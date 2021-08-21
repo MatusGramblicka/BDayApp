@@ -1,0 +1,12 @@
+﻿﻿.person-image {
+    width: 100%;
+}
+
+.person-title {
+    color: #007bff;
+}
+
+.person-description {
+    font-style: italic;
+    white-space: pre-line;
+}

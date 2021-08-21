@@ -1,0 +1,77 @@
+﻿@if (Persons.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col"></th>
+                <th scope="col">Name</th>
+                <th scope="col">Surname</th>
+                <th scope="col">BirthDay</th>
+                <th scope="col">NameDay</th>
+                <th scope="col" style="visibility: @(hideButtons ? "hidden" : "visible")">Update</th>
+                <th scope="col" style="visibility: @(hideButtons ? "hidden" : "visible")">Delete</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var person in Persons)
+            {
+                if (!DisplayPerson(person.DayOfBirth))
+                    continue;
+            <tr>
+                <td>
+                    <a href="/person/@person.Id">
+                        <img src="@person.ImageUrl" alt="person image" style="width:100px;" />
+                    </a>
+                </td>
+                <td class="align-middle">
+                    <a href="/person/@person.Id">
+                        @person.Name
+                    </a>
+                </td>
+                <td class="align-middle">
+                    @person.Surname
+                </td>
+                <td class="align-middle">
+                    @person.DayOfBirth.ToString("dd.MM.yyyy")
+                </td>
+                <td class="align-middle">
+                    @person.DayOfNameDay.ToString("dd.MM.")
+                </td>
+                <td class="align-middle">
+                    <a class="btn btn-info" href="/updatePerson/@person.Id" style="visibility: @(hideButtons ? "hidden" : "visible")">
+                        Update
+                    </a>
+                </td>
+                <td class="align-middle">
+                    <button type="button" class="btn btn-danger" style="visibility: @(hideButtons ? "hidden" : "visible")"
+                            @onclick="() => CallConfirmationModal(person.Id)">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+    <Confirmation BodyMessage="Do you want to delete this person?"
+                  OnOKClicked="DeletePerson" @ref="_confirmation" />
+}
+else
+{
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col"></th>
+            <th scope="col">Name</th>
+            <th scope="col">Surname</th>
+            <th scope="col">BirthDay</th>
+            <th scope="col">NameDay</th>
+            <th scope="col" style="visibility: @(hideButtons ? "hidden" : "visible")">Update</th>
+            <th scope="col" style="visibility: @(hideButtons ? "hidden" : "visible")">Delete</th>
+        </tr>
+    </thead>    
+</table>
+<span>
+    Loading persons...
+</span>
+
+}

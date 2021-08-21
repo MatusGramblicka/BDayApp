@@ -1,0 +1,12 @@
+F:\BDay\BDayApp\BDayServer\EmailService\bin\Release\net5.0\EmailService.deps.json
+F:\BDay\BDayApp\BDayServer\EmailService\bin\Release\net5.0\EmailService.dll
+F:\BDay\BDayApp\BDayServer\EmailService\bin\Release\net5.0\ref\EmailService.dll
+F:\BDay\BDayApp\BDayServer\EmailService\bin\Release\net5.0\EmailService.pdb
+F:\BDay\BDayApp\BDayServer\EmailService\obj\Release\net5.0\EmailService.csprojAssemblyReference.cache
+F:\BDay\BDayApp\BDayServer\EmailService\obj\Release\net5.0\EmailService.GeneratedMSBuildEditorConfig.editorconfig
+F:\BDay\BDayApp\BDayServer\EmailService\obj\Release\net5.0\EmailService.AssemblyInfoInputs.cache
+F:\BDay\BDayApp\BDayServer\EmailService\obj\Release\net5.0\EmailService.AssemblyInfo.cs
+F:\BDay\BDayApp\BDayServer\EmailService\obj\Release\net5.0\EmailService.csproj.CoreCompileInputs.cache
+F:\BDay\BDayApp\BDayServer\EmailService\obj\Release\net5.0\EmailService.dll
+F:\BDay\BDayApp\BDayServer\EmailService\obj\Release\net5.0\ref\EmailService.dll
+F:\BDay\BDayApp\BDayServer\EmailService\obj\Release\net5.0\EmailService.pdb

@@ -40,7 +40,7 @@ namespace BDayClient.HttpInterceptor
 		{
 			var absolutePath = e.Request.RequestUri.AbsolutePath;
 
-			if (!absolutePath.Contains("token") && !absolutePath.Contains("accounts"))
+			if (!absolutePath.Contains("token") && !absolutePath.Contains("account"))
 			{
 				var token = await _refreshTokenService.TryRefreshToken();
 				if (!string.IsNullOrEmpty(token))

@@ -109,7 +109,7 @@ namespace BDayServer
             }
             else
             {
-                //app.UseHsts();
+                app.UseHsts();
             }
 
             app.UseHttpsRedirection();

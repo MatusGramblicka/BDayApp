@@ -36,12 +36,16 @@
             <ValidationMessage For="@(() => _personForUpdateDto.DayOfNameDay)" />
         </div>
     </div>
-    <div class="form-group row">
-        <label for="image" class="col-md-2 col-form-label">Image:</label>
-        <div class="col-md-10">
-            <ImageUpload OnChange="AssignImageUrl" ImgUrl="@_personForUpdateDto.ImageUrl" />
-        </div>
-    </div>
+    <AuthorizeView Roles="Administrator">
+        <Authorized Context="Auth">
+            <div class="form-group row">
+                <label for="image" class="col-md-2 col-form-label">Image:</label>
+                <div class="col-md-10">
+                    <ImageUpload OnChange="AssignImageUrl" ImgUrl="@_personForUpdateDto.ImageUrl" />
+                </div>
+            </div>
+        </Authorized>
+    </AuthorizeView>
     <div class="row">
         <div class="col-md-12 text-right">
             <button type="submit" class="btn btn-success"

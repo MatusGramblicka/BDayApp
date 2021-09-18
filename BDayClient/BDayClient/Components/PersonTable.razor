@@ -3,7 +3,11 @@
     <table class="table">
         <thead>
             <tr>
-                <th scope="col"></th>
+                <AuthorizeView Roles="Administrator">
+                    <Authorized>
+                        <th scope="col"></th>
+                    </Authorized>
+                </AuthorizeView>
                 <th scope="col">Name</th>
                 <th scope="col">Surname</th>
                 <th scope="col">BirthDay</th>
@@ -18,11 +22,15 @@
                 if (!DisplayPerson(person.DayOfBirth))
                     continue;
             <tr>
-                <td>
-                    <a href="/person/@person.Id">
-                        <img src="@person.ImageUrl" alt="person image" style="width:100px;" />
-                    </a>
-                </td>
+                <AuthorizeView Roles="Administrator">
+                    <Authorized>
+                        <td>
+                            <a href="/person/@person.Id">
+                                <img src="@person.ImageUrl" alt="person image" style="width:100px;" />
+                            </a>
+                        </td>
+                    </Authorized>
+                </AuthorizeView>
                 <td class="align-middle">
                     <a href="/person/@person.Id">
                         @person.Name
@@ -32,7 +40,7 @@
                     @person.Surname
                 </td>
                 <td class="align-middle">
-                    @person.DayOfBirth.ToString("dd.MM.yyyy")
+                    @person.DayOfBirth.ToString("dd.MM.")
                 </td>
                 <td class="align-middle">
                     @person.DayOfNameDay.ToString("dd.MM.")
@@ -60,7 +68,11 @@ else
 <table class="table">
     <thead>
         <tr>
-            <th scope="col"></th>
+            <AuthorizeView Roles="Administrator">
+                <Authorized>
+                    <th scope="col"></th>
+                </Authorized>
+            </AuthorizeView>
             <th scope="col">Name</th>
             <th scope="col">Surname</th>
             <th scope="col">BirthDay</th>

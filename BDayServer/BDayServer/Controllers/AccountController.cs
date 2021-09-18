@@ -135,8 +135,8 @@ namespace BDayServer.Controllers
                 return await GenerateOTPFor2StepVerification(user);
 
             var token = await _authenticationService.GetToken(user);
-
-            user.RefreshToken = _authenticationService.GenerateRefreshToken();
+			//await _userManager.AddToRoleAsync(user, "Administrator");
+			user.RefreshToken = _authenticationService.GenerateRefreshToken();
             user.RefreshTokenExpiryTime = DateTime.Now.AddDays(7);
             await _userManager.UpdateAsync(user);
 

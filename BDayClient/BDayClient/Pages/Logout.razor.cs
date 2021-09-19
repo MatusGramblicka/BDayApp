@@ -1,8 +1,5 @@
 ﻿using BDayClient.HttpRepository;
 using Microsoft.AspNetCore.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace BDayClient.Pages
@@ -18,7 +15,7 @@ namespace BDayClient.Pages
 		protected override async Task OnInitializedAsync()
 		{
 			await AuthenticationService.Logout();
-			NavigationManager.NavigateTo("/");
+			NavigationManager.NavigateTo("/login");
 		}
 	}
 }

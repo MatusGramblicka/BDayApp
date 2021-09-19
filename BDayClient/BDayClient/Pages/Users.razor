@@ -1,27 +1,11 @@
 ﻿@page "/users"
 @using BDayClient.Components
+@using Microsoft.AspNetCore.Authorization
 
-@*<div class="row">
-    <div class="col-md-5">
-        <Search OnSearchChanged="SearchChanged" />
-    </div>
-    <div class="col-md-5">
-        <Sort OnSortChanged="SortChanged" />
-    </div>
-    <div class="col-md-2">
-        <a class="btn btn-success mb-1" href="/createPerson">New Person</a>
-    </div>
-</div>*@
+@attribute [Authorize(Roles = "Administrator")]
+
 <div class="row">
     <div class="col">
         <UsersTable Users="UsersList" LoggedUser="@LoggedUserName" OnUpdate="UpdateUser" OnRemoveAdminRole="RemoveAdminRole" OnDeleteUser="DeleteUser" OnChange2StepsAuthorization="Change2StepsAuthorization"/>
     </div>
 </div>
-@*<div class="row">
-    <div class="col">
-        <Pagination MetaData="MetaData" Spread="1" SelectedPage="SelectedPage" />
-    </div>
-    <div class="col">
-        <PageSizeDropDown SelectedPageSize="SetPageSize" />
-    </div>
-</div>*@

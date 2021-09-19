@@ -1,5 +1,8 @@
 ﻿@page "/index"
 @using BDayClient.Components
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Roles = "Administrator")]
 
 <br />
 <br />
@@ -8,3 +11,4 @@
         <PersonTable Persons="PersonList" hideButtons="true" />
     </div>
 </div>
+

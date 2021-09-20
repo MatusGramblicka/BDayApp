@@ -3,12 +3,9 @@ using BDayServer.Services;
 using EmailService;
 using Entities;
 using Entities.DTO;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -148,32 +145,7 @@ namespace BDayServer.Controllers
                 Token = token,
                 RefreshToken = user.RefreshToken
             });
-        }
-
-		private async Task<IActionResult> GenerateOTPFor2StepVerification(User user)
-		{
-			var providers = await _userManager.GetValidTwoFactorProvidersAsync(user);
-			if (!providers.Contains("Email"))
-			{
-				return Unauthorized(new AuthResponseDto
-				{
-					ErrorMessage = "Invalid 2-Step Verification Provider"
-				});
-			}
-
-			var token = await _userManager.GenerateTwoFactorTokenAsync(user, "Email");
-
-			var message = new Message(new string[] { user.Email }, "Authentication token",
-				token, null);
-
-			await _emailSender.SendEmailAsync(message);
-
-			return Ok(new AuthResponseDto
-			{
-				Is2StepVerificationRequired = true,
-				Provider = "Email"
-			});
-		}
+        }		
 
 		[HttpPost("ForgotPassword")]
 		public async Task<IActionResult> ForgotPassword(
@@ -246,99 +218,6 @@ namespace BDayServer.Controllers
 			return Ok();
 		}
 
-		[HttpGet("Users")]
-		[Authorize(Roles = "Administrator")]
-		public async Task<IActionResult> GetUsers()
-		{
-			var allUsers = _userManager.Users.ToList();			
-			//var usersAdministrator = await _userManager.GetUsersInRoleAsync("Administrator");
-
-			foreach (var user in allUsers)
-			{
-				if (await _userManager.IsInRoleAsync(user, "Administrator"))
-					user.IsAdmin = true;				
-			}
-
-			var userLite = _mapper.Map<IEnumerable<UserLite>>(allUsers);
-
-			return Ok(userLite);
-		}
-
-		[HttpPost("UpdateUser")]
-		[Authorize(Roles = "Administrator")]
-		public async Task<IActionResult> UpdateUser([FromBody] UserLite userForUpdate)
-		{
-			var user = await _userManager.FindByNameAsync(userForUpdate.Email);
-
-			if (user == null)
-			{
-				return Unauthorized(new AuthResponseDto
-				{
-					ErrorMessage = "Invalid Request"
-				});
-			}
-
-			await _userManager.AddToRoleAsync(user, "Administrator");
-
-			return Ok();
-		}
-
-		[HttpPost("RemoveAdminRole")]
-		[Authorize(Roles = "Administrator")]
-		public async Task<IActionResult> RemoveAdminRole([FromBody] UserLite userForUpdate)
-		{
-			var user = await _userManager.FindByNameAsync(userForUpdate.Email);
-
-			if (user == null)
-			{
-				return Unauthorized(new AuthResponseDto
-				{
-					ErrorMessage = "Invalid Request"
-				});
-			}
-
-			await _userManager.RemoveFromRoleAsync(user, "Administrator");
-
-			return Ok();
-		}
-
-		[HttpPost("DeleteUser")]
-		[Authorize(Roles = "Administrator")]
-		public async Task<IActionResult> DeleteUser([FromBody] UserLite userForDeletion)
-		{
-			var user = await _userManager.FindByNameAsync(userForDeletion.Email);
-
-			if (user == null)
-			{
-				return Unauthorized(new AuthResponseDto
-				{
-					ErrorMessage = "Invalid Request"
-				});
-			}
-
-			var logins = await _userManager.GetLoginsAsync(user);
-
-			var rolesForUser = await _userManager.GetRolesAsync(user);
-			
-			foreach (var login in logins.ToList())
-			{
-				await _userManager.RemoveLoginAsync(user, login.LoginProvider, login.ProviderKey);
-			}
-
-			if (rolesForUser.Count > 0)
-			{
-				foreach (var item in rolesForUser.ToList())
-				{
-					await _userManager.RemoveFromRoleAsync(user, item);
-				}
-			}
-
-			//Delete User
-			await _userManager.DeleteAsync(user);
-
-			return Ok();
-		}
-
 		[HttpPost("TwoStepVerification")]
 		public async Task<IActionResult> TwoStepVerification(
 			[FromBody] TwoFactorVerificationDto twoFactorVerificationDto)
@@ -378,23 +257,29 @@ namespace BDayServer.Controllers
 			});
 		}
 
-		[HttpPost("SetTwoFactorAuthorization")]
-		[Authorize(Roles = "Administrator")]
-		public async Task<IActionResult> SetTwoFactorAuthorization([FromBody] UserLite2StepsAuthDto userForUpdate)
+		private async Task<IActionResult> GenerateOTPFor2StepVerification(User user)
 		{
-			var user = await _userManager.FindByNameAsync(userForUpdate.Email);
-			
-			if (user == null)
+			var providers = await _userManager.GetValidTwoFactorProvidersAsync(user);
+			if (!providers.Contains("Email"))
 			{
 				return Unauthorized(new AuthResponseDto
 				{
-					ErrorMessage = "Invalid Request"
+					ErrorMessage = "Invalid 2-Step Verification Provider"
 				});
 			}
 
-			await _userManager.SetTwoFactorEnabledAsync(user, userForUpdate.TwoFactorEnabled);			
+			var token = await _userManager.GenerateTwoFactorTokenAsync(user, "Email");
 
-			return Ok();
+			var message = new Message(new string[] { user.Email }, "Authentication token",
+				token, null);
+
+			await _emailSender.SendEmailAsync(message);
+
+			return Ok(new AuthResponseDto
+			{
+				Is2StepVerificationRequired = true,
+				Provider = "Email"
+			});
 		}
 	}
 }

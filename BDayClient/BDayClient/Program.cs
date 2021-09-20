@@ -59,6 +59,8 @@ namespace BDayClient
 
             builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 
+            builder.Services.AddScoped<IUsersHttpRepository, UsersHttpRepository>();            
+
             builder.Services.AddScoped<RefreshTokenService>();
 
             await builder.Build().RunAsync();

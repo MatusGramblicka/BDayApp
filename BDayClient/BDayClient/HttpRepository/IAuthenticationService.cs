@@ -1,8 +1,4 @@
-﻿using Entities;
-using Entities.DTO;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Entities.DTO;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -16,12 +12,8 @@ namespace BDayClient.HttpRepository
         Task<string> RefreshToken();
         Task<HttpStatusCode> ForgotPassword(ForgotPasswordDto forgotPasswordDto);
         Task<ResetPasswordResponseDto> ResetPassword(ResetPasswordDto resetPasswordDto);
-        Task<HttpStatusCode> EmailConfirmation(string email, string token);
-        Task<List<UserLite>> GetUsers();
-        Task<HttpStatusCode> UpdateUser(UserLite user);
-        Task<HttpStatusCode> RemoveAdminRole(UserLite user);
-        Task<HttpStatusCode> DeleteUser(UserLite user);
+        Task<HttpStatusCode> EmailConfirmation(string email, string token);       
         Task<AuthResponseDto> LoginVerification(TwoFactorVerificationDto twoFactorDto);
-        Task<HttpStatusCode> SetTwoFactorAuthorization(UserLite2StepsAuthDto user2StepsAuth);
+        
     }
 }

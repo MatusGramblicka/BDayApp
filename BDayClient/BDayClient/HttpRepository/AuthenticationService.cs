@@ -1,14 +1,11 @@
 ﻿using BDayClient.AuthProvider;
 using Blazored.LocalStorage;
-using Entities;
 using Entities.DTO;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.WebUtilities;
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -152,46 +149,7 @@ namespace BDayClient.HttpRepository
 
             return response.StatusCode;
         }
-
-        public async Task<List<UserLite>> GetUsers()
-        {
-            var usersResult = await _client.GetFromJsonAsync<List<UserLite>>("account/users");
-
-            return usersResult;
-        }
-
-        public async Task<HttpStatusCode> UpdateUser(UserLite user)
-        {
-            var result = await _client.PostAsJsonAsync("account/updateuser",
-                user);
-
-            return result.StatusCode;
-        }
-
-        public async Task<HttpStatusCode> RemoveAdminRole(UserLite user)
-        {
-            var result = await _client.PostAsJsonAsync("account/removeadminrole",
-                user);
-
-            return result.StatusCode;
-        }
-
-        public async Task<HttpStatusCode> DeleteUser(UserLite user)
-        {
-            var result = await _client.PostAsJsonAsync("account/deleteuser",
-                user);
-
-            return result.StatusCode;
-        }
-
-        public async Task<HttpStatusCode> SetTwoFactorAuthorization(UserLite2StepsAuthDto user2StepsAuth)
-        {
-            var result = await _client.PostAsJsonAsync("account/SetTwoFactorAuthorization",
-                user2StepsAuth);
-
-            return result.StatusCode;
-        }
-
+        
         public async Task<AuthResponseDto> LoginVerification(TwoFactorVerificationDto twoFactorDto)
         {
             var response = await _client.PostAsJsonAsync("account/twostepverification",

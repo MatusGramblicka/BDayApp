@@ -2,16 +2,13 @@
 using BDayClient.HttpInterceptor;
 using BDayClient.HttpRepository;
 using Blazored.LocalStorage;
-using Entities;
-using Entities.RequestFeatures;
+using Entities.DTO;
 using Microsoft.AspNetCore.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Entities.DTO;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace BDayClient.Pages
 {
@@ -21,7 +18,7 @@ namespace BDayClient.Pages
 		public string LoggedUserName { get; set; }
 
 		[Inject]
-		public IAuthenticationService AuthService { get; set; }
+		public IUsersHttpRepository UsersHttpRepository { get; set; }
 		[Inject]
 		public HttpInterceptorService Interceptor { get; set; }
 		[Inject]
@@ -50,32 +47,32 @@ namespace BDayClient.Pages
 
 		private async Task GetUsers()
 		{
-			UsersList = await AuthService.GetUsers();
+			UsersList = await UsersHttpRepository.GetUsers();
 			
 			Logger.LogInformation(JsonConvert.SerializeObject(UsersList));
 		}
 
         private async Task UpdateUser(UserLite user)
         {
-			await AuthService.UpdateUser(user);
+			await UsersHttpRepository.UpdateUser(user);
 			await GetUsers();
 		}
 
 		private async Task RemoveAdminRole(UserLite user)
 		{
-			await AuthService.RemoveAdminRole(user);
+			await UsersHttpRepository.RemoveAdminRole(user);
 			await GetUsers();
 		}
 
 		private async Task DeleteUser(UserLite user)
 		{
-			await AuthService.DeleteUser(user);
+			await UsersHttpRepository.DeleteUser(user);
 			await GetUsers();
 		}
 
 		private async Task Change2StepsAuthorization(UserLite2StepsAuthDto user2StepsAuth)
 		{
-			await AuthService.SetTwoFactorAuthorization(user2StepsAuth);
+			await UsersHttpRepository.SetTwoFactorAuthorization(user2StepsAuth);
 			await GetUsers();
 		}
 

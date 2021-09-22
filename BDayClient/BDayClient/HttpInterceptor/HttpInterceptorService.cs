@@ -26,13 +26,17 @@ namespace BDayClient.HttpInterceptor
 		}
 
 		public void RegisterEvent() => _interceptor.AfterSend += HandleResponse;
-		public void RegisterBeforeSendEvent() =>
+		public void RegisterBeforeSendEvent()
+		{
+			//https://code-maze.com/refresh-token-with-blazor-webassembly-and-asp-net-core-web-api/?fbclid=IwAR1S1wncpwJQC0v6aqxJviXIP8lLFb34izfK6k6-mKM6jx-YxlyX4bpep3k#comment-3817
+			_interceptor.BeforeSendAsync -= InterceptBeforeSendAsync;
 			_interceptor.BeforeSendAsync += InterceptBeforeSendAsync;
+		}
 
 		public void DisposeEvent()
 		{
 			_interceptor.AfterSend -= HandleResponse;
-			_interceptor.BeforeSendAsync -= InterceptBeforeSendAsync;
+			//_interceptor.BeforeSendAsync -= InterceptBeforeSendAsync;
 		}
 
 		private async Task InterceptBeforeSendAsync(object sender,

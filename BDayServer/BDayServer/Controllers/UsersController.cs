@@ -12,7 +12,8 @@ namespace BDayServer.Controllers
 {
     [Route("api/users")]
     [ApiController]
-    public class UsersController : ControllerBase
+	[Authorize(Roles = "Administrator")]
+	public class UsersController : ControllerBase
 	{
 		private readonly UserManager<User> _userManager;		
 		private readonly IMapper _mapper;
@@ -24,8 +25,7 @@ namespace BDayServer.Controllers
 			_mapper = mapper;
 		}	
 
-		[HttpGet("Users")]
-		[Authorize(Roles = "Administrator")]
+		[HttpGet("Users")]		
 		public async Task<IActionResult> GetUsers()
 		{
 			var allUsers = _userManager.Users.ToList();
@@ -42,8 +42,7 @@ namespace BDayServer.Controllers
 			return Ok(userLite);
 		}
 
-		[HttpPost("UpdateUser")]
-		[Authorize(Roles = "Administrator")]
+		[HttpPost("UpdateUser")]		
 		public async Task<IActionResult> UpdateUser([FromBody] UserLite userForUpdate)
 		{
 			var user = await _userManager.FindByNameAsync(userForUpdate.Email);
@@ -61,8 +60,7 @@ namespace BDayServer.Controllers
 			return Ok();
 		}
 
-		[HttpPost("RemoveAdminRole")]
-		[Authorize(Roles = "Administrator")]
+		[HttpPost("RemoveAdminRole")]		
 		public async Task<IActionResult> RemoveAdminRole([FromBody] UserLite userForUpdate)
 		{
 			var user = await _userManager.FindByNameAsync(userForUpdate.Email);
@@ -80,8 +78,7 @@ namespace BDayServer.Controllers
 			return Ok();
 		}
 
-		[HttpPost("DeleteUser")]
-		[Authorize(Roles = "Administrator")]
+		[HttpPost("DeleteUser")]		
 		public async Task<IActionResult> DeleteUser([FromBody] UserLite userForDeletion)
 		{
 			var user = await _userManager.FindByNameAsync(userForDeletion.Email);
@@ -117,8 +114,7 @@ namespace BDayServer.Controllers
 			return Ok();
 		}		
 
-		[HttpPost("SetTwoFactorAuthorization")]
-		[Authorize(Roles = "Administrator")]
+		[HttpPost("SetTwoFactorAuthorization")]		
 		public async Task<IActionResult> SetTwoFactorAuthorization([FromBody] UserLite2StepsAuthDto userForUpdate)
 		{
 			var user = await _userManager.FindByNameAsync(userForUpdate.Email);

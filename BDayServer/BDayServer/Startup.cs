@@ -1,6 +1,7 @@
 using AutoMapper;
 using BDayServer.ActionFilters;
 using BDayServer.Extensions;
+using BDayServer.HostedService;
 using BDayServer.Services;
 using EmailService;
 using Entities;
@@ -10,9 +11,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -21,11 +20,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace BDayServer
 {
@@ -95,9 +91,15 @@ namespace BDayServer
             });
 
             services.AddRazorPages();
+
+            services.AddCronJob<ScheduleJob>(c =>
+            {
+                c.TimeZoneInfo = TimeZoneInfo.Local;
+                c.CronExpression = @"0 12 * * *"; // 12:00 PM daily.
+                //c.CronExpression = @"*/2 * * * *"; // every 2 minutes.
+            });
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
             if (env.IsDevelopment())

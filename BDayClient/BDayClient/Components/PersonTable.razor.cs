@@ -3,7 +3,6 @@ using Entities.Models;
 using Microsoft.AspNetCore.Components;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace BDayClient.Components
@@ -21,6 +20,7 @@ namespace BDayClient.Components
 
 		public DateTime timeNow = DateTime.Today;
 		public int age;
+		public int ageNameDay;
 
 		private Confirmation _confirmation;
 		private Guid _personIdToDelete;
@@ -37,13 +37,17 @@ namespace BDayClient.Components
 			await OnDelete.InvokeAsync(_personIdToDelete);
 		}
 
-		private bool DisplayPerson(DateTime DayOfBirth)
+		private bool DisplayPerson(DateTime DayOfBirth, DateTime DayOfNameDay)
 		{
 			if (hideButtons)
 			{
-				age =  timeNow.Year-DayOfBirth.Year;				
+				age = timeNow.Year - DayOfBirth.Year;				
 				int numOfDays = (DayOfBirth - timeNow.AddYears(-age)).Days;
-				bool result = (numOfDays < 30) && (numOfDays >= 0);
+				
+				ageNameDay = timeNow.Year - DayOfNameDay.Year;
+				int numOfDaysNameDay = (DayOfNameDay - timeNow.AddYears(-ageNameDay)).Days; ;
+
+				bool result = ((numOfDays < 30) && (numOfDays >= 0)) || ((numOfDaysNameDay < 30) && (numOfDaysNameDay >= 0));
 				return result;
 			}
 			return true;

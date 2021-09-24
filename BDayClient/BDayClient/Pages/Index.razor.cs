@@ -3,9 +3,7 @@ using BDayClient.HttpRepository;
 using Entities.Models;
 using Entities.RequestFeatures;
 using Microsoft.AspNetCore.Components;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace BDayClient.Pages
@@ -26,6 +24,8 @@ namespace BDayClient.Pages
 		protected async override Task OnInitializedAsync()
 		{
 			Interceptor.RegisterEvent();
+			Interceptor.RegisterBeforeSendEvent();
+
 			await GetPersons();
 		}	
 

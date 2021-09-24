@@ -19,7 +19,7 @@
         <tbody>
             @foreach (var person in Persons)
             {
-                if (!DisplayPerson(person.DayOfBirth))
+                if (!DisplayPerson(person.DayOfBirth, person.DayOfNameDay))
                     continue;
             <tr>
                 <AuthorizeView Roles="Administrator">

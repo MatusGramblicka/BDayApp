@@ -65,7 +65,8 @@ namespace BDayServer.HostedService
             var ageNameDay = timeNow.Year - person.DayOfNameDay.Year;
             int numOfDaysNameDay = (person.DayOfNameDay - timeNow.AddYears(-ageNameDay)).Days; ;
 
-            bool result = ((numOfDays < 14) && (numOfDays >= 0)) || ((numOfDaysNameDay < 14) && (numOfDaysNameDay >= 0));
+            bool result = (((numOfDays == 14) || (numOfDays == 1)) && (numOfDays >= 0)) || 
+                (((numOfDaysNameDay == 14) || (numOfDaysNameDay == 1)) && (numOfDaysNameDay >= 0));
             return result;
         }
 

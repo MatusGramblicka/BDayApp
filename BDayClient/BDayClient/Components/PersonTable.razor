@@ -12,15 +12,13 @@
                 <th scope="col">Surname</th>
                 <th scope="col">BirthDay</th>
                 <th scope="col">NameDay</th>
-                <th scope="col" style="visibility: @(hideButtons ? "hidden" : "visible")">Update</th>
-                <th scope="col" style="visibility: @(hideButtons ? "hidden" : "visible")">Delete</th>
+                <th scope="col">Update</th>
+                <th scope="col">Delete</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var person in Persons)
             {
-                if (!DisplayPerson(person.DayOfBirth, person.DayOfNameDay))
-                    continue;
             <tr>
                 <AuthorizeView Roles="Administrator">
                     <Authorized>
@@ -46,12 +44,12 @@
                     @person.DayOfNameDay.ToString("dd.MM.")
                 </td>
                 <td class="align-middle">
-                    <a class="btn btn-info" href="/updatePerson/@person.Id" style="visibility: @(hideButtons ? "hidden" : "visible")">
+                    <a class="btn btn-info" href="/updatePerson/@person.Id">
                         Update
                     </a>
                 </td>
                 <td class="align-middle">
-                    <button type="button" class="btn btn-danger" style="visibility: @(hideButtons ? "hidden" : "visible")"
+                    <button type="button" class="btn btn-danger"
                             @onclick="() => CallConfirmationModal(person.Id)">
                         Delete
                     </button>
@@ -77,13 +75,12 @@ else
             <th scope="col">Surname</th>
             <th scope="col">BirthDay</th>
             <th scope="col">NameDay</th>
-            <th scope="col" style="visibility: @(hideButtons ? "hidden" : "visible")">Update</th>
-            <th scope="col" style="visibility: @(hideButtons ? "hidden" : "visible")">Delete</th>
+            <th scope="col">Update</th>
+            <th scope="col">Delete</th>
         </tr>
     </thead>    
 </table>
 <span>
     Loading persons...
 </span>
-
 }

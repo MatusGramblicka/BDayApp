@@ -1,16 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Entities.RequestFeatures
+﻿namespace Entities.RequestFeatures
 {
     public class PersonParameters : RequestParameters
     {
         public PersonParameters()
         {
-            OrderBy = "name";
+            OrderBy = "dayOfBirth ascending";
         }
         public uint MinAge { get; set; }
         public uint MaxAge { get; set; } = int.MaxValue;

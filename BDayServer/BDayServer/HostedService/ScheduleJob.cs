@@ -81,7 +81,6 @@ namespace BDayServer.HostedService
         {
             var personsNameDay = personsDto
                 .Where(p => hasCloseEvent(p))
-                //.Select(s => s.Surname)
                 .ToList();
 
             var personsNameDayString = "";
@@ -98,9 +97,6 @@ namespace BDayServer.HostedService
                 foreach (var person in personsNameDay)
                     personsNameDayString += $"{person.Name} {person.Surname} {person.DayOfNameDay:dd/MM/yyyy} \n";
             }
-
-            //if (personsNameDayString.Length >= 2)
-            //    personsNameDayString = personsNameDayString.Remove(personsNameDayString.Length - 2) + ".";
 
             _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob found these people who have close nameday celebration {personsNameDayString}");
 

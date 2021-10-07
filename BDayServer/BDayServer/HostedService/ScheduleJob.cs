@@ -44,30 +44,17 @@ namespace BDayServer.HostedService
         public override async Task DoWork(CancellationToken cancellationToken)
         {
             _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob is working.");
-           
+
             var message = await PrepareMessage();
-            await _emailSender.SendEmailAsync(message);
+
+            if (message != null)
+                await _emailSender.SendEmailAsync(message);
         }
 
         public override Task StopAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("ScheduleJob is stopping.");
             return base.StopAsync(cancellationToken);
-        }
-
-        private static bool HasCloseCelebration(PersonDto person)
-        {
-            var timeNow = DateTime.Today;
-
-            var age = timeNow.Year - person.DayOfBirth.Year;
-            int numOfDays = (person.DayOfBirth - timeNow.AddYears(-age)).Days;
-
-            var ageNameDay = timeNow.Year - person.DayOfNameDay.Year;
-            int numOfDaysNameDay = (person.DayOfNameDay - timeNow.AddYears(-ageNameDay)).Days; ;
-
-            bool result = (((numOfDays == 14) || (numOfDays == 1)) && (numOfDays >= 0)) || 
-                (((numOfDaysNameDay == 14) || (numOfDaysNameDay == 1)) && (numOfDaysNameDay >= 0));
-            return result;
         }
 
         private async Task<Message> PrepareMessage()
@@ -77,23 +64,72 @@ namespace BDayServer.HostedService
                 .Select(s => s.Email)
                 .ToArray();
 
-            var personsFromDB = await _repository.Person.GetAllPersonsAsync(new PersonParameters(), trackChanges: false);
-            var personsDto = _mapper.Map<IEnumerable<PersonDto>>(personsFromDB);
+            var personsFromDb = await _repository.Person.GetAllPersonsAsync(new PersonParameters { PageSize = 50 }, trackChanges: false);
+            var personsDto = _mapper.Map<IEnumerable<PersonDto>>(personsFromDb);
 
-            var PersonsSurname = personsDto
-                .Where(p => HasCloseCelebration(p))
-                .Select(s => s.Surname)
+            var messageBirthDays = PrepareMessage(personsDto, HasCloseBirthDay, "People with birthday in few days:");
+
+            var messageNameDays = PrepareMessage(personsDto, HasCloseNameDay, "People with nameday in few days:");
+
+            if (messageBirthDays.Length == 0 && messageNameDays.Length == 0)
+                return null;
+            else
+                return new Message(allUsersEmails, "Celebration is close", $"{messageBirthDays}{Environment.NewLine}{messageNameDays}", null);
+        }
+
+        private string PrepareMessage(IEnumerable<PersonDto> personsDto, Func<PersonDto, bool> hasCloseEvent, string message)
+        {
+            var personsNameDay = personsDto
+                .Where(p => hasCloseEvent(p))
+                //.Select(s => s.Surname)
                 .ToList();
 
-            var surnames = "";
+            var personsNameDayString = "";
 
-            foreach (var surname in PersonsSurname)
-                surnames += surname + ", ";
+            var methodName = hasCloseEvent.Method.Name;
 
-            surnames = surnames.Remove(surnames.Length - 2) + ".";
+            if (methodName.Contains("birth", StringComparison.InvariantCultureIgnoreCase))
+            {
+                foreach (var person in personsNameDay)
+                    personsNameDayString += $"{person.Name} {person.Surname} {person.DayOfBirth:dd/MM/yyyy}\n";
+            }
+            else if (methodName.Contains("name", StringComparison.InvariantCultureIgnoreCase))
+            {
+                foreach (var person in personsNameDay)
+                    personsNameDayString += $"{person.Name} {person.Surname} {person.DayOfNameDay:dd/MM/yyyy} \n";
+            }
 
-            return new Message(allUsersEmails, "Celebration is close",
-                $"People with event in few days: {surnames}", null);
+            //if (personsNameDayString.Length >= 2)
+            //    personsNameDayString = personsNameDayString.Remove(personsNameDayString.Length - 2) + ".";
+
+            _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob found these people who have close nameday celebration {personsNameDayString}");
+
+            if (personsNameDayString.Length == 0)
+                return personsNameDayString;
+            else
+                return $"{message}\n{personsNameDayString}";
+        }
+
+        private bool HasCloseBirthDay(PersonDto person)
+        {
+            _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob is searching for people with close birthday.");
+            var timeNow = DateTime.Today;
+
+            var age = timeNow.Year - person.DayOfBirth.Year;
+            var numOfDays = (person.DayOfBirth - timeNow.AddYears(-age)).Days;
+
+            return numOfDays == 14 || numOfDays == 1 || numOfDays == 0;
+        }
+
+        private bool HasCloseNameDay(PersonDto person)
+        {
+            _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob is searching for people with close nameday.");
+            var timeNow = DateTime.Today;
+
+            var ageNameDay = timeNow.Year - person.DayOfNameDay.Year;
+            var numOfDaysNameDay = (person.DayOfNameDay - timeNow.AddYears(-ageNameDay)).Days;
+
+            return numOfDaysNameDay == 14 || numOfDaysNameDay == 1 || numOfDaysNameDay == 0;
         }
     }
 }

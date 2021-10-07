@@ -31,6 +31,7 @@ namespace BDayClient.Pages
 
 		private async Task GetPersons()
 		{
+			_personParameters.PageSize = 50;
 			var pagingResponse = await PersonRepo.GetPersons(_personParameters);
 
 			PersonList = pagingResponse.Items;

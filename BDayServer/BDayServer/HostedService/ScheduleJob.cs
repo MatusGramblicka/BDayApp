@@ -67,14 +67,14 @@ namespace BDayServer.HostedService
             var personsFromDb = await _repository.Person.GetAllPersonsAsync(new PersonParameters { PageSize = 50 }, trackChanges: false);
             var personsDto = _mapper.Map<IEnumerable<PersonDto>>(personsFromDb);
 
-            var messageBirthDays = PrepareMessage(personsDto, HasCloseBirthDay, "People with birthday in few days:");
+            var messageBirthDays = PrepareMessage(personsDto, HasCloseBirthDay, "- birthday:");
 
-            var messageNameDays = PrepareMessage(personsDto, HasCloseNameDay, "People with nameday in few days:");
+            var messageNameDays = PrepareMessage(personsDto, HasCloseNameDay, "- nameday:");
 
             if (messageBirthDays.Length == 0 && messageNameDays.Length == 0)
                 return null;
             else
-                return new Message(allUsersEmails, "Celebration is close", $"{messageBirthDays}{Environment.NewLine}{messageNameDays}", null);
+                return new Message(allUsersEmails, "Celebration", $"{messageBirthDays}{Environment.NewLine}{messageNameDays}", null);
         }
 
         private string PrepareMessage(IEnumerable<PersonDto> personsDto, Func<PersonDto, bool> hasCloseEvent, string message)

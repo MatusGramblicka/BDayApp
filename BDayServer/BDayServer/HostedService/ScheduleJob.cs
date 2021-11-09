@@ -67,9 +67,9 @@ namespace BDayServer.HostedService
             var personsFromDb = await _repository.Person.GetAllPersonsAsync(new PersonParameters { PageSize = 50 }, trackChanges: false);
             var personsDto = _mapper.Map<IEnumerable<PersonDto>>(personsFromDb);
 
-            var messageBirthDays = PrepareMessage(personsDto, HasCloseBirthDay, "- birthday:");
+            var messageBirthDays = PrepareMessage(personsDto, HasCloseBirthDay, "Birthday:");
 
-            var messageNameDays = PrepareMessage(personsDto, HasCloseNameDay, "- nameday:");
+            var messageNameDays = PrepareMessage(personsDto, HasCloseNameDay, "Nameday:");
 
             if (messageBirthDays.Length == 0 && messageNameDays.Length == 0)
                 return null;
@@ -90,12 +90,12 @@ namespace BDayServer.HostedService
             if (methodName.Contains("birth", StringComparison.InvariantCultureIgnoreCase))
             {
                 foreach (var person in personsNameDay)
-                    personsNameDayString += $"{person.Name} {person.Surname} {person.DayOfBirth:dd/MM/yyyy}\n";
+                    personsNameDayString += $"{person.Name} {person.Surname} {person.DayOfBirth:dd/MM}\n";
             }
             else if (methodName.Contains("name", StringComparison.InvariantCultureIgnoreCase))
             {
                 foreach (var person in personsNameDay)
-                    personsNameDayString += $"{person.Name} {person.Surname} {person.DayOfNameDay:dd/MM/yyyy} \n";
+                    personsNameDayString += $"{person.Name} {person.Surname} {person.DayOfNameDay:dd/MM} \n";
             }
 
             _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob found these people who have close nameday celebration {personsNameDayString}");

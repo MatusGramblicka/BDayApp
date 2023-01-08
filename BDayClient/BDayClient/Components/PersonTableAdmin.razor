@@ -1,59 +1,59 @@
 ﻿@if (Persons.Any())
 {
-    <table class="table">
-        <thead>
-            <tr>                
-                <th scope="col"></th>                    
-                <th scope="col">Name</th>
-                <th scope="col">Surname</th>
-                <th scope="col">BirthDay</th>
-                <th scope="col">NameDay</th>               
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var person in Persons)
-            {
-                if (!DisplayPerson(person.DayOfBirth, person.DayOfNameDay))
-                    continue;
-                <tr>                    
-                    <td>
-                        <a href="/person/@person.Id">
-                            <img src="@person.ImageUrl" alt="person image" style="width:100px;" />
-                        </a>
-                    </td>                      
-                    <td class="align-middle">
-                        <a href="/person/@person.Id">
-                            @person.Name
-                        </a>
-                    </td>
-                    <td class="align-middle">
-                        @person.Surname
-                    </td>
-                    <td class="align-middle">
-                        @person.DayOfBirth.ToString("dd.MM.")
-                    </td>
-                    <td class="align-middle">
-                        @person.DayOfNameDay.ToString("dd.MM.")
-                    </td>                    
-                </tr>
-            }
-        </tbody>
-    </table>    
+	<table class="table">
+		<thead>
+		<tr>                
+			<th scope="col"></th>                    
+			<th scope="col">Name</th>
+			<th scope="col">Surname</th>
+			<th scope="col">BirthDay</th>
+			<th scope="col">NameDay</th>               
+		</tr>
+		</thead>
+		<tbody>
+		@foreach (var person in Persons)
+		{
+			if (!DisplayPerson(person.DayOfBirth, person.DayOfNameDay))
+				continue;
+			<tr>                    
+				<td>
+					<a href="/person/@person.Id">
+						<img src="@person.ImageUrl" alt="person image" style="width:100px;" />
+					</a>
+				</td>                      
+				<td class="align-middle">
+					<a href="/person/@person.Id">
+						@person.Name
+					</a>
+				</td>
+				<td class="align-middle">
+					@person.Surname
+				</td>
+				<td class="align-middle">
+					@person.DayOfBirth.ToString("dd.MM.")
+				</td>
+				<td class="align-middle">
+					@person.DayOfNameDay.ToString("dd.MM.")
+				</td>                    
+			</tr>
+		}
+		</tbody>
+	</table>    
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr> 
-                <th scope="col"></th>
-                <th scope="col">Name</th>
-                <th scope="col">Surname</th>
-                <th scope="col">BirthDay</th>
-                <th scope="col">NameDay</th>                
-            </tr>
-        </thead>
-    </table>
-    <span>
-        Loading persons...
-    </span>
+	<table class="table">
+		<thead>
+		<tr> 
+			<th scope="col"></th>
+			<th scope="col">Name</th>
+			<th scope="col">Surname</th>
+			<th scope="col">BirthDay</th>
+			<th scope="col">NameDay</th>                
+		</tr>
+		</thead>
+	</table>
+	<span>
+		Loading persons...
+	</span>
 }

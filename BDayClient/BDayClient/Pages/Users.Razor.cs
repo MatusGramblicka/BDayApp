@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace BDayClient.Pages
 {
-    public partial class Users : IDisposable
+	public partial class Users : IDisposable
 	{
 		public List<UserLite> UsersList { get; set; } = new List<UserLite>();
 		public string LoggedUserName { get; set; }
@@ -48,12 +48,12 @@ namespace BDayClient.Pages
 		private async Task GetUsers()
 		{
 			UsersList = await UsersHttpRepository.GetUsers();
-			
+
 			Logger.LogInformation(JsonConvert.SerializeObject(UsersList));
 		}
 
-        private async Task UpdateUser(UserLite user)
-        {
+		private async Task UpdateUser(UserLite user)
+		{
 			await UsersHttpRepository.UpdateUser(user);
 			await GetUsers();
 		}

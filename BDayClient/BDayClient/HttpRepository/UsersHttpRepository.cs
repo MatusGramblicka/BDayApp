@@ -9,13 +9,13 @@ namespace BDayClient.HttpRepository
 {
     public class UsersHttpRepository : IUsersHttpRepository
     {
-        private readonly HttpClient _client;    
+        private readonly HttpClient _client;
 
         public UsersHttpRepository(HttpClient client)
         {
-            _client = client;          
+            _client = client;
         }
-    
+
         public async Task<List<UserLite>> GetUsers()
         {
             var usersResult = await _client.GetFromJsonAsync<List<UserLite>>("users/users");
@@ -53,6 +53,6 @@ namespace BDayClient.HttpRepository
                 user2StepsAuth);
 
             return result.StatusCode;
-        }        
+        }
     }
 }

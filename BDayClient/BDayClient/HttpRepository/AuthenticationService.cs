@@ -16,22 +16,22 @@ using System.Threading.Tasks;
 namespace BDayClient.HttpRepository
 {
     public class AuthenticationService : IAuthenticationService
-	{
-		private readonly HttpClient _client;
-		private readonly JsonSerializerOptions _options =
-			new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-		private readonly AuthenticationStateProvider _authStateProvider;
-		private readonly ILocalStorageService _localStorage;
+    {
+        private readonly HttpClient _client;
+        private readonly JsonSerializerOptions _options =
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        private readonly AuthenticationStateProvider _authStateProvider;
+        private readonly ILocalStorageService _localStorage;
         private readonly NavigationManager _navManager;
 
         public AuthenticationService(HttpClient client,
-			AuthenticationStateProvider authStateProvider,
-			ILocalStorageService localStorage,
+            AuthenticationStateProvider authStateProvider,
+            ILocalStorageService localStorage,
             NavigationManager navManager)
-		{
-			_client = client;
-			_authStateProvider = authStateProvider;
-			_localStorage = localStorage;
+        {
+            _client = client;
+            _authStateProvider = authStateProvider;
+            _localStorage = localStorage;
             _navManager = navManager;
         }
 
@@ -93,24 +93,24 @@ namespace BDayClient.HttpRepository
         }
 
         public async Task<ResponseDto> RegisterUser(UserForRegistrationDto userForRegistrationDto)
-		{
+        {
             userForRegistrationDto.ClientURI = Path.Combine(
                 _navManager.BaseUri, "emailconfirmation");
 
             var response = await _client.PostAsJsonAsync("account/register",
-				userForRegistrationDto);
+                userForRegistrationDto);
 
-			if (!response.IsSuccessStatusCode)
-			{
-				var content = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
 
-				var result = JsonSerializer.Deserialize<ResponseDto>(content, _options);
+                var result = JsonSerializer.Deserialize<ResponseDto>(content, _options);
 
-				return result;
-			}
+                return result;
+            }
 
-			return new ResponseDto { IsSuccessfulRegistration = true };
-		}
+            return new ResponseDto { IsSuccessfulRegistration = true };
+        }
 
         public async Task<HttpStatusCode> ForgotPassword(ForgotPasswordDto forgotPasswordDto)
         {
@@ -149,7 +149,7 @@ namespace BDayClient.HttpRepository
 
             return response.StatusCode;
         }
-        
+
         public async Task<AuthResponseDto> LoginVerification(TwoFactorVerificationDto twoFactorDto)
         {
             var response = await _client.PostAsJsonAsync("account/twostepverification",

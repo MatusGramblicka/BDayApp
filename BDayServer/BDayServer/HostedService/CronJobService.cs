@@ -70,5 +70,5 @@ namespace BDayServer.HostedService
         {
             _timer?.Dispose();
         }
-    }   
+    }
 }

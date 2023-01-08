@@ -96,7 +96,7 @@ namespace EmailService
 
                     await client.SendAsync(mailMessage);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     //log an error message or throw an exception, or both.
                     throw;

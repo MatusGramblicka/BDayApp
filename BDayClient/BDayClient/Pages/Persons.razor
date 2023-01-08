@@ -6,26 +6,26 @@
 @attribute [Authorize]
 
 <div class="row">
-    <div class="col-md-5">
-        <Search OnSearchChanged="SearchChanged" />
-    </div>
-    <div class="col-md-5">
-        <Sort OnSortChanged="SortChanged" />
-    </div>
-    <div class="col-md-2">
-        <a class="btn btn-success mb-1" href="/createPerson">New Person</a>
-    </div>
+	<div class="col-md-5">
+		<Search OnSearchChanged="SearchChanged" />
+	</div>
+	<div class="col-md-5">
+		<Sort OnSortChanged="SortChanged" />
+	</div>
+	<div class="col-md-2">
+		<a class="btn btn-success mb-1" href="/createPerson">New Person</a>
+	</div>
 </div>
 <div class="row">
-    <div class="col">
-        <PersonTable Persons="PersonList" OnDelete="DeletePerson" />
-    </div>
+	<div class="col">
+		<PersonTable Persons="PersonList" OnDelete="DeletePerson" />
+	</div>
 </div>
 <div class="row">
-    <div class="col">
-        <Pagination MetaData="MetaData" Spread="1" SelectedPage="SelectedPage" />
-    </div>
-    <div class="col">
-        <PageSizeDropDown SelectedPageSize="SetPageSize" />
-    </div>
+	<div class="col">
+		<Pagination MetaData="MetaData" Spread="1" SelectedPage="SelectedPage" />
+	</div>
+	<div class="col">
+		<PageSizeDropDown SelectedPageSize="SetPageSize" />
+	</div>
 </div>

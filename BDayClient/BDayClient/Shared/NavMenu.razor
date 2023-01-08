@@ -1,67 +1,67 @@
 ﻿<div class="top-row pl-4 navbar navbar-dark">
-    <AuthorizeView>
-        <NotAuthorized>
-            <a class="navbar-brand" href="login">BDay App</a>
-        </NotAuthorized>
-    </AuthorizeView>
-    <AuthorizeView>
-        <Authorized>
-            <a class="navbar-brand" href="persons">BDay App</a>
-        </Authorized>
-    </AuthorizeView>
-    <button class="navbar-toggler" @onclick="ToggleNavMenu">
-        <span class="navbar-toggler-icon"></span>
-    </button>
+	<AuthorizeView>
+		<NotAuthorized>
+			<a class="navbar-brand" href="login">BDay App</a>
+		</NotAuthorized>
+	</AuthorizeView>
+	<AuthorizeView>
+		<Authorized>
+			<a class="navbar-brand" href="persons">BDay app</a>
+		</Authorized>
+	</AuthorizeView>
+	<button class="navbar-toggler" @onclick="ToggleNavMenu">
+		<span class="navbar-toggler-icon"></span>
+	</button>
 </div>
 
 <div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
-    <ul class="nav flex-column">
-        <AuthorizeView>
-            <NotAuthorized>
-                <li class="nav-item px-3">
-                    <NavLink class="nav-link" href="login">
-                        <span class="oi oi-home" aria-hidden="true"></span> Persons
-                    </NavLink>
-                </li>
-            </NotAuthorized>
-        </AuthorizeView>
-        <AuthorizeView>
-            <Authorized>
-                <li class="nav-item px-3">
-                    <NavLink class="nav-link" href="persons">
-                        <span class="oi oi-list-rich" aria-hidden="true"></span> Persons
-                    </NavLink>
-                </li>
-            </Authorized>
-        </AuthorizeView>
-        <AuthorizeView Roles="Administrator">
-            <Authorized>
-                <li class="nav-item px-3">
-                    <NavLink class="nav-link" href="index">
-                        <span class="oi oi-align-center" aria-hidden="true"></span> Index
-                    </NavLink>
-                </li>
-            </Authorized>
-        </AuthorizeView>
-        <AuthorizeView Roles="Administrator">
-            <Authorized>
-                <li class="nav-item px-3">
-                    <NavLink class="nav-link" href="users">
-                        <span class="oi oi-list-rich" aria-hidden="true"></span> Users
-                    </NavLink>
-                </li>
-            </Authorized>
-        </AuthorizeView>
-    </ul>
+	<ul class="nav flex-column">
+		<AuthorizeView>
+			<NotAuthorized>
+				<li class="nav-item px-3">
+					<NavLink class="nav-link" href="login">
+						<span class="oi oi-home" aria-hidden="true"></span> Persons
+					</NavLink>
+				</li>
+			</NotAuthorized>
+		</AuthorizeView>
+		<AuthorizeView>
+			<Authorized>
+				<li class="nav-item px-3">
+					<NavLink class="nav-link" href="persons">
+						<span class="oi oi-list-rich" aria-hidden="true"></span> Persons
+					</NavLink>
+				</li>
+			</Authorized>
+		</AuthorizeView>
+		<AuthorizeView Roles="Administrator">
+			<Authorized>
+				<li class="nav-item px-3">
+					<NavLink class="nav-link" href="index">
+						<span class="oi oi-align-center" aria-hidden="true"></span> Index
+					</NavLink>
+				</li>
+			</Authorized>
+		</AuthorizeView>
+		<AuthorizeView Roles="Administrator">
+			<Authorized>
+				<li class="nav-item px-3">
+					<NavLink class="nav-link" href="users">
+						<span class="oi oi-list-rich" aria-hidden="true"></span> Users
+					</NavLink>
+				</li>
+			</Authorized>
+		</AuthorizeView>
+	</ul>
 </div>
 
 @code {
-    private bool collapseNavMenu = true;
+private bool collapseNavMenu = true;
 
-    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
-    }
+private void ToggleNavMenu()
+{
+collapseNavMenu = !collapseNavMenu;
+}
 }

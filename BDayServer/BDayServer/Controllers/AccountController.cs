@@ -13,23 +13,23 @@ using System.Threading.Tasks;
 
 namespace BDayServer.Controllers
 {
-    [Route("api/account")]
-    [ApiController]
-    public class AccountController : ControllerBase
-    {
+	[Route("api/account")]
+	[ApiController]
+	public class AccountController : ControllerBase
+	{
 		private readonly UserManager<User> _userManager;
 		private readonly IAuthenticationService _authenticationService;
-        private readonly IEmailSender _emailSender;
+		private readonly IEmailSender _emailSender;
 		private readonly IMapper _mapper;
 
 		public AccountController(UserManager<User> userManager,
 			IAuthenticationService authenticationService,
-            IEmailSender emailSender,
+			IEmailSender emailSender,
 			IMapper mapper)
 		{
 			_userManager = userManager;
 			_authenticationService = authenticationService;
-            _emailSender = emailSender;
+			_emailSender = emailSender;
 			_mapper = mapper;
 
 		}
@@ -42,7 +42,7 @@ namespace BDayServer.Controllers
 				return BadRequest();
 
 			var user = new User
-            {
+			{
 				UserName = userForRegistrationDto.Email,
 				Email = userForRegistrationDto.Email
 			};
@@ -75,11 +75,11 @@ namespace BDayServer.Controllers
 			return StatusCode(201);
 		}
 
-        [HttpPost("login")]
-        public async Task<IActionResult> Login(
-            [FromBody] UserForAuthenticationDto userForAuthenticationDto)
-        {
-            var user = await _userManager.FindByNameAsync(userForAuthenticationDto.Email);
+		[HttpPost("login")]
+		public async Task<IActionResult> Login(
+			[FromBody] UserForAuthenticationDto userForAuthenticationDto)
+		{
+			var user = await _userManager.FindByNameAsync(userForAuthenticationDto.Email);
 
 			if (user == null)
 			{
@@ -95,57 +95,57 @@ namespace BDayServer.Controllers
 					ErrorMessage = "Email is not confirmed"
 				});
 
-            if (await _userManager.IsLockedOutAsync(user))
-                return Unauthorized(new AuthResponseDto
-                {
-                    ErrorMessage = "The account is locked out"
-                });
+			if (await _userManager.IsLockedOutAsync(user))
+				return Unauthorized(new AuthResponseDto
+				{
+					ErrorMessage = "The account is locked out"
+				});
 
-            if (!await _userManager.CheckPasswordAsync(user, userForAuthenticationDto.Password))
+			if (!await _userManager.CheckPasswordAsync(user, userForAuthenticationDto.Password))
 			{
-                await _userManager.AccessFailedAsync(user);
+				await _userManager.AccessFailedAsync(user);
 
-                if (await _userManager.IsLockedOutAsync(user))
-                {
-                    var content = $"Your account is locked out. " +
-                        $"If you want to reset the password, you can use the " +
-                        $"Forgot Password link on the Login page";
+				if (await _userManager.IsLockedOutAsync(user))
+				{
+					var content = $"Your account is locked out. " +
+						$"If you want to reset the password, you can use the " +
+						$"Forgot Password link on the Login page";
 
-                    var message = new Message(new string[] { userForAuthenticationDto.Email },
-                        "Locked out account information", content, null);
+					var message = new Message(new string[] { userForAuthenticationDto.Email },
+						"Locked out account information", content, null);
 
-                    await _emailSender.SendEmailAsync(message);
+					await _emailSender.SendEmailAsync(message);
 
-                    return Unauthorized(new AuthResponseDto
-                    {
-                        ErrorMessage = "The account is locked out"
-                    });
-                }
+					return Unauthorized(new AuthResponseDto
+					{
+						ErrorMessage = "The account is locked out"
+					});
+				}
 
-                return Unauthorized(new AuthResponseDto
+				return Unauthorized(new AuthResponseDto
 				{
 					ErrorMessage = "Invalid Authentication"
 				});
 			}
 
-            if (await _userManager.GetTwoFactorEnabledAsync(user))
-                return await GenerateOTPFor2StepVerification(user);
+			if (await _userManager.GetTwoFactorEnabledAsync(user))
+				return await GenerateOTPFor2StepVerification(user);
 
-            var token = await _authenticationService.GetToken(user);
+			var token = await _authenticationService.GetToken(user);
 			//await _userManager.AddToRoleAsync(user, "Administrator");
 			user.RefreshToken = _authenticationService.GenerateRefreshToken();
-            user.RefreshTokenExpiryTime = DateTime.Now.AddDays(7);
-            await _userManager.UpdateAsync(user);
+			user.RefreshTokenExpiryTime = DateTime.Now.AddDays(7);
+			await _userManager.UpdateAsync(user);
 
 			await _userManager.ResetAccessFailedCountAsync(user);
 
 			return Ok(new AuthResponseDto
-            {
-                IsAuthSuccessful = true,
-                Token = token,
-                RefreshToken = user.RefreshToken
-            });
-        }		
+			{
+				IsAuthSuccessful = true,
+				Token = token,
+				RefreshToken = user.RefreshToken
+			});
+		}
 
 		[HttpPost("ForgotPassword")]
 		public async Task<IActionResult> ForgotPassword(

@@ -95,8 +95,7 @@ namespace BDayServer
             services.AddCronJob<ScheduleJob>(c =>
             {
                 c.TimeZoneInfo = TimeZoneInfo.Local;
-                //c.CronExpression = @"0 12 * * *"; // 12:00 PM daily.
-                c.CronExpression = @"*/5 * * * *"; // every 5 minutes.
+                c.CronExpression = @"0 12 * * *";
             });
         }
 

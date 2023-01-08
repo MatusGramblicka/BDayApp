@@ -22,15 +22,15 @@ namespace Repository.Extensions
 
         public static IQueryable<Person> Sort(this IQueryable<Person> persons, string orderByQueryString)
         {
-            if (string.IsNullOrWhiteSpace(orderByQueryString))                
+            if (string.IsNullOrWhiteSpace(orderByQueryString))
                 return persons.OrderBy(x => x.DayOfBirth.Month).ThenBy(x => x.DayOfBirth.Day);
-                //return persons.OrderBy(e => e.Name);
+            //return persons.OrderBy(e => e.Name);
 
             var orderQuery = OrderQueryBuilder.CreateOrderQuery<Person>(orderByQueryString);
 
-            if (string.IsNullOrWhiteSpace(orderQuery))                
+            if (string.IsNullOrWhiteSpace(orderQuery))
                 return persons.OrderBy(x => x.DayOfBirth.Month).ThenBy(x => x.DayOfBirth.Day);
-                //return persons.OrderBy(e => e.Name);
+            //return persons.OrderBy(e => e.Name);
 
             if (orderQuery.Contains("DayOfBirth"))
             {
@@ -45,7 +45,7 @@ namespace Repository.Extensions
                     return persons.OrderBy(x => x.DayOfNameDay.Month).ThenBy(x => x.DayOfNameDay.Day);
                 if (orderQuery.Contains("descending"))
                     return persons.OrderByDescending(x => x.DayOfNameDay.Month).ThenByDescending(x => x.DayOfNameDay.Day);
-            }            
+            }
 
             return persons.OrderBy(orderQuery);
         }

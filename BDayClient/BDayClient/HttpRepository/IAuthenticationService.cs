@@ -12,8 +12,8 @@ namespace BDayClient.HttpRepository
         Task<string> RefreshToken();
         Task<HttpStatusCode> ForgotPassword(ForgotPasswordDto forgotPasswordDto);
         Task<ResetPasswordResponseDto> ResetPassword(ResetPasswordDto resetPasswordDto);
-        Task<HttpStatusCode> EmailConfirmation(string email, string token);       
+        Task<HttpStatusCode> EmailConfirmation(string email, string token);
         Task<AuthResponseDto> LoginVerification(TwoFactorVerificationDto twoFactorDto);
-        
+
     }
 }

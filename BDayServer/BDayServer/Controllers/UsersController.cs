@@ -10,22 +10,22 @@ using System.Threading.Tasks;
 
 namespace BDayServer.Controllers
 {
-    [Route("api/users")]
-    [ApiController]
+	[Route("api/users")]
+	[ApiController]
 	[Authorize(Roles = "Administrator")]
 	public class UsersController : ControllerBase
 	{
-		private readonly UserManager<User> _userManager;		
+		private readonly UserManager<User> _userManager;
 		private readonly IMapper _mapper;
 
-		public UsersController(UserManager<User> userManager,			
+		public UsersController(UserManager<User> userManager,
 			IMapper mapper)
 		{
-			_userManager = userManager;			
+			_userManager = userManager;
 			_mapper = mapper;
-		}	
+		}
 
-		[HttpGet("Users")]		
+		[HttpGet("Users")]
 		public async Task<IActionResult> GetUsers()
 		{
 			var allUsers = _userManager.Users.ToList();
@@ -42,7 +42,7 @@ namespace BDayServer.Controllers
 			return Ok(userLite);
 		}
 
-		[HttpPost("UpdateUser")]		
+		[HttpPost("UpdateUser")]
 		public async Task<IActionResult> UpdateUser([FromBody] UserLite userForUpdate)
 		{
 			var user = await _userManager.FindByNameAsync(userForUpdate.Email);
@@ -60,7 +60,7 @@ namespace BDayServer.Controllers
 			return Ok();
 		}
 
-		[HttpPost("RemoveAdminRole")]		
+		[HttpPost("RemoveAdminRole")]
 		public async Task<IActionResult> RemoveAdminRole([FromBody] UserLite userForUpdate)
 		{
 			var user = await _userManager.FindByNameAsync(userForUpdate.Email);
@@ -78,7 +78,7 @@ namespace BDayServer.Controllers
 			return Ok();
 		}
 
-		[HttpPost("DeleteUser")]		
+		[HttpPost("DeleteUser")]
 		public async Task<IActionResult> DeleteUser([FromBody] UserLite userForDeletion)
 		{
 			var user = await _userManager.FindByNameAsync(userForDeletion.Email);
@@ -112,9 +112,9 @@ namespace BDayServer.Controllers
 			await _userManager.DeleteAsync(user);
 
 			return Ok();
-		}		
+		}
 
-		[HttpPost("SetTwoFactorAuthorization")]		
+		[HttpPost("SetTwoFactorAuthorization")]
 		public async Task<IActionResult> SetTwoFactorAuthorization([FromBody] UserLite2StepsAuthDto userForUpdate)
 		{
 			var user = await _userManager.FindByNameAsync(userForUpdate.Email);

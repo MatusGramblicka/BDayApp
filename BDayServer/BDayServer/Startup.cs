@@ -79,6 +79,8 @@ namespace BDayServer
             services.Configure<JwtConfiguration>(Configuration.GetSection("JWTSettings"));
             services.AddScoped<IAuthenticationService, AuthenticationService>();
 
+            services.AddScoped<IGetUserProvider, GetUserProvider>();
+
             var emailConfig = Configuration.GetSection("EmailConfiguration")
                 .Get<EmailConfiguration>();
             services.AddSingleton(emailConfig);

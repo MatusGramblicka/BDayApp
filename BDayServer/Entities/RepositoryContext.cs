@@ -1,21 +1,18 @@
 ﻿using Entities.Configuration;
 using Entities.Models;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Entities
 {
     public class RepositoryContext : IdentityDbContext<User>
     {
-        public RepositoryContext(DbContextOptions options)
+        private readonly string userId;
+
+        public RepositoryContext(DbContextOptions options, IGetUserProvider userData)
         : base(options)
         {
+            userId = userData.UserId;
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -23,6 +20,8 @@ namespace Entities
             base.OnModelCreating(modelBuilder);
             modelBuilder.ApplyConfiguration(new PersonConfiguration());
             modelBuilder.ApplyConfiguration(new RoleConfiguration());
+
+            modelBuilder.Entity<Person>().HasQueryFilter(b => b.PersonCreator == userId);
         }
 
         public DbSet<Person> Persons { get; set; }

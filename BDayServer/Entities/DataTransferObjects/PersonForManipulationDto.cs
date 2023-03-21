@@ -19,5 +19,7 @@ namespace Entities.DataTransferObjects
         public DateTime DayOfNameDay { get; set; }
 
         public string ImageUrl { get; set; }
+
+        public string PersonCreator { get; set; }
     }
 }

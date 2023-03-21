@@ -2,23 +2,21 @@
 using BDayClient.HttpRepository;
 using Blazored.Toast.Services;
 using Entities.DataTransferObjects;
-using Entities.Models;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Forms;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace BDayClient.Pages
 {
-    public partial class CreatePerson
+	public partial class CreatePerson
     {
 		private PersonForCreationDto _person = new PersonForCreationDto();
 		private EditContext _editContext;
-		private bool formInvalid = true;
+		private bool formInvalid = true;        
 
-		[Inject]
+        [Inject]
 		public IPersonHttpRepository PersonRepo { get; set; }
 
 		[Inject]
@@ -27,9 +25,12 @@ namespace BDayClient.Pages
 		[Inject]
 		public IToastService ToastService { get; set; }
 
-		protected override void OnInitialized()
-		{
-			_person.DayOfBirth = new DateTime(2000, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified);
+        [Inject]
+        public AuthenticationStateProvider AauthStateProvider { get; set; }
+
+        protected override void OnInitialized()
+		{          
+            _person.DayOfBirth = new DateTime(2000, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified);
             _person.DayOfNameDay = new DateTime(2000, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified);
 			_editContext = new EditContext(_person);
 			_editContext.OnFieldChanged += HandleFieldChanged;
@@ -44,7 +45,10 @@ namespace BDayClient.Pages
 
 		private async Task Create()
 		{
-			await PersonRepo.CreatePerson(_person);
+            var authState = await AauthStateProvider.GetAuthenticationStateAsync();       
+			_person.PersonCreator = authState.User.Identity.Name;
+
+            await PersonRepo.CreatePerson(_person);
 
 			ToastService.ShowSuccess($"Action successful. " +
 				$"Person \"{_person.Name}\" successfully added.");

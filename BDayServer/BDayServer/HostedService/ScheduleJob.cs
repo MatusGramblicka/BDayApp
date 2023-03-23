@@ -45,10 +45,15 @@ namespace BDayServer.HostedService
         {
             _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob is working.");
 
-            var message = await PrepareMessage();
+            var messages = await PrepareMessage();
 
-            if (message != null)
-                await _emailSender.SendEmailAsync(message);
+            if (messages != null)
+            { 
+                foreach(var message in messages)
+                {
+                    await _emailSender.SendEmailAsync(message);
+                }                
+            }
         }
 
         public override Task StopAsync(CancellationToken cancellationToken)
@@ -57,53 +62,103 @@ namespace BDayServer.HostedService
             return base.StopAsync(cancellationToken);
         }
 
-        private async Task<Message> PrepareMessage()
+        private async Task<List<Message>> PrepareMessage()
         {
             var allUsersEmails = _userManager
                 .Users
                 .Select(s => s.Email)
                 .ToArray();
 
-            var personsFromDb = await _repository.Person.GetAllPersonsAsync(new PersonParameters { PageSize = 50 }, trackChanges: false);
+            var personsFromDb = await _repository.Person.GetAllPersonsAsync(new PersonParameters { PageSize = 200 }, trackChanges: false);
             var personsDto = _mapper.Map<IEnumerable<PersonDto>>(personsFromDb);
+                        
+            var messageBirthDays = PrepareMessage(personsDto, HasCloseBirthDay, DayType.Birthday);
+            var messageNameDays = PrepareMessage(personsDto, HasCloseNameDay, DayType.Nameday);
 
-            var messageBirthDays = PrepareMessage(personsDto, HasCloseBirthDay, "Birthday:");
+            var massages = new List<Message>();
 
-            var messageNameDays = PrepareMessage(personsDto, HasCloseNameDay, "Nameday:");
-
-            if (messageBirthDays.Length == 0 && messageNameDays.Length == 0)
+            if (messageBirthDays.Count == 0 && messageNameDays.Count == 0)
                 return null;
             else
-                return new Message(allUsersEmails, "Celebration", $"{messageBirthDays}{Environment.NewLine}{messageNameDays}", null);
+            {
+                var BirthAndName = new List<ReceipientMessage>();
+                BirthAndName.AddRange(messageBirthDays);
+                BirthAndName.AddRange(messageNameDays);
+
+                var messageDaysByPersonCreators = BirthAndName.GroupBy(m => m.Receipient);
+                foreach(var messageDaysByPersonCreator in messageDaysByPersonCreators)
+                {
+                    if(!allUsersEmails.Contains(messageDaysByPersonCreator.Key))
+                    { 
+                        continue; 
+                    }    
+
+                    var receipients = new string[] { messageDaysByPersonCreator.Key };
+                    
+                    var messageBirth = "";
+                    var messageName = "";
+                    foreach (var receipientMess in messageDaysByPersonCreator)
+                    {
+                        if (receipientMess.CelebrationType.Equals(DayType.Birthday))
+                        {
+                            messageBirth += receipientMess.Message; 
+                        }
+                        else
+                        {
+                            messageName += receipientMess.Message;
+                        }
+                    }
+
+                    massages.Add(new Message(receipients, "Celebration", $"{messageBirth}{Environment.NewLine}{messageName}", null));
+                }
+
+                return massages;
+                //return new Message(allUsersEmails, "Celebration", $"{messageBirthDays}{Environment.NewLine}{messageNameDays}", null);
+            }                
         }
 
-        private string PrepareMessage(IEnumerable<PersonDto> personsDto, Func<PersonDto, bool> hasCloseEvent, string message)
+        private List<ReceipientMessage> PrepareMessage(IEnumerable<PersonDto> personsDto, Func<PersonDto, bool> hasCloseEvent, DayType dayType)
         {
-            var personsNameDay = personsDto
-                .Where(p => hasCloseEvent(p))
-                .ToList();
-
-            var personsNameDayString = "";
+            var personsDay = personsDto
+                .Where(p => hasCloseEvent(p));
+                
+            var personsDayString = "";
 
             var methodName = hasCloseEvent.Method.Name;
 
+            var receipientMessageList = new List<ReceipientMessage>();
+
             if (methodName.Contains("birth", StringComparison.InvariantCultureIgnoreCase))
             {
-                foreach (var person in personsNameDay)
-                    personsNameDayString += $"{person.Name} {person.Surname} {person.DayOfBirth:dd/MM}\n";
+                foreach (var person in personsDay)
+                {                    
+                    receipientMessageList.Add(new ReceipientMessage 
+                    { 
+                        Message = $"{person.Name} {person.Surname} {person.DayOfBirth:dd/MM}\n", 
+                        Receipient = person.PersonCreator,
+                        CelebrationType = dayType
+                    });
+                }                    
             }
             else if (methodName.Contains("name", StringComparison.InvariantCultureIgnoreCase))
             {
-                foreach (var person in personsNameDay)
-                    personsNameDayString += $"{person.Name} {person.Surname} {person.DayOfNameDay:dd/MM} \n";
+                foreach (var person in personsDay)
+                {                    
+                    receipientMessageList.Add(new ReceipientMessage
+                    {
+                        Message = $"{person.Name} {person.Surname} {person.DayOfBirth:dd/MM}\n",
+                        Receipient = person.PersonCreator,
+                        CelebrationType = dayType
+                    });
+                }
             }
 
-            _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob found these people who have close nameday celebration {personsNameDayString}");
+            _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob found those people who have close day celebration {personsDayString}");
 
-            if (personsNameDayString.Length == 0)
-                return personsNameDayString;
+            if (receipientMessageList.All(r => r.Message.Length == 0))        
+                return new List<ReceipientMessage>();
             else
-                return $"{message}\n{personsNameDayString}";
+                return receipientMessageList;
         }
 
         private bool HasCloseBirthDay(PersonDto person)

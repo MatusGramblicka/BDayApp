@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using BDayServer.ActionFilters;
 using Contracts;
+using Entities;
 using Entities.DataTransferObjects.Person;
 using Entities.Models;
 using Entities.RequestFeatures;
@@ -21,10 +22,13 @@ namespace BDayServer.Controllers
         private readonly IRepositoryManager _repository;
         private readonly IMapper _mapper;
 
-        public PersonsController(IRepositoryManager repository, IMapper mapper)
+        private readonly string _userId;
+
+        public PersonsController(IRepositoryManager repository, IMapper mapper, IGetUserProvider userData)
         {
             _repository = repository;
             _mapper = mapper;
+            _userId = userData.UserId;
         }
 
         [HttpGet(Name = "GetPersons")]
@@ -56,7 +60,13 @@ namespace BDayServer.Controllers
         [ServiceFilter(typeof(ValidationFilterAttribute))]
         public async Task<IActionResult> CreatePerson([FromBody] PersonForCreationDto person)
         {
+            if (_userId == null)
+            {
+                BadRequest("User is null");
+            }
+
             var personEntity = _mapper.Map<Person>(person);
+            personEntity.PersonCreator = _userId;
 
             _repository.Person.CreatePerson(personEntity);
             await _repository.SaveAsync();
@@ -69,11 +79,12 @@ namespace BDayServer.Controllers
         [HttpPut("{id}")]
         [ServiceFilter(typeof(ValidationFilterAttribute))]
         [ServiceFilter(typeof(ValidatePersonExistsAttribute))]
-        public async Task<IActionResult> UpdatePerson(Guid id, [FromBody] PersonForUpdateDto person)
+        public async Task<IActionResult> UpdatePerson(Guid id, [FromBody] PersonForUpdateDto personDto)
         {
             var personEntity = HttpContext.Items["person"] as Person;
 
-            _mapper.Map(person, personEntity);
+            //todo is personCreator overwritten?
+            _mapper.Map(personDto, personEntity);
             await _repository.SaveAsync();
 
             return NoContent();

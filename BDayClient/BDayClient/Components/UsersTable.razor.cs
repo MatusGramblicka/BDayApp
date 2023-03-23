@@ -1,8 +1,5 @@
-﻿using BDayClient.Features;
-using BDayClient.Shared;
-using Blazored.LocalStorage;
-using Entities;
-using Entities.DTO;
+﻿using BDayClient.Shared;
+using Entities.DataTransferObjects.User;
 using Microsoft.AspNetCore.Components;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -11,23 +8,17 @@ namespace BDayClient.Components
 {
     public partial class UsersTable
     {
-		[Parameter]
-        public List<UserLite> Users { get; set; }
+        [Parameter] public List<UserLite> Users { get; set; }
 
-        [Parameter]
-        public string LoggedUser { get; set; }
+        [Parameter] public string LoggedUser { get; set; }
 
-        [Parameter]
-        public EventCallback<UserLite> OnUpdate { get; set; }
+        [Parameter] public EventCallback<UserLite> OnUpdate { get; set; }
 
-        [Parameter]
-        public EventCallback<UserLite> OnRemoveAdminRole { get; set; }
+        [Parameter] public EventCallback<UserLite> OnRemoveAdminRole { get; set; }
 
-        [Parameter]
-        public EventCallback<UserLite> OnDeleteUser { get; set; }
+        [Parameter] public EventCallback<UserLite> OnDeleteUser { get; set; }
 
-        [Parameter]
-        public EventCallback<UserLite2StepsAuthDto> OnChange2StepsAuthorization { get; set; }
+        [Parameter] public EventCallback<UserLite2StepsAuthDto> OnChange2StepsAuthorization { get; set; }
 
         private Confirmation _confirmation;
         private UserLite _userToDelete;
@@ -37,7 +28,7 @@ namespace BDayClient.Components
 
             var userChange2StepsAuth = new UserLite2StepsAuthDto();
             userChange2StepsAuth.Email = user.Email;
-            userChange2StepsAuth.TwoFactorEnabled = (bool)value;
+            userChange2StepsAuth.TwoFactorEnabled = (bool) value;
             await OnChange2StepsAuthorization.InvokeAsync(userChange2StepsAuth);
         }
 

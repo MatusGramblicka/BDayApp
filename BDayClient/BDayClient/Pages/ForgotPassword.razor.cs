@@ -1,9 +1,6 @@
 ﻿using BDayClient.HttpRepository;
-using Entities.DTO;
+using Entities.DataTransferObjects;
 using Microsoft.AspNetCore.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -11,22 +8,21 @@ namespace BDayClient.Pages
 {
     public partial class ForgotPassword
     {
-		private ForgotPasswordDto _forgotPassDto = new ForgotPasswordDto();
-		private bool _showSuccess;
-		private bool _showError;
+        private ForgotPasswordDto _forgotPassDto = new();
+        private bool _showSuccess;
+        private bool _showError;
 
-		[Inject]
-		public IAuthenticationService AuthService { get; set; }
+        [Inject] public IAuthenticationService AuthService { get; set; }
 
-		private async Task Submit()
-		{
-			_showSuccess = _showError = false;
+        private async Task Submit()
+        {
+            _showSuccess = _showError = false;
 
-			var result = await AuthService.ForgotPassword(_forgotPassDto);
-			if (result == HttpStatusCode.OK)
-				_showSuccess = true;
-			else
-				_showError = true;
-		}
-	}
+            var result = await AuthService.ForgotPassword(_forgotPassDto);
+            if (result == HttpStatusCode.OK)
+                _showSuccess = true;
+            else
+                _showError = true;
+        }
+    }
 }

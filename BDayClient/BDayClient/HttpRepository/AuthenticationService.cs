@@ -1,6 +1,7 @@
 ﻿using BDayClient.AuthProvider;
 using Blazored.LocalStorage;
-using Entities.DTO;
+using Entities.DataTransferObjects;
+using Entities.DataTransferObjects.User;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.WebUtilities;
@@ -18,8 +19,9 @@ namespace BDayClient.HttpRepository
     public class AuthenticationService : IAuthenticationService
     {
         private readonly HttpClient _client;
-        private readonly JsonSerializerOptions _options =
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+        private readonly JsonSerializerOptions _options = new() {PropertyNameCaseInsensitive = true};
+
         private readonly AuthenticationStateProvider _authStateProvider;
         private readonly ILocalStorageService _localStorage;
         private readonly NavigationManager _navManager;
@@ -49,13 +51,13 @@ namespace BDayClient.HttpRepository
             await _localStorage.SetItemAsync("authToken", result.Token);
             await _localStorage.SetItemAsync("refreshToken", result.RefreshToken);
 
-            ((AuthStateProvider)_authStateProvider).NotifyUserAuthentication(
+            ((AuthStateProvider) _authStateProvider).NotifyUserAuthentication(
                 result.Token);
 
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
                 "bearer", result.Token);
 
-            return new AuthResponseDto { IsAuthSuccessful = true };
+            return new AuthResponseDto {IsAuthSuccessful = true};
         }
 
         public async Task Logout()
@@ -63,7 +65,7 @@ namespace BDayClient.HttpRepository
             await _localStorage.RemoveItemAsync("authToken");
             await _localStorage.RemoveItemAsync("refreshToken");
 
-            ((AuthStateProvider)_authStateProvider).NotifyUserLogout();
+            ((AuthStateProvider) _authStateProvider).NotifyUserLogout();
 
             _client.DefaultRequestHeaders.Authorization = null;
         }
@@ -94,7 +96,7 @@ namespace BDayClient.HttpRepository
 
         public async Task<ResponseDto> RegisterUser(UserForRegistrationDto userForRegistrationDto)
         {
-            userForRegistrationDto.ClientURI = Path.Combine(
+            userForRegistrationDto.ClientUri = Path.Combine(
                 _navManager.BaseUri, "emailconfirmation");
 
             var response = await _client.PostAsJsonAsync("account/register",
@@ -109,12 +111,12 @@ namespace BDayClient.HttpRepository
                 return result;
             }
 
-            return new ResponseDto { IsSuccessfulRegistration = true };
+            return new ResponseDto {IsSuccessfulRegistration = true};
         }
 
         public async Task<HttpStatusCode> ForgotPassword(ForgotPasswordDto forgotPasswordDto)
         {
-            forgotPasswordDto.ClientURI =
+            forgotPasswordDto.ClientUri =
                 Path.Combine(_navManager.BaseUri, "resetpassword");
 
             var result = await _client.PostAsJsonAsync("account/forgotpassword",
@@ -164,13 +166,13 @@ namespace BDayClient.HttpRepository
             await _localStorage.SetItemAsync("authToken", result.Token);
             await _localStorage.SetItemAsync("refreshToken", result.RefreshToken);
 
-            ((AuthStateProvider)_authStateProvider).NotifyUserAuthentication(
+            ((AuthStateProvider) _authStateProvider).NotifyUserAuthentication(
                 result.Token);
 
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
                 "bearer", result.Token);
 
-            return new AuthResponseDto { IsAuthSuccessful = true };
+            return new AuthResponseDto {IsAuthSuccessful = true};
         }
     }
 }

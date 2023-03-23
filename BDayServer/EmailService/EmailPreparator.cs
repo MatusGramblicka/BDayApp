@@ -38,7 +38,7 @@ namespace EmailService
 
             var personsFromDb =
                 await _repository.Person.GetAllPersonsAsync(new PersonParameters {PageSize = 200}, trackChanges: false);
-            var personsDto = _mapper.Map<IEnumerable<PersonDto>>(personsFromDb);
+            var personsDto = _mapper.Map<IEnumerable<PersonEmailDto>>(personsFromDb).ToList();
 
             var messageBirthDays = PrepareMessage(personsDto, HasCloseBirthDay, DayType.Birthday);
             var messageNameDays = PrepareMessage(personsDto, HasCloseNameDay, DayType.NameDay);
@@ -85,10 +85,10 @@ namespace EmailService
             return massages;
         }
 
-        private static List<ReceipientMessage> PrepareMessage(IEnumerable<PersonDto> personsDto,
-            Func<PersonDto, bool> hasCloseEvent, DayType dayType)
+        private static List<ReceipientMessage> PrepareMessage(IEnumerable<PersonEmailDto> personsEmailDto,
+            Func<PersonEmailDto, bool> hasCloseEvent, DayType dayType)
         {
-            var personsDay = personsDto
+            var personsDay = personsEmailDto
                 .Where(hasCloseEvent);
 
             var methodName = hasCloseEvent.Method.Name;
@@ -124,7 +124,7 @@ namespace EmailService
                 : recipientsMessageList;
         }
 
-        private bool HasCloseBirthDay(PersonDto person)
+        private bool HasCloseBirthDay(PersonEmailDto person)
         {
             _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob is searching for people with close birthday.");
             var timeNow = DateTime.Today;
@@ -135,7 +135,7 @@ namespace EmailService
             return numOfDays == 14 || numOfDays == 1 || numOfDays == 0;
         }
 
-        private bool HasCloseNameDay(PersonDto person)
+        private bool HasCloseNameDay(PersonEmailDto person)
         {
             _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob is searching for people with close nameday.");
             var timeNow = DateTime.Today;

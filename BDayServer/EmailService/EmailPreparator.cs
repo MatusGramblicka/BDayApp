@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 using Contracts;
+using EmailService.Contracts;
+using EmailService.Contracts.Models;
 using Entities;
 using Entities.DataTransferObjects.Person;
 using Entities.RequestFeatures;
@@ -9,8 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using EmailService.Contracts;
-using EmailService.Contracts.Models;
 
 namespace EmailService
 {
@@ -34,10 +34,7 @@ namespace EmailService
 
         public async Task<List<Message>> PrepareMessage()
         {
-            var allUsersEmails = _userManager
-                .Users
-                .Select(s => s.Email)
-                .ToArray();
+            var allUsersEmails = _userManager.Users.Select(s => s.Email).ToArray();
 
             var personsFromDb =
                 await _repository.Person.GetAllPersonsAsync(new PersonParameters {PageSize = 200}, trackChanges: false);
@@ -49,63 +46,59 @@ namespace EmailService
             var massages = new List<Message>();
 
             if (messageBirthDays.Count == 0 && messageNameDays.Count == 0)
-                return null;
-            else
             {
-                var BirthAndName = new List<ReceipientMessage>();
-                BirthAndName.AddRange(messageBirthDays);
-                BirthAndName.AddRange(messageNameDays);
+                return null;
+            }
 
-                var messageDaysByPersonCreators = BirthAndName.GroupBy(m => m.Receipient);
-                foreach (var messageDaysByPersonCreator in messageDaysByPersonCreators)
+            var birthAndName = new List<ReceipientMessage>();
+            birthAndName.AddRange(messageBirthDays);
+            birthAndName.AddRange(messageNameDays);
+
+            var messageDaysByPersonCreators = birthAndName.GroupBy(m => m.Receipient);
+            foreach (var messageDaysByPersonCreator in messageDaysByPersonCreators)
+            {
+                if (!allUsersEmails.Contains(messageDaysByPersonCreator.Key))
                 {
-                    if (!allUsersEmails.Contains(messageDaysByPersonCreator.Key))
-                    {
-                        continue;
-                    }
-
-                    var receipients = new string[] {messageDaysByPersonCreator.Key};
-
-                    var messageBirth = "";
-                    var messageName = "";
-                    foreach (var receipientMess in messageDaysByPersonCreator)
-                    {
-                        if (receipientMess.CelebrationType.Equals(DayType.Birthday))
-                        {
-                            messageBirth += receipientMess.Message;
-                        }
-                        else
-                        {
-                            messageName += receipientMess.Message;
-                        }
-                    }
-
-                    massages.Add(new Message(receipients, "Celebration",
-                        $"{messageBirth}{Environment.NewLine}{messageName}", null));
+                    continue;
                 }
 
-                return massages;
-                //return new Message(allUsersEmails, "Celebration", $"{messageBirthDays}{Environment.NewLine}{messageNameDays}", null);
+                var recipients = new[] {messageDaysByPersonCreator.Key};
+
+                var messageBirth = "";
+                var messageName = "";
+                foreach (var recipientsMess in messageDaysByPersonCreator)
+                {
+                    if (recipientsMess.CelebrationType.Equals(DayType.Birthday))
+                    {
+                        messageBirth += recipientsMess.Message;
+                    }
+                    else
+                    {
+                        messageName += recipientsMess.Message;
+                    }
+                }
+
+                massages.Add(new Message(recipients, "Celebration",
+                    $"{messageBirth}{Environment.NewLine}{messageName}", null));
             }
+
+            return massages;
         }
 
-        private List<ReceipientMessage> PrepareMessage(IEnumerable<PersonDto> personsDto,
+        private static List<ReceipientMessage> PrepareMessage(IEnumerable<PersonDto> personsDto,
             Func<PersonDto, bool> hasCloseEvent, DayType dayType)
         {
             var personsDay = personsDto
-                .Where(p => hasCloseEvent(p));
-
-            var personsDayString = "";
+                .Where(hasCloseEvent);
 
             var methodName = hasCloseEvent.Method.Name;
-
-            var receipientMessageList = new List<ReceipientMessage>();
+            var recipientsMessageList = new List<ReceipientMessage>();
 
             if (methodName.Contains("birth", StringComparison.InvariantCultureIgnoreCase))
             {
                 foreach (var person in personsDay)
                 {
-                    receipientMessageList.Add(new ReceipientMessage
+                    recipientsMessageList.Add(new ReceipientMessage
                     {
                         Message = $"{person.Name} {person.Surname} {person.DayOfBirth:dd/MM}\n",
                         Receipient = person.PersonCreator,
@@ -117,7 +110,7 @@ namespace EmailService
             {
                 foreach (var person in personsDay)
                 {
-                    receipientMessageList.Add(new ReceipientMessage
+                    recipientsMessageList.Add(new ReceipientMessage
                     {
                         Message = $"{person.Name} {person.Surname} {person.DayOfBirth:dd/MM}\n",
                         Receipient = person.PersonCreator,
@@ -126,13 +119,9 @@ namespace EmailService
                 }
             }
 
-            _logger.LogInformation(
-                $"{DateTime.Now:hh:mm:ss} ScheduleJob found those people who have close day celebration {personsDayString}");
-
-            if (receipientMessageList.All(r => r.Message.Length == 0))
-                return new List<ReceipientMessage>();
-            else
-                return receipientMessageList;
+            return recipientsMessageList.All(r => r.Message.Length == 0)
+                ? new List<ReceipientMessage>()
+                : recipientsMessageList;
         }
 
         private bool HasCloseBirthDay(PersonDto person)

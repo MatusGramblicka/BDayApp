@@ -1,23 +1,27 @@
-﻿using MailKit.Net.Smtp;
+﻿using EmailService.Contracts;
+using EmailService.Contracts.Models;
+using MailKit.Net.Smtp;
+using Microsoft.Extensions.Logging;
 using MimeKit;
 using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using EmailService.Contracts;
-using EmailService.Contracts.Models;
 
 namespace EmailService
 {
     public class EmailSender : IEmailSender
     {
-        private readonly EmailConfiguration _emailConfig;
-
         private const string AuthenticationMechanisms = "XOAUTH2";
 
-        public EmailSender(EmailConfiguration emailConfig)
+        private readonly ILogger<EmailSender> _logger;
+
+        private readonly EmailConfiguration _emailConfig;
+
+        public EmailSender(EmailConfiguration emailConfig, ILogger<EmailSender> logger)
         {
             _emailConfig = emailConfig;
+            _logger = logger;
         }
 
         public void SendEmail(Message message)
@@ -41,14 +45,13 @@ namespace EmailService
             emailMessage.To.AddRange(message.To);
             emailMessage.Subject = message.Subject;
 
-            //var bodyBuilder = new BodyBuilder { HtmlBody = string.Format("<h2 style='color:red;'>{0}</h2>", message.Content) };
             var bodyBuilder = new BodyBuilder {TextBody = message.Content};
 
             if (message.Attachments != null && message.Attachments.Any())
             {
-                byte[] fileBytes;
                 foreach (var attachment in message.Attachments)
                 {
+                    byte[] fileBytes;
                     using (var ms = new MemoryStream())
                     {
                         attachment.CopyTo(ms);
@@ -75,9 +78,9 @@ namespace EmailService
 
                 client.Send(mailMessage);
             }
-            catch
+            catch (Exception ex)
             {
-                //log an error message or throw an exception, or both.
+                _logger.LogError($"Sending EmailConfiguration Exception: {ex}");
                 throw;
             }
             finally
@@ -100,7 +103,7 @@ namespace EmailService
             }
             catch (Exception ex)
             {
-                //log an error message or throw an exception, or both.
+                _logger.LogError($"Sending EmailConfiguration Exception: {ex}");
                 throw;
             }
             finally

@@ -18,28 +18,26 @@ namespace EmailService
     {
         private readonly ILogger<EmailPreparator> _logger;
         private readonly UserManager<User> _userManager;
-        private readonly IRepositoryManager _repository;
-        private readonly IMapper _mapper;
+        //private readonly IRepositoryManager _repository;
+        //private readonly IMapper _mapper;
 
 
-        public EmailPreparator(ILogger<EmailPreparator> logger, UserManager<User> userManager,
-            IRepositoryManager repository, IMapper mapper)
+        public EmailPreparator(ILogger<EmailPreparator> logger, UserManager<User> userManager/*,IRepositoryManager repository, IMapper mapper*/)
         {
 
             _logger = logger;
             _userManager = userManager;
-            _repository = repository;
-            _mapper = mapper;
+            //_repository = repository;
+            //_mapper = mapper;
         }
 
-        public async Task<List<Message>> PrepareMessage()
+        public async Task<List<Message>> PrepareMessage(List<PersonEmailDto> personsDto)
         {
-            var allUsersEmails = _userManager.Users.Select(s => s.Email).ToArray();
+            var allUsersEmails = _userManager.Users.Select(s => s.Email).ToArray();            
 
-            var personsFromDb =
-                await _repository.Person.GetAllPersonsAsync(new PersonParameters {PageSize = 200}, trackChanges: false);
-            var personsDto = _mapper.Map<IEnumerable<PersonEmailDto>>(personsFromDb).ToList();
             _logger.LogInformation("after mapper");
+            
+            _logger.LogInformation($"after mapper personsDto {personsDto.Count}");
             var messageBirthDays = PrepareMessage(personsDto, HasCloseBirthDay, DayType.Birthday);
             var messageNameDays = PrepareMessage(personsDto, HasCloseNameDay, DayType.NameDay);
 
@@ -86,17 +84,17 @@ namespace EmailService
             return massages;
         }
 
-        private static List<ReceipientMessage> PrepareMessage(IEnumerable<PersonEmailDto> personsEmailDto,
+        private List<ReceipientMessage> PrepareMessage(IEnumerable<PersonEmailDto> personsEmailDto,
             Func<PersonEmailDto, bool> hasCloseEvent, DayType dayType)
         {
-            var personsDay = personsEmailDto
-                .Where(hasCloseEvent);
-
+            var personsDay = personsEmailDto.Where(p => hasCloseEvent(p)).ToList();
+            _logger.LogInformation($"personsDay {personsDay.Count}");
             var methodName = hasCloseEvent.Method.Name;
             var recipientsMessageList = new List<ReceipientMessage>();
-
+            _logger.LogInformation($"personsDay methodName {methodName}");
             if (methodName.Contains("birth", StringComparison.InvariantCultureIgnoreCase))
             {
+                _logger.LogInformation($"personsDay birth method");
                 foreach (var person in personsDay)
                 {
                     recipientsMessageList.Add(new ReceipientMessage
@@ -109,6 +107,7 @@ namespace EmailService
             }
             else if (methodName.Contains("name", StringComparison.InvariantCultureIgnoreCase))
             {
+                _logger.LogInformation($"personsDay nameday method");
                 foreach (var person in personsDay)
                 {
                     recipientsMessageList.Add(new ReceipientMessage

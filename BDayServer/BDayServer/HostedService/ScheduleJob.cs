@@ -5,6 +5,13 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EmailService.Contracts;
+using Contracts;
+using AutoMapper;
+using Entities.DataTransferObjects.Person;
+using Entities.RequestFeatures;
+using System.Collections.Generic;
+using System.Linq;
+using Entities;
 
 namespace BDayServer.HostedService
 {
@@ -13,15 +20,21 @@ namespace BDayServer.HostedService
         private readonly ILogger<ScheduleJob> _logger;
         private readonly IEmailSender _emailSender;
         private readonly IEmailPreparator _emailPreparator;
+        private readonly IRepositoryManager _repository;
+        private readonly IMapper _mapper;
+        private readonly RepositoryContextScheduleJob _repositoryContextScheduleJob;
 
         public ScheduleJob(IScheduleConfig<ScheduleJob> config, ILogger<ScheduleJob> logger,
-            IServiceProvider serviceProvider)
+            IMapper mapper, IServiceProvider serviceProvider)
             : base(config.CronExpression, config.TimeZoneInfo)
         {
             _logger = logger;
             //https://www.thecodebuzz.com/cannot-consume-scoped-service-from-singleton-ihostedservice/
             _emailPreparator = serviceProvider.CreateScope().ServiceProvider.GetRequiredService<IEmailPreparator>();
             _emailSender = serviceProvider.CreateScope().ServiceProvider.GetRequiredService<IEmailSender>();
+            _repository = serviceProvider.CreateScope().ServiceProvider.GetRequiredService<IRepositoryManager>();
+            _mapper = mapper;
+            _repositoryContextScheduleJob= serviceProvider.CreateScope().ServiceProvider.GetService<RepositoryContextScheduleJob>();
         }
 
         public override Task StartAsync(CancellationToken cancellationToken)
@@ -34,7 +47,13 @@ namespace BDayServer.HostedService
         {
             _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob is working.");
 
-            var messages = await _emailPreparator.PrepareMessage();
+            //var personsFromDb =
+            //    await _repository.Person.GetAllPersonsAsync(new PersonParameters { PageSize = 50 }, trackChanges: false);
+            var personsFromDb = _repositoryContextScheduleJob.Persons.ToList();
+            var personsDto = _mapper.Map<IEnumerable<PersonEmailDto>>(personsFromDb).ToList();
+
+            _logger.LogInformation($"after mapper personsFromDb {personsFromDb.Count}");
+            var messages = await _emailPreparator.PrepareMessage(personsDto);
             _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob gets messages count. {messages.Count}");
             if (messages != null)
             {

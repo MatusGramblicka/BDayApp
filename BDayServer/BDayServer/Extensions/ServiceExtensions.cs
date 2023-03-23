@@ -23,6 +23,10 @@ namespace BDayServer.Extensions
             services.AddDbContext<RepositoryContext>(opts =>
                 opts.UseMySql(configuration.GetConnectionString("sqlConnection"),
                     ServerVersion.AutoDetect(configuration.GetConnectionString("sqlConnection")),
+                    b => b.MigrationsAssembly("BDayServer")))
+            .AddDbContext<RepositoryContextScheduleJob>(opts =>
+                opts.UseMySql(configuration.GetConnectionString("sqlConnection"),
+                    ServerVersion.AutoDetect(configuration.GetConnectionString("sqlConnection")),
                     b => b.MigrationsAssembly("BDayServer")));
 
         public static void ConfigureRepositoryManager(this IServiceCollection services) =>

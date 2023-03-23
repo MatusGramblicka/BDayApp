@@ -101,7 +101,7 @@ namespace BDayServer
             {
                 c.TimeZoneInfo = TimeZoneInfo.Local;
                 //c.CronExpression = @"0 12 * * *";
-                c.CronExpression = @"*/1 * * * *";
+                c.CronExpression = @"0 */2 * * *";
             });
         }
 

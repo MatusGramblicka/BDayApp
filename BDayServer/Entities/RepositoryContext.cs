@@ -9,7 +9,7 @@ namespace Entities
     {
         private readonly string _userId;
 
-        public RepositoryContext(DbContextOptions options, IGetUserProvider userData)
+        public RepositoryContext(DbContextOptions<RepositoryContext> options, IGetUserProvider userData)
             : base(options)
         {
             _userId = userData.UserId;
@@ -23,6 +23,14 @@ namespace Entities
 
             modelBuilder.Entity<Person>().HasQueryFilter(b => b.PersonCreator == _userId);
         }
+
+        public DbSet<Person> Persons { get; set; }
+    }
+
+    public class RepositoryContextScheduleJob : IdentityDbContext<User>
+    {
+        public RepositoryContextScheduleJob(DbContextOptions<RepositoryContextScheduleJob> options)
+            : base(options) { }
 
         public DbSet<Person> Persons { get; set; }
     }

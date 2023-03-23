@@ -22,6 +22,8 @@ using Microsoft.OpenApi.Models;
 using System;
 using System.IO;
 using System.Text;
+using EmailService.Contracts;
+using EmailService.Contracts.Models;
 
 namespace BDayServer
 {
@@ -85,6 +87,7 @@ namespace BDayServer
                 .Get<EmailConfiguration>();
             services.AddSingleton(emailConfig);
             services.AddScoped<IEmailSender, EmailSender>();
+            services.AddScoped<IEmailPreparator, EmailPreparator>();
 
             services.AddControllers();
             services.AddSwaggerGen(c =>

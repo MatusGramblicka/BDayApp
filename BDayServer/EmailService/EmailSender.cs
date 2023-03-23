@@ -4,6 +4,8 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using EmailService.Contracts;
+using EmailService.Contracts.Models;
 
 namespace EmailService
 {

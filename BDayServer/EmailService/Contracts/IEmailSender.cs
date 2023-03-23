@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
+using EmailService.Contracts.Models;
 
-namespace EmailService
+namespace EmailService.Contracts
 {
     public interface IEmailSender
     {

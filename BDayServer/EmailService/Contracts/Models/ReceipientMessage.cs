@@ -1,4 +1,4 @@
-﻿namespace BDayServer.HostedService
+﻿namespace EmailService.Contracts.Models
 {
     public class ReceipientMessage
     {

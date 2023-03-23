@@ -1,4 +1,4 @@
-﻿namespace EmailService
+﻿namespace EmailService.Contracts.Models
 {
     public class EmailConfiguration
     {

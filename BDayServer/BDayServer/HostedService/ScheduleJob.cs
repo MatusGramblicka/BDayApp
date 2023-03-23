@@ -35,7 +35,7 @@ namespace BDayServer.HostedService
             _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob is working.");
 
             var messages = await _emailPreparator.PrepareMessage();
-
+            _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob gets messages count. {messages.Count}");
             if (messages != null)
             {
                 foreach (var message in messages)

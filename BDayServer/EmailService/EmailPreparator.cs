@@ -39,7 +39,7 @@ namespace EmailService
             var personsFromDb =
                 await _repository.Person.GetAllPersonsAsync(new PersonParameters {PageSize = 200}, trackChanges: false);
             var personsDto = _mapper.Map<IEnumerable<PersonEmailDto>>(personsFromDb).ToList();
-
+            _logger.LogInformation("after mapper");
             var messageBirthDays = PrepareMessage(personsDto, HasCloseBirthDay, DayType.Birthday);
             var messageNameDays = PrepareMessage(personsDto, HasCloseNameDay, DayType.NameDay);
 
@@ -47,6 +47,7 @@ namespace EmailService
 
             if (messageBirthDays.Count == 0 && messageNameDays.Count == 0)
             {
+                _logger.LogInformation("after mapper get null");
                 return null;
             }
 

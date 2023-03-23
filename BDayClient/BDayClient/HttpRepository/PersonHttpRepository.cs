@@ -23,8 +23,7 @@ namespace BDayClient.HttpRepository
         private readonly NavigationManager _navManager;
         private readonly ApiConfiguration _apiConfiguration;
 
-        private readonly JsonSerializerOptions _options =
-            new JsonSerializerOptions {PropertyNameCaseInsensitive = true};
+        private readonly JsonSerializerOptions _options = new() {PropertyNameCaseInsensitive = true};
 
         public PersonHttpRepository(HttpClient client, NavigationManager navManager,
             IOptions<ApiConfiguration> configuration)

@@ -25,8 +25,8 @@ namespace BDayClient.Pages
 		[Inject]
 		public IToastService ToastService { get; set; }
 
-        [Inject]
-        public AuthenticationStateProvider AuthStateProvider { get; set; }
+        //[Inject]
+        //public AuthenticationStateProvider AuthStateProvider { get; set; }
 
         protected override void OnInitialized()
 		{          

@@ -11,6 +11,8 @@ namespace EmailService
     {
         private readonly EmailConfiguration _emailConfig;
 
+        private const string AuthenticationMechanisms = "XOAUTH2";
+
         public EmailSender(EmailConfiguration emailConfig)
         {
             _emailConfig = emailConfig;
@@ -38,7 +40,7 @@ namespace EmailService
             emailMessage.Subject = message.Subject;
 
             //var bodyBuilder = new BodyBuilder { HtmlBody = string.Format("<h2 style='color:red;'>{0}</h2>", message.Content) };
-            var bodyBuilder = new BodyBuilder { TextBody = message.Content };
+            var bodyBuilder = new BodyBuilder {TextBody = message.Content};
 
             if (message.Attachments != null && message.Attachments.Any())
             {
@@ -51,7 +53,8 @@ namespace EmailService
                         fileBytes = ms.ToArray();
                     }
 
-                    bodyBuilder.Attachments.Add(attachment.FileName, fileBytes, ContentType.Parse(attachment.ContentType));
+                    bodyBuilder.Attachments.Add(attachment.FileName, fileBytes,
+                        ContentType.Parse(attachment.ContentType));
                 }
             }
 
@@ -61,51 +64,47 @@ namespace EmailService
 
         private void Send(MimeMessage mailMessage)
         {
-            using (var client = new SmtpClient())
+            using var client = new SmtpClient();
+            try
             {
-                try
-                {
-                    client.Connect(_emailConfig.SmtpServer, _emailConfig.Port, true);
-                    client.AuthenticationMechanisms.Remove("XOAUTH2");
-                    client.Authenticate(_emailConfig.UserName, _emailConfig.Password);
+                client.Connect(_emailConfig.SmtpServer, _emailConfig.Port, true);
+                client.AuthenticationMechanisms.Remove(AuthenticationMechanisms);
+                client.Authenticate(_emailConfig.UserName, _emailConfig.Password);
 
-                    client.Send(mailMessage);
-                }
-                catch
-                {
-                    //log an error message or throw an exception, or both.
-                    throw;
-                }
-                finally
-                {
-                    client.Disconnect(true);
-                    client.Dispose();
-                }
+                client.Send(mailMessage);
+            }
+            catch
+            {
+                //log an error message or throw an exception, or both.
+                throw;
+            }
+            finally
+            {
+                client.Disconnect(true);
+                client.Dispose();
             }
         }
 
         private async Task SendAsync(MimeMessage mailMessage)
         {
-            using (var client = new SmtpClient())
+            using var client = new SmtpClient();
+            try
             {
-                try
-                {
-                    await client.ConnectAsync(_emailConfig.SmtpServer, _emailConfig.Port, true);
-                    client.AuthenticationMechanisms.Remove("XOAUTH2");
-                    await client.AuthenticateAsync(_emailConfig.UserName, _emailConfig.Password);
+                await client.ConnectAsync(_emailConfig.SmtpServer, _emailConfig.Port, true);
+                client.AuthenticationMechanisms.Remove(AuthenticationMechanisms);
+                await client.AuthenticateAsync(_emailConfig.UserName, _emailConfig.Password);
 
-                    await client.SendAsync(mailMessage);
-                }
-                catch (Exception ex)
-                {
-                    //log an error message or throw an exception, or both.
-                    throw;
-                }
-                finally
-                {
-                    await client.DisconnectAsync(true);
-                    client.Dispose();
-                }
+                await client.SendAsync(mailMessage);
+            }
+            catch (Exception ex)
+            {
+                //log an error message or throw an exception, or both.
+                throw;
+            }
+            finally
+            {
+                await client.DisconnectAsync(true);
+                client.Dispose();
             }
         }
     }

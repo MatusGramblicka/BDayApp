@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Contracts;
+using Entities;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore;
-using System.Text;
-using System.Threading.Tasks;
-using Contracts;
-using Entities;
 
 namespace Repository
 {
@@ -14,25 +11,25 @@ namespace Repository
     {
         protected RepositoryContext RepositoryContext;
 
-        public RepositoryBase(RepositoryContext repositoryContext)
+        protected RepositoryBase(RepositoryContext repositoryContext)
         {
             RepositoryContext = repositoryContext;
         }
 
         public IQueryable<T> FindAll(bool trackChanges) =>
-            !trackChanges ?
-              RepositoryContext.Set<T>()
-                .AsNoTracking() :
-              RepositoryContext.Set<T>();
+            !trackChanges
+                ? RepositoryContext.Set<T>()
+                    .AsNoTracking()
+                : RepositoryContext.Set<T>();
 
         public IQueryable<T> FindByCondition(Expression<Func<T, bool>> expression,
-        bool trackChanges) =>
-            !trackChanges ?
-              RepositoryContext.Set<T>()
-                .Where(expression)
-                .AsNoTracking() :
-              RepositoryContext.Set<T>()
-                .Where(expression);
+            bool trackChanges) =>
+            !trackChanges
+                ? RepositoryContext.Set<T>()
+                    .Where(expression)
+                    .AsNoTracking()
+                : RepositoryContext.Set<T>()
+                    .Where(expression);
 
         public void Create(T entity) => RepositoryContext.Set<T>().Add(entity);
 

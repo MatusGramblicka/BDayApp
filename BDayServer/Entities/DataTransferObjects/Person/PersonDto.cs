@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Entities.DataTransferObjects
+namespace Entities.DataTransferObjects.Person
 {
     public class PersonDto
     {

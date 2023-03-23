@@ -1,4 +1,4 @@
-﻿namespace Entities.DTO
+﻿namespace Entities.DataTransferObjects.User
 {
     public class UserLite2StepsAuthDto
     {

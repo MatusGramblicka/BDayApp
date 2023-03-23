@@ -1,9 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace BDayServer.ActionFilters
 {
@@ -19,7 +16,8 @@ namespace BDayServer.ActionFilters
             if (param == null)
             {
                 //_logger.LogError($"Object sent from client is null. Controller: {controller}, action: {action}");
-                context.Result = new BadRequestObjectResult($"Object is null. Controller: {controller}, action: {action}");
+                context.Result =
+                    new BadRequestObjectResult($"Object is null. Controller: {controller}, action: {action}");
                 return;
             }
 
@@ -30,6 +28,8 @@ namespace BDayServer.ActionFilters
             }
         }
 
-        public void OnActionExecuted(ActionExecutedContext context) { }
+        public void OnActionExecuted(ActionExecutedContext context)
+        {
+        }
     }
 }

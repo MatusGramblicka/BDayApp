@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Entities.DTO
+namespace Entities.DataTransferObjects
 {
     public class ResponseDto
     {

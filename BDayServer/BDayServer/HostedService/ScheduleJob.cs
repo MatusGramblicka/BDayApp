@@ -2,7 +2,6 @@
 using Contracts;
 using EmailService;
 using Entities;
-using Entities.DataTransferObjects;
 using Entities.RequestFeatures;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Entities.DataTransferObjects.Person;
 
 namespace BDayServer.HostedService
 {
@@ -73,7 +73,7 @@ namespace BDayServer.HostedService
             var personsDto = _mapper.Map<IEnumerable<PersonDto>>(personsFromDb);
                         
             var messageBirthDays = PrepareMessage(personsDto, HasCloseBirthDay, DayType.Birthday);
-            var messageNameDays = PrepareMessage(personsDto, HasCloseNameDay, DayType.Nameday);
+            var messageNameDays = PrepareMessage(personsDto, HasCloseNameDay, DayType.NameDay);
 
             var massages = new List<Message>();
 

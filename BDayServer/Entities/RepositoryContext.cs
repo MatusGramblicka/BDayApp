@@ -7,12 +7,12 @@ namespace Entities
 {
     public class RepositoryContext : IdentityDbContext<User>
     {
-        private readonly string userId;
+        private readonly string _userId;
 
         public RepositoryContext(DbContextOptions options, IGetUserProvider userData)
-        : base(options)
+            : base(options)
         {
-            userId = userData.UserId;
+            _userId = userData.UserId;
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -21,7 +21,7 @@ namespace Entities
             modelBuilder.ApplyConfiguration(new PersonConfiguration());
             modelBuilder.ApplyConfiguration(new RoleConfiguration());
 
-            modelBuilder.Entity<Person>().HasQueryFilter(b => b.PersonCreator == userId);
+            modelBuilder.Entity<Person>().HasQueryFilter(b => b.PersonCreator == _userId);
         }
 
         public DbSet<Person> Persons { get; set; }

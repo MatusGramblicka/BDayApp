@@ -23,10 +23,7 @@ namespace BDayClient.Pages
 		public HttpInterceptorService Interceptor { get; set; }
 
 		[Inject]
-		public IToastService ToastService { get; set; }
-
-        //[Inject]
-        //public AuthenticationStateProvider AuthStateProvider { get; set; }
+		public IToastService ToastService { get; set; }      
 
         protected override void OnInitialized()
 		{          
@@ -45,9 +42,6 @@ namespace BDayClient.Pages
 
 		private async Task Create()
 		{
-   //         var authState = await AuthStateProvider.GetAuthenticationStateAsync();       
-			//_person.PersonCreator = authState.User.Identity.Name;
-
             await PersonRepo.CreatePerson(_person);
 
 			ToastService.ShowSuccess($"Action successful. " +

@@ -18,8 +18,6 @@ namespace Entities.DataTransferObjects.Person
 
         public DateTime DayOfNameDay { get; set; }
 
-        public string ImageUrl { get; set; }
-
-        //public string PersonCreator { get; set; }
+        public string ImageUrl { get; set; }        
     }
 }

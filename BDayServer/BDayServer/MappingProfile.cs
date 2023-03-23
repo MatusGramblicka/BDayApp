@@ -17,6 +17,8 @@ namespace BDayServer
             CreateMap<PersonForUpdateDto, Person>().ReverseMap();
 
             CreateMap<User, UserLite>();
+
+            CreateMap<Person, PersonEmailDto>();
         }
     }
 }

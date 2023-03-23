@@ -60,13 +60,12 @@ namespace BDayServer.Controllers
         [ServiceFilter(typeof(ValidationFilterAttribute))]
         public async Task<IActionResult> CreatePerson([FromBody] PersonForCreationDto person)
         {
-            var personEntity = _mapper.Map<Person>(person);
-
             if (_userId == null)
             {
                 BadRequest("User is null");
             }
 
+            var personEntity = _mapper.Map<Person>(person);
             personEntity.PersonCreator = _userId;
 
             _repository.Person.CreatePerson(personEntity);
@@ -80,11 +79,12 @@ namespace BDayServer.Controllers
         [HttpPut("{id}")]
         [ServiceFilter(typeof(ValidationFilterAttribute))]
         [ServiceFilter(typeof(ValidatePersonExistsAttribute))]
-        public async Task<IActionResult> UpdatePerson(Guid id, [FromBody] PersonForUpdateDto person)
+        public async Task<IActionResult> UpdatePerson(Guid id, [FromBody] PersonForUpdateDto personDto)
         {
             var personEntity = HttpContext.Items["person"] as Person;
 
-            _mapper.Map(person, personEntity);
+            //todo is personCreator overwritten?
+            _mapper.Map(personDto, personEntity);
             await _repository.SaveAsync();
 
             return NoContent();

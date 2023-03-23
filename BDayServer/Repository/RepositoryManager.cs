@@ -1,17 +1,13 @@
 ﻿using Contracts;
 using Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Repository
 {
     public class RepositoryManager : IRepositoryManager
     {
-        private RepositoryContext _repositoryContext;
-        private IPersonRepository _personRepository;    
+        private readonly RepositoryContext _repositoryContext;
+        private IPersonRepository _personRepository;
 
         public RepositoryManager(RepositoryContext repositoryContext)
         {
@@ -28,7 +24,7 @@ namespace Repository
                 return _personRepository;
             }
         }
-       
+
         public Task SaveAsync() => _repositoryContext.SaveChangesAsync();
     }
 }

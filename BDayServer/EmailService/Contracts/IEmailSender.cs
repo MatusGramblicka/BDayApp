@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using EmailService.Contracts.Models;
 
-namespace EmailService
+namespace EmailService.Contracts
 {
     public interface IEmailSender
     {

@@ -1,4 +1,4 @@
-﻿namespace Entities.DTO
+﻿namespace Entities.DataTransferObjects
 {
     public class RefreshTokenDto
     {

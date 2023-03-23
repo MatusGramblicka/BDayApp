@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace EmailService
+﻿namespace EmailService.Contracts.Models
 {
     public class EmailConfiguration
     {

@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using Entities;
-using Entities.DataTransferObjects;
-using Entities.DTO;
+using Entities.DataTransferObjects.Person;
+using Entities.DataTransferObjects.User;
 using Entities.Models;
 
 namespace BDayServer

@@ -22,6 +22,8 @@ using Microsoft.OpenApi.Models;
 using System;
 using System.IO;
 using System.Text;
+using EmailService.Contracts;
+using EmailService.Contracts.Models;
 
 namespace BDayServer
 {
@@ -34,7 +36,6 @@ namespace BDayServer
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.ConfigureCors();
@@ -45,15 +46,16 @@ namespace BDayServer
             services.AddScoped<ValidatePersonExistsAttribute>();
 
             services.AddIdentity<User, IdentityRole>(opt =>
-            {
-                opt.Lockout.AllowedForNewUsers = true;
-                opt.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(2);
-                opt.Lockout.MaxFailedAccessAttempts = 3;
-            })
+                {
+                    opt.Lockout.AllowedForNewUsers = true;
+                    opt.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(2);
+                    opt.Lockout.MaxFailedAccessAttempts = 3;
+                })
                 .AddEntityFrameworkStores<RepositoryContext>()
                 .AddDefaultTokenProviders();
             services.Configure<DataProtectionTokenProviderOptions>(opt =>
-                opt.TokenLifespan = TimeSpan.FromHours(2)); ;
+                opt.TokenLifespan = TimeSpan.FromHours(2));
+            ;
 
             var jwtSettings = Configuration.GetSection("JWTSettings");
             services.AddAuthentication(opt =>
@@ -72,7 +74,7 @@ namespace BDayServer
                     ValidIssuer = jwtSettings["validIssuer"],
                     ValidAudience = jwtSettings["validAudience"],
                     IssuerSigningKey = new SymmetricSecurityKey
-                    (Encoding.UTF8.GetBytes(jwtSettings["securityKey"]))
+                        (Encoding.UTF8.GetBytes(jwtSettings["securityKey"]))
                 };
             });
 
@@ -85,11 +87,12 @@ namespace BDayServer
                 .Get<EmailConfiguration>();
             services.AddSingleton(emailConfig);
             services.AddScoped<IEmailSender, EmailSender>();
+            services.AddScoped<IEmailPreparator, EmailPreparator>();
 
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "BDayServer", Version = "v1" });
+                c.SwaggerDoc("v1", new OpenApiInfo {Title = "BDayServer", Version = "v1"});
             });
 
             services.AddRazorPages();
@@ -123,7 +126,7 @@ namespace BDayServer
             app.UseStaticFiles(new StaticFileOptions
             {
                 FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(),
-                @"StaticFiles")),
+                    @"StaticFiles")),
                 RequestPath = new PathString("/StaticFiles")
             });
 

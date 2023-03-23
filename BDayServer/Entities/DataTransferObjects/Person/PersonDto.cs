@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Entities.DataTransferObjects
+namespace Entities.DataTransferObjects.Person
 {
     public class PersonDto
     {
@@ -14,5 +10,6 @@ namespace Entities.DataTransferObjects
         public DateTime DayOfBirth { get; set; }
         public DateTime DayOfNameDay { get; set; }
         public string ImageUrl { get; set; }
+        public string PersonCreator { get; set; }
     }
 }

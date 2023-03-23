@@ -1,16 +1,14 @@
 ﻿using AutoMapper;
 using BDayServer.ActionFilters;
 using Contracts;
-using Entities.DataTransferObjects;
+using Entities.DataTransferObjects.Person;
 using Entities.Models;
 using Entities.RequestFeatures;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace BDayServer.Controllers
@@ -32,11 +30,11 @@ namespace BDayServer.Controllers
         [HttpGet(Name = "GetPersons")]
         public async Task<IActionResult> GetPersons([FromQuery] PersonParameters personParameters)
         {
-            var personsFromDB = await _repository.Person.GetAllPersonsAsync(personParameters, trackChanges: false);
+            var personsFromDb = await _repository.Person.GetAllPersonsAsync(personParameters, trackChanges: false);
 
-            Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(personsFromDB.MetaData));
+            Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(personsFromDb.MetaData));
 
-            var personsDto = _mapper.Map<IEnumerable<PersonDto>>(personsFromDB);
+            var personsDto = _mapper.Map<IEnumerable<PersonDto>>(personsFromDb);
 
             return Ok(personsDto);
         }
@@ -45,15 +43,13 @@ namespace BDayServer.Controllers
         public async Task<IActionResult> GetPerson(Guid id)
         {
             var person = await _repository.Person.GetPersonAsync(id, trackChanges: false);
-            if (person == null)           
-            {               
+            if (person == null)
+            {
                 return NotFound();
             }
-            else
-            {
-                var personDto = _mapper.Map<PersonDto>(person);
-                return Ok(personDto);
-            }
+
+            var personDto = _mapper.Map<PersonDto>(person);
+            return Ok(personDto);
         }
 
         [HttpPost(Name = "CreatePerson")]
@@ -67,7 +63,7 @@ namespace BDayServer.Controllers
 
             var personToReturn = _mapper.Map<PersonDto>(personEntity);
 
-            return CreatedAtRoute("PersonById", new { id = personToReturn.Id }, personToReturn);
+            return CreatedAtRoute("PersonById", new {id = personToReturn.Id}, personToReturn);
         }
 
         [HttpPut("{id}")]

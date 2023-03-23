@@ -1,14 +1,13 @@
-﻿using System;
+﻿using Contracts;
+using Entities;
+using Entities.Models;
+using Entities.RequestFeatures;
+using Microsoft.EntityFrameworkCore;
+using Repository.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Entities.Models;
-using System.Text;
 using System.Threading.Tasks;
-using Contracts;
-using Entities;
-using Microsoft.EntityFrameworkCore;
-using Entities.RequestFeatures;
-using Repository.Extensions;
 
 namespace Repository
 {
@@ -22,22 +21,21 @@ namespace Repository
         public async Task<PagedList<Person>> GetAllPersonsAsync(PersonParameters personParameters, bool trackChanges)
         {
             var persons = await FindAll(trackChanges)
-                //.FilterEmployees(employeeParameters.MinAge, employeeParameters.MaxAge)
                 .Search(personParameters.SearchTerm)
                 .Sort(personParameters.OrderBy)
                 .ToListAsync();
 
             return PagedList<Person>
-               .ToPagedList(persons, personParameters.PageNumber, personParameters.PageSize);
+                .ToPagedList(persons, personParameters.PageNumber, personParameters.PageSize);
         }
 
         public async Task<Person> GetPersonAsync(Guid personId, bool trackChanges) =>
             await FindByCondition(c => c.Id.Equals(personId), trackChanges)
-            .SingleOrDefaultAsync();
+                .SingleOrDefaultAsync();
 
         public async Task<IEnumerable<Person>> GetByIdsAsync(IEnumerable<Guid> ids, bool trackChanges) =>
             await FindByCondition(x => ids.Contains(x.Id), trackChanges)
-            .ToListAsync();
+                .ToListAsync();
 
         public void CreatePerson(Person person) => Create(person);
 

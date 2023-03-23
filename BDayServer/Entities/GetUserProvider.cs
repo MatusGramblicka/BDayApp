@@ -7,8 +7,11 @@ namespace Entities
         public string UserId { get; }            
 
         public GetUserProvider(IHttpContextAccessor accessor)
-        {           
-            UserId = accessor.HttpContext?.User.Identity.Name;       
+        {
+            if (accessor.HttpContext?.User.Identity != null)
+            {
+                UserId = accessor.HttpContext?.User.Identity.Name;
+            }
         }
     }
 }

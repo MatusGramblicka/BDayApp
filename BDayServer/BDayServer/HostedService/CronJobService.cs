@@ -30,14 +30,15 @@ namespace BDayServer.HostedService
             if (next.HasValue)
             {
                 var delay = next.Value - DateTimeOffset.Now;
-                if (delay.TotalMilliseconds <= 0)   // prevent non-positive values from being passed into Timer
+                if (delay.TotalMilliseconds <= 0)
                 {
                     await ScheduleJob(cancellationToken);
                 }
+
                 _timer = new System.Timers.Timer(delay.TotalMilliseconds);
                 _timer.Elapsed += async (sender, args) =>
                 {
-                    _timer.Dispose();  // reset and dispose timer
+                    _timer.Dispose(); // reset and dispose timer
                     _timer = null;
 
                     if (!cancellationToken.IsCancellationRequested)
@@ -47,17 +48,18 @@ namespace BDayServer.HostedService
 
                     if (!cancellationToken.IsCancellationRequested)
                     {
-                        await ScheduleJob(cancellationToken);    // reschedule next
+                        await ScheduleJob(cancellationToken); // reschedule next
                     }
                 };
                 _timer.Start();
             }
+
             await Task.CompletedTask;
         }
 
         public virtual async Task DoWork(CancellationToken cancellationToken)
         {
-            await Task.Delay(5000, cancellationToken);  // do the work
+            await Task.Delay(5000, cancellationToken);
         }
 
         public virtual async Task StopAsync(CancellationToken cancellationToken)
@@ -66,9 +68,6 @@ namespace BDayServer.HostedService
             await Task.CompletedTask;
         }
 
-        public virtual void Dispose()
-        {
-            _timer?.Dispose();
-        }
+        public virtual void Dispose() => _timer?.Dispose();
     }
 }

@@ -1,4 +1,4 @@
-﻿using Entities.DTO;
+﻿using Entities.DataTransferObjects.User;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;

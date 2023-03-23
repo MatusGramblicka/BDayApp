@@ -1,4 +1,5 @@
-﻿using Entities.DTO;
+﻿using Entities.DataTransferObjects;
+using Entities.DataTransferObjects.User;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -14,6 +15,5 @@ namespace BDayClient.HttpRepository
         Task<ResetPasswordResponseDto> ResetPassword(ResetPasswordDto resetPasswordDto);
         Task<HttpStatusCode> EmailConfirmation(string email, string token);
         Task<AuthResponseDto> LoginVerification(TwoFactorVerificationDto twoFactorDto);
-
     }
 }

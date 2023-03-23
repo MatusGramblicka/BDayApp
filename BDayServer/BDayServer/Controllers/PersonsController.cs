@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using BDayServer.ActionFilters;
 using Contracts;
+using Entities;
 using Entities.DataTransferObjects.Person;
 using Entities.Models;
 using Entities.RequestFeatures;
@@ -21,10 +22,13 @@ namespace BDayServer.Controllers
         private readonly IRepositoryManager _repository;
         private readonly IMapper _mapper;
 
-        public PersonsController(IRepositoryManager repository, IMapper mapper)
+        private readonly string _userId;
+
+        public PersonsController(IRepositoryManager repository, IMapper mapper, IGetUserProvider userData)
         {
             _repository = repository;
             _mapper = mapper;
+            _userId = userData.UserId;
         }
 
         [HttpGet(Name = "GetPersons")]
@@ -57,6 +61,13 @@ namespace BDayServer.Controllers
         public async Task<IActionResult> CreatePerson([FromBody] PersonForCreationDto person)
         {
             var personEntity = _mapper.Map<Person>(person);
+
+            if (_userId == null)
+            {
+                BadRequest("User is null");
+            }
+
+            personEntity.PersonCreator = _userId;
 
             _repository.Person.CreatePerson(personEntity);
             await _repository.SaveAsync();

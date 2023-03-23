@@ -20,6 +20,6 @@ namespace Entities.DataTransferObjects.Person
 
         public string ImageUrl { get; set; }
 
-        public string PersonCreator { get; set; }
+        //public string PersonCreator { get; set; }
     }
 }

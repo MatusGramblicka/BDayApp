@@ -1,7 +1,7 @@
 ﻿using BDayClient.HttpInterceptor;
 using BDayClient.HttpRepository;
 using Blazored.Toast.Services;
-using Entities.DataTransferObjects;
+using Entities.DataTransferObjects.Person;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Forms;
@@ -12,9 +12,9 @@ namespace BDayClient.Pages
 {
 	public partial class CreatePerson
     {
-		private PersonForCreationDto _person = new PersonForCreationDto();
+		private PersonForCreationDto _person = new();
 		private EditContext _editContext;
-		private bool formInvalid = true;        
+		private bool _formInvalid = true;        
 
         [Inject]
 		public IPersonHttpRepository PersonRepo { get; set; }
@@ -26,7 +26,7 @@ namespace BDayClient.Pages
 		public IToastService ToastService { get; set; }
 
         [Inject]
-        public AuthenticationStateProvider AauthStateProvider { get; set; }
+        public AuthenticationStateProvider AuthStateProvider { get; set; }
 
         protected override void OnInitialized()
 		{          
@@ -39,14 +39,14 @@ namespace BDayClient.Pages
 
 		private void HandleFieldChanged(object sender, FieldChangedEventArgs e)
 		{
-			formInvalid = !_editContext.Validate();
+			_formInvalid = !_editContext.Validate();
 			StateHasChanged();
 		}
 
 		private async Task Create()
 		{
-            var authState = await AauthStateProvider.GetAuthenticationStateAsync();       
-			_person.PersonCreator = authState.User.Identity.Name;
+   //         var authState = await AuthStateProvider.GetAuthenticationStateAsync();       
+			//_person.PersonCreator = authState.User.Identity.Name;
 
             await PersonRepo.CreatePerson(_person);
 
@@ -59,7 +59,7 @@ namespace BDayClient.Pages
 
 		private void ValidationChanged(object sender, ValidationStateChangedEventArgs e)
 		{
-			formInvalid = true;
+			_formInvalid = true;
 			_editContext.OnFieldChanged -= HandleFieldChanged;
 			_editContext = new EditContext(_person);
 			_editContext.OnFieldChanged += HandleFieldChanged;

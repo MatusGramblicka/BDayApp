@@ -1,10 +1,9 @@
-﻿using EmailService;
+﻿using EmailService.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using EmailService.Contracts;
 
 namespace BDayServer.HostedService
 {
@@ -34,7 +33,7 @@ namespace BDayServer.HostedService
         {
             _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob is working.");
 
-            var messages = await _emailPreparator.PrepareMessage();
+            var messages = _emailPreparator.PrepareMessage();
 
             if (messages != null)
             {

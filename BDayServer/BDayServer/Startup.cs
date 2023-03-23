@@ -99,8 +99,8 @@ namespace BDayServer
 
             services.AddCronJob<ScheduleJob>(c =>
             {
-                c.TimeZoneInfo = TimeZoneInfo.Local;
-                c.CronExpression = @"0 12 * * *";
+                c.TimeZoneInfo = TimeZoneInfo.Utc;
+                c.CronExpression = @"0 12 * * *";               
             });
         }
 

@@ -1,43 +1,37 @@
 ﻿using AutoMapper;
-using Contracts;
 using EmailService.Contracts;
 using EmailService.Contracts.Models;
 using Entities;
 using Entities.DataTransferObjects.Person;
-using Entities.RequestFeatures;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace EmailService
 {
     public class EmailPreparator : IEmailPreparator
     {
         private readonly ILogger<EmailPreparator> _logger;
-        private readonly UserManager<User> _userManager;
-        private readonly IRepositoryManager _repository;
+        private readonly UserManager<User> _userManager;      
         private readonly IMapper _mapper;
+        private readonly RepositoryContextScheduleJob _repositoryContextScheduleJob;
 
-
-        public EmailPreparator(ILogger<EmailPreparator> logger, UserManager<User> userManager,
-            IRepositoryManager repository, IMapper mapper)
+        public EmailPreparator(ILogger<EmailPreparator> logger, UserManager<User> userManager, 
+            IMapper mapper, RepositoryContextScheduleJob repositoryContextScheduleJob)
         {
-
             _logger = logger;
             _userManager = userManager;
-            _repository = repository;
             _mapper = mapper;
+            _repositoryContextScheduleJob = repositoryContextScheduleJob;
         }
 
-        public async Task<List<Message>> PrepareMessage()
+        public List<Message> PrepareMessage()
         {
             var allUsersEmails = _userManager.Users.Select(s => s.Email).ToArray();
-
-            var personsFromDb =
-                await _repository.Person.GetAllPersonsAsync(new PersonParameters {PageSize = 200}, trackChanges: false);
+                        
+            var personsFromDb = _repositoryContextScheduleJob.Persons.ToList();
             var personsDto = _mapper.Map<IEnumerable<PersonEmailDto>>(personsFromDb).ToList();
 
             var messageBirthDays = PrepareMessage(personsDto, HasCloseBirthDay, DayType.Birthday);
@@ -79,7 +73,7 @@ namespace EmailService
                 }
 
                 massages.Add(new Message(recipients, "Celebration",
-                    $"{messageBirth}{Environment.NewLine}{messageName}", null));
+                    $"Birthday:{Environment.NewLine}{messageBirth}{Environment.NewLine}Nameday:{Environment.NewLine}{messageName}", null));
             }
 
             return massages;

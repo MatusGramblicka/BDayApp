@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace BDayServer.Controllers
@@ -27,16 +26,10 @@ namespace BDayServer.Controllers
         }
 
         [HttpGet("Users")]
-        public async Task<IActionResult> GetUsers()
+        public IActionResult GetUsers()
         {
-            var allUsers = _userManager.Users.ToList();
-            //var usersAdministrator = await _userManager.GetUsersInRoleAsync("Administrator");
-
-            foreach (var user in allUsers)
-            {
-                if (await _userManager.IsInRoleAsync(user, "Administrator"))
-                    user.IsAdmin = true;
-            }
+            var allUsers = _userManager.Users;
+            //var usersAdministrator = await _userManager.GetUsersInRoleAsync("Administrator");                       
 
             var userLite = _mapper.Map<IEnumerable<UserLite>>(allUsers);
 
@@ -57,6 +50,8 @@ namespace BDayServer.Controllers
             }
 
             await _userManager.AddToRoleAsync(user, "Administrator");
+            user.IsAdmin = true;
+            await _userManager.UpdateAsync(user);
 
             return Ok();
         }
@@ -75,6 +70,8 @@ namespace BDayServer.Controllers
             }
 
             await _userManager.RemoveFromRoleAsync(user, "Administrator");
+            user.IsAdmin = false;
+            await _userManager.UpdateAsync(user);
 
             return Ok();
         }
@@ -96,14 +93,14 @@ namespace BDayServer.Controllers
 
             var rolesForUser = await _userManager.GetRolesAsync(user);
 
-            foreach (var login in logins.ToList())
+            foreach (var login in logins)
             {
                 await _userManager.RemoveLoginAsync(user, login.LoginProvider, login.ProviderKey);
             }
 
             if (rolesForUser.Count > 0)
             {
-                foreach (var item in rolesForUser.ToList())
+                foreach (var item in rolesForUser)
                 {
                     await _userManager.RemoveFromRoleAsync(user, item);
                 }

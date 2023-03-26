@@ -5,7 +5,7 @@ using Entities.DataTransferObjects.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace BDayServer.Controllers
@@ -15,25 +15,25 @@ namespace BDayServer.Controllers
     [Authorize(Roles = "Administrator")]
     public class UsersController : ControllerBase
     {
-        private readonly UserManager<User> _userManager;
-        private readonly IMapper _mapper;
+        private readonly UserManager<User> _userManager;       
 
-        public UsersController(UserManager<User> userManager,
-            IMapper mapper)
+        public UsersController(UserManager<User> userManager)
         {
-            _userManager = userManager;
-            _mapper = mapper;
+            _userManager = userManager;          
         }
 
         [HttpGet("Users")]
         public IActionResult GetUsers()
         {
-            var allUsers = _userManager.Users;
+            var allUsersLite = _userManager.Users.Select(u => new UserLite
+            {
+                Email = u.Email,
+                IsAdmin = u.IsAdmin,
+                TwoFactorEnabled = u.TwoFactorEnabled
+            });
             //var usersAdministrator = await _userManager.GetUsersInRoleAsync("Administrator");                       
 
-            var userLite = _mapper.Map<IEnumerable<UserLite>>(allUsers);
-
-            return Ok(userLite);
+            return Ok(allUsersLite);
         }
 
         [HttpPost("UpdateUser")]

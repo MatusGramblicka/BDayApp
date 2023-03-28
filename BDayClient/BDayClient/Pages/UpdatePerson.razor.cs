@@ -14,7 +14,7 @@ namespace BDayClient.Pages
     public partial class UpdatePerson : IDisposable
     {
         private Person _person;
-        private PersonForUpdateDto PersonForUpdateDto { get; set; } = new();
+        private PersonForUpdateDto PersonForUpdateDto { get; set; } 
         private EditContext _editContext;
         private bool formInvalid = true;
 

@@ -22,16 +22,10 @@ namespace Entities
             modelBuilder.ApplyConfiguration(new RoleConfiguration());
 
             modelBuilder.Entity<Person>().HasQueryFilter(b => b.PersonCreator == _userId);
+            modelBuilder.Entity<Event>().HasQueryFilter(b => b.EventCreator == _userId);
         }
 
         public DbSet<Person> Persons { get; set; }
-    }
-
-    public class RepositoryContextScheduleJob : IdentityDbContext<User>
-    {
-        public RepositoryContextScheduleJob(DbContextOptions<RepositoryContextScheduleJob> options)
-            : base(options) { }
-
-        public DbSet<Person> Persons { get; set; }
-    }
+        public DbSet<Event> Events { get; set; }
+    }    
 }

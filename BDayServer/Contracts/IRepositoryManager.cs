@@ -4,7 +4,8 @@ namespace Contracts
 {
     public interface IRepositoryManager
     {
-        IPersonRepository Person { get; }       
+        IPersonRepository Person { get; }
+        IEventRepository Event { get; }
         Task SaveAsync();
     }
 }

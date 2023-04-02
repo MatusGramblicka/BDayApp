@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Entities;
+using Entities.DataTransferObjects.Event;
 using Entities.DataTransferObjects.Person;
 using Entities.DataTransferObjects.User;
 using Entities.Models;
@@ -10,15 +11,17 @@ namespace BDayServer
     {
         public MappingProfile()
         {
-            CreateMap<Person, PersonDto>();        
-
+            CreateMap<Person, PersonDto>();    
             CreateMap<PersonForCreationDto, Person>();
-
             CreateMap<PersonForUpdateDto, Person>().ReverseMap();
+            CreateMap<Person, PersonEmailDto>();
 
             CreateMap<User, UserLite>();
 
-            CreateMap<Person, PersonEmailDto>();
+            CreateMap<Event, EventDto>();
+            CreateMap<EventForCreationDto, Event>();
+            CreateMap<EventForUpdateDto, Event>().ReverseMap();
+            CreateMap<Event, EventEmailDto>();
         }
     }
 }

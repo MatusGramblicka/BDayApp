@@ -8,6 +8,7 @@ namespace Repository
     {
         private readonly RepositoryContext _repositoryContext;
         private IPersonRepository _personRepository;
+        private IEventRepository _eventRepository;
 
         public RepositoryManager(RepositoryContext repositoryContext)
         {
@@ -22,6 +23,17 @@ namespace Repository
                     _personRepository = new PersonRepository(_repositoryContext);
 
                 return _personRepository;
+            }
+        }
+
+        public IEventRepository Event
+        {
+            get
+            {
+                if (_eventRepository == null)
+                    _eventRepository = new EventRepository(_repositoryContext);
+
+                return _eventRepository;
             }
         }
 

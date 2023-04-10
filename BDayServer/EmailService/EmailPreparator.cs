@@ -106,7 +106,7 @@ namespace EmailService
                 {
                     recipientsMessageList.Add(new ReceipientMessage
                     {
-                        Message = $"{person.Name} {person.Surname} {person.DayOfBirth:dd/MM}\n",
+                        Message = $"{person.Name} {person.Surname} {person.DayOfNameDay:dd/MM}\n",
                         Receipient = person.PersonCreator,
                         CelebrationType = dayType
                     });

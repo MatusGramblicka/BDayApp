@@ -30,25 +30,20 @@ namespace EmailService
         public List<Message> PrepareMessage()
         {
             var allUsersEmails = _userManager.Users.Select(s => s.Email).ToArray();
-                        
+
             var personsFromDb = _repositoryContextScheduleJob.Persons.ToList();
             var personsDto = _mapper.Map<IEnumerable<PersonEmailDto>>(personsFromDb).ToList();
 
-            var messageBirthDays = PrepareMessage(personsDto, HasCloseBirthDay, DayType.Birthday);
-            var messageNameDays = PrepareMessage(personsDto, HasCloseNameDay, DayType.NameDay);
+            var messageBirthAndNameDays = PrepareMessagesBirthAndNameday(personsDto);
 
             var massages = new List<Message>();
 
-            if (messageBirthDays.Count == 0 && messageNameDays.Count == 0)
+            if (messageBirthAndNameDays.Count == 0)
             {
                 return null;
             }
 
-            var birthAndName = new List<ReceipientMessage>();
-            birthAndName.AddRange(messageBirthDays);
-            birthAndName.AddRange(messageNameDays);
-
-            var messageDaysByPersonCreators = birthAndName.GroupBy(m => m.Receipient);
+            var messageDaysByPersonCreators = messageBirthAndNameDays.GroupBy(m => m.Receipient);
             foreach (var messageDaysByPersonCreator in messageDaysByPersonCreators)
             {
                 if (!allUsersEmails.Contains(messageDaysByPersonCreator.Key))
@@ -56,7 +51,7 @@ namespace EmailService
                     continue;
                 }
 
-                var recipients = new[] {messageDaysByPersonCreator.Key};
+                var recipients = new[] { messageDaysByPersonCreator.Key };
 
                 var messageBirth = "";
                 var messageName = "";
@@ -79,65 +74,56 @@ namespace EmailService
             return massages;
         }
 
-        private static List<ReceipientMessage> PrepareMessage(IEnumerable<PersonEmailDto> personsEmailDto,
-            Func<PersonEmailDto, bool> hasCloseEvent, DayType dayType)
+        private List<ReceipientMessage> PrepareMessagesBirthAndNameday(IEnumerable<PersonEmailDto> personsEmailDto)
         {
-            var personsDay = personsEmailDto
-                .Where(hasCloseEvent);
+            var birthDayPersons = personsEmailDto
+                .Where(p => HasCloseDay(p.DayOfBirth));
 
-            var methodName = hasCloseEvent.Method.Name;
+            var recipientsMessageListBirthDay = new List<ReceipientMessage>();
+
+            foreach (var birthDayPerson in birthDayPersons)
+            {
+                recipientsMessageListBirthDay.Add(new ReceipientMessage
+                {
+                    Message = $"{birthDayPerson.Name} {birthDayPerson.Surname} {birthDayPerson.DayOfBirth:dd/MM}\n",
+                    Receipient = birthDayPerson.PersonCreator,
+                    CelebrationType = DayType.Birthday
+                });
+            }
+
+            var nameDayPersons = personsEmailDto
+                .Where(p => HasCloseDay(p.DayOfNameDay));
+
+            var recipientsMessageListNameDay = new List<ReceipientMessage>();
+
+            foreach (var nameDayPerson in nameDayPersons)
+            {
+                recipientsMessageListNameDay.Add(new ReceipientMessage
+                {
+                    Message = $"{nameDayPerson.Name} {nameDayPerson.Surname} {nameDayPerson.DayOfNameDay:dd/MM}\n",
+                    Receipient = nameDayPerson.PersonCreator,
+                    CelebrationType = DayType.NameDay
+                });
+            }
+
             var recipientsMessageList = new List<ReceipientMessage>();
-
-            if (methodName.Contains("birth", StringComparison.InvariantCultureIgnoreCase))
-            {
-                foreach (var person in personsDay)
-                {
-                    recipientsMessageList.Add(new ReceipientMessage
-                    {
-                        Message = $"{person.Name} {person.Surname} {person.DayOfBirth:dd/MM}\n",
-                        Receipient = person.PersonCreator,
-                        CelebrationType = dayType
-                    });
-                }
-            }
-            else if (methodName.Contains("name", StringComparison.InvariantCultureIgnoreCase))
-            {
-                foreach (var person in personsDay)
-                {
-                    recipientsMessageList.Add(new ReceipientMessage
-                    {
-                        Message = $"{person.Name} {person.Surname} {person.DayOfNameDay:dd/MM}\n",
-                        Receipient = person.PersonCreator,
-                        CelebrationType = dayType
-                    });
-                }
-            }
+            recipientsMessageList.AddRange(recipientsMessageListBirthDay);
+            recipientsMessageList.AddRange(recipientsMessageListNameDay);
 
             return recipientsMessageList.All(r => r.Message.Length == 0)
                 ? new List<ReceipientMessage>()
                 : recipientsMessageList;
-        }
+        }        
 
-        private bool HasCloseBirthDay(PersonEmailDto person)
+        private bool HasCloseDay(DateTime dateTime)
         {
             _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob is searching for people with close birthday.");
             var timeNow = DateTime.Today;
 
-            var age = timeNow.Year - person.DayOfBirth.Year;
-            var numOfDays = (person.DayOfBirth - timeNow.AddYears(-age)).Days;
+            var age = timeNow.Year - dateTime.Year;
+            var numOfDays = (dateTime - timeNow.AddYears(-age)).Days;
 
             return numOfDays == 14 || numOfDays == 1 || numOfDays == 0;
-        }
-
-        private bool HasCloseNameDay(PersonEmailDto person)
-        {
-            _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob is searching for people with close nameday.");
-            var timeNow = DateTime.Today;
-
-            var ageNameDay = timeNow.Year - person.DayOfNameDay.Year;
-            var numOfDaysNameDay = (person.DayOfNameDay - timeNow.AddYears(-ageNameDay)).Days;
-
-            return numOfDaysNameDay == 14 || numOfDaysNameDay == 1 || numOfDaysNameDay == 0;
-        }
+        }        
     }
 }

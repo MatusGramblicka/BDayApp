@@ -31,7 +31,7 @@ namespace BDayClient.HttpRepository
 
 			return new AuthTokenDto
 			{
-				IsAuthSuccessful = false,
+				IsAuthSuccessful = null,
 				Token = string.Empty
 			};
 		}

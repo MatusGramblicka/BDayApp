@@ -51,7 +51,7 @@ namespace BDayClient.HttpInterceptor
 			{
 				var authToken = await _refreshTokenService.TryRefreshToken();
 
-				if (authToken.IsAuthSuccessful == false)
+				if (authToken.IsAuthSuccessful.HasValue && authToken.IsAuthSuccessful == false)
 				{
                     await _authenticationService.Logout();
                 }

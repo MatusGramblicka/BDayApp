@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components.Authorization;
+﻿using Entities.DataTransferObjects;
+using Microsoft.AspNetCore.Components.Authorization;
 using System;
 using System.Threading.Tasks;
 
@@ -16,7 +17,7 @@ namespace BDayClient.HttpRepository
 			_authService = authService;
 		}
 
-		public async Task<string> TryRefreshToken()
+		public async Task<AuthTokenDto> TryRefreshToken()
 		{
 			var authState = await _authStateProvider.GetAuthenticationStateAsync();
 			var user = authState.User;
@@ -28,7 +29,11 @@ namespace BDayClient.HttpRepository
 			if (diff.TotalMinutes <= 2)
 				return await _authService.RefreshToken();
 
-			return string.Empty;
+			return new AuthTokenDto
+			{
+				IsAuthSuccessful = false,
+				Token = string.Empty
+			};
 		}
 	}
 }

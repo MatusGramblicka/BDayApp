@@ -10,7 +10,7 @@ namespace BDayClient.HttpRepository
         Task<ResponseDto> RegisterUser(UserForRegistrationDto userForRegistrationDto);
         Task<AuthResponseDto> Login(UserForAuthenticationDto userForAuthentication);
         Task Logout();
-        Task<string> RefreshToken();
+        Task<AuthTokenDto> RefreshToken();
         Task<HttpStatusCode> ForgotPassword(ForgotPasswordDto forgotPasswordDto);
         Task<ResetPasswordResponseDto> ResetPassword(ResetPasswordDto resetPasswordDto);
         Task<HttpStatusCode> EmailConfirmation(string email, string token);

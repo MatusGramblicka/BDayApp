@@ -70,7 +70,7 @@ namespace BDayClient.HttpRepository
             _client.DefaultRequestHeaders.Authorization = null;
         }
 
-        public async Task<string> RefreshToken()
+        public async Task<AuthTokenDto> RefreshToken()
         {
             var token = await _localStorage.GetItemAsync<string>("authToken");
             var refreshToken = await _localStorage.GetItemAsync<string>("refreshToken");
@@ -91,7 +91,11 @@ namespace BDayClient.HttpRepository
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue
                 ("bearer", result.Token);
 
-            return result.Token;
+            return new AuthTokenDto 
+            {
+                IsAuthSuccessful = result.IsAuthSuccessful, 
+                Token = result.Token
+            };
         }
 
         public async Task<ResponseDto> RegisterUser(UserForRegistrationDto userForRegistrationDto)

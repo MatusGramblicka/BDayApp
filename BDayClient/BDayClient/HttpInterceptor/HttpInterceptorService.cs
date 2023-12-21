@@ -14,16 +14,19 @@ namespace BDayClient.HttpInterceptor
 		private readonly NavigationManager _navManager;
 		private readonly IToastService _toastService;
 		private readonly RefreshTokenService _refreshTokenService;
+        private readonly IAuthenticationService _authenticationService;
 
-		public HttpInterceptorService(HttpClientInterceptor interceptor,
+        public HttpInterceptorService(HttpClientInterceptor interceptor,
 			NavigationManager navManager, IToastService toastService,
-			RefreshTokenService refreshTokenService)
+			RefreshTokenService refreshTokenService, IAuthenticationService authenticationService)
 		{
 			_interceptor = interceptor;
 			_navManager = navManager;
 			_toastService = toastService;
 			_refreshTokenService = refreshTokenService;
-		}
+			_authenticationService = authenticationService;
+
+        }
 
 		public void RegisterEvent() => _interceptor.AfterSend += HandleResponse;
 		public void RegisterBeforeSendEvent()
@@ -46,7 +49,15 @@ namespace BDayClient.HttpInterceptor
 
 			if (!absolutePath.Contains("token") && !absolutePath.Contains("account"))
 			{
-				var token = await _refreshTokenService.TryRefreshToken();
+				var authToken = await _refreshTokenService.TryRefreshToken();
+
+				if (authToken.IsAuthSuccessful == false)
+				{
+                    await _authenticationService.Logout();
+                }
+
+				var token = authToken.Token;
+
 				if (!string.IsNullOrEmpty(token))
 				{
 					e.Request.Headers.Authorization =

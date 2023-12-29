@@ -15,18 +15,20 @@ namespace BDayClient.HttpInterceptor
 		private readonly IToastService _toastService;
 		private readonly RefreshTokenService _refreshTokenService;
         private readonly IAuthenticationService _authenticationService;
+		private readonly NavigationManager _navigationManager;
 
-        public HttpInterceptorService(HttpClientInterceptor interceptor,
+		public HttpInterceptorService(HttpClientInterceptor interceptor,
 			NavigationManager navManager, IToastService toastService,
-			RefreshTokenService refreshTokenService, IAuthenticationService authenticationService)
+			RefreshTokenService refreshTokenService, IAuthenticationService authenticationService,
+			NavigationManager navigationManager)
 		{
 			_interceptor = interceptor;
 			_navManager = navManager;
 			_toastService = toastService;
 			_refreshTokenService = refreshTokenService;
 			_authenticationService = authenticationService;
-
-        }
+			_navigationManager = navigationManager;
+		}
 
 		public void RegisterEvent() => _interceptor.AfterSend += HandleResponse;
 		public void RegisterBeforeSendEvent()
@@ -46,28 +48,28 @@ namespace BDayClient.HttpInterceptor
 			HttpClientInterceptorEventArgs e)
 		{
 			var absolutePath = e.Request.RequestUri.AbsolutePath;
-
-			if (!absolutePath.Contains("token") && !absolutePath.Contains("account"))
-			{    
-                var authToken = await _refreshTokenService.TryRefreshToken();
-				var token = authToken.Token;
-
-				if (!string.IsNullOrEmpty(token))
-				{
-					e.Request.Headers.Authorization =
-						new AuthenticationHeaderValue("bearer", token);
-				}
-			}
-
-            if (absolutePath.Contains("token"))
-            {
+			            
+            if (!absolutePath.Contains("token") && !absolutePath.Contains("account"))
+			{
                 var authToken = await _refreshTokenService.TryRefreshToken();
 
                 if (authToken.IsAuthSuccessful.HasValue && authToken.IsAuthSuccessful == false)
                 {
                     await _authenticationService.Logout();
-                }                
-            }
+                    _navigationManager.NavigateTo("/login");
+                    // or _navigationManager.NavigateTo("/logout");
+
+                    return;
+                }
+
+                var token = authToken.Token;
+
+                if (!string.IsNullOrEmpty(token))
+                {
+                    e.Request.Headers.Authorization =
+                        new AuthenticationHeaderValue("bearer", token);
+                }
+            }            
         }
 
 		private void HandleResponse(object sender, HttpClientInterceptorEventArgs e)

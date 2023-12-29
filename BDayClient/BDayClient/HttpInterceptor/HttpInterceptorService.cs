@@ -48,14 +48,8 @@ namespace BDayClient.HttpInterceptor
 			var absolutePath = e.Request.RequestUri.AbsolutePath;
 
 			if (!absolutePath.Contains("token") && !absolutePath.Contains("account"))
-			{
-				var authToken = await _refreshTokenService.TryRefreshToken();
-
-				if (authToken.IsAuthSuccessful.HasValue && authToken.IsAuthSuccessful == false)
-				{
-                    await _authenticationService.Logout();
-                }
-
+			{    
+                var authToken = await _refreshTokenService.TryRefreshToken();
 				var token = authToken.Token;
 
 				if (!string.IsNullOrEmpty(token))
@@ -64,7 +58,17 @@ namespace BDayClient.HttpInterceptor
 						new AuthenticationHeaderValue("bearer", token);
 				}
 			}
-		}
+
+            if (absolutePath.Contains("token"))
+            {
+                var authToken = await _refreshTokenService.TryRefreshToken();
+
+                if (authToken.IsAuthSuccessful.HasValue && authToken.IsAuthSuccessful == false)
+                {
+                    await _authenticationService.Logout();
+                }                
+            }
+        }
 
 		private void HandleResponse(object sender, HttpClientInterceptorEventArgs e)
 		{

@@ -36,7 +36,7 @@ namespace BDayClient.Pages
             if (!string.IsNullOrWhiteSpace(token))
             {
                 LoggedUserName = JwtParser.GetLoggedUserName(token);
-                Logger.LogInformation(LoggedUserName);
+                Logger.LogInformation($"LoggedUserName {LoggedUserName}");
             }
         }
 
@@ -44,7 +44,7 @@ namespace BDayClient.Pages
         {
             UsersList = await UsersHttpRepository.GetUsers();
 
-            Logger.LogInformation(JsonConvert.SerializeObject(UsersList));
+            Logger.LogInformation($"UsersList {JsonConvert.SerializeObject(UsersList)}");
         }
 
         private async Task UpdateUser(UserLite user)

@@ -1,6 +1,8 @@
 ﻿using BDayClient.HttpRepository;
+using BDayClient.Pages;
 using Blazored.Toast.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -13,22 +15,17 @@ namespace BDayClient.HttpInterceptor
 		private readonly HttpClientInterceptor _interceptor;
 		private readonly NavigationManager _navManager;
 		private readonly IToastService _toastService;
-		private readonly RefreshTokenService _refreshTokenService;
-        private readonly IAuthenticationService _authenticationService;
-		private readonly NavigationManager _navigationManager;
+		private readonly RefreshTokenService _refreshTokenService; 
 
-		public HttpInterceptorService(HttpClientInterceptor interceptor,
+        public HttpInterceptorService(HttpClientInterceptor interceptor,
 			NavigationManager navManager, IToastService toastService,
-			RefreshTokenService refreshTokenService, IAuthenticationService authenticationService,
-			NavigationManager navigationManager)
+			RefreshTokenService refreshTokenService)
 		{
 			_interceptor = interceptor;
 			_navManager = navManager;
 			_toastService = toastService;
-			_refreshTokenService = refreshTokenService;
-			_authenticationService = authenticationService;
-			_navigationManager = navigationManager;
-		}
+			_refreshTokenService = refreshTokenService;			
+        }
 
 		public void RegisterEvent() => _interceptor.AfterSend += HandleResponse;
 		public void RegisterBeforeSendEvent()
@@ -53,14 +50,13 @@ namespace BDayClient.HttpInterceptor
 			{
                 var authToken = await _refreshTokenService.TryRefreshToken();
 
+				// if refresh token auth is not successful logout must be performed in order to 
+				// prevent side and upper panel to shown authorized information, e.g. login user
                 if (authToken.IsAuthSuccessful.HasValue && authToken.IsAuthSuccessful == false)
-                {
-                    await _authenticationService.Logout();
-                    _navigationManager.NavigateTo("/login");
-                    // or _navigationManager.NavigateTo("/logout");
-
+                {					            
+                    _navManager.NavigateTo("/logout");
                     return;
-                }
+                }               
 
                 var token = authToken.Token;
 

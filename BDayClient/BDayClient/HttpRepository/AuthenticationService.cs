@@ -5,6 +5,7 @@ using Entities.DataTransferObjects.User;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -25,16 +26,18 @@ namespace BDayClient.HttpRepository
         private readonly AuthenticationStateProvider _authStateProvider;
         private readonly ILocalStorageService _localStorage;
         private readonly NavigationManager _navManager;
+        private readonly ILogger<AuthenticationService> _logger;
 
         public AuthenticationService(HttpClient client,
             AuthenticationStateProvider authStateProvider,
             ILocalStorageService localStorage,
-            NavigationManager navManager)
+            NavigationManager navManager, ILogger<AuthenticationService> logger)
         {
             _client = client;
             _authStateProvider = authStateProvider;
             _localStorage = localStorage;
             _navManager = navManager;
+            _logger = logger;
         }
 
         public async Task<AuthResponseDto> Login(UserForAuthenticationDto userForAuthentication)
@@ -91,8 +94,10 @@ namespace BDayClient.HttpRepository
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue
                 ("bearer", result.Token);
 
+            _logger.LogInformation($"result.IsAuthSuccessful {result.IsAuthSuccessful}");
             if (result.IsAuthSuccessful == false)
             {
+                _logger.LogInformation("NavigateTo /logout");
                 _navManager.NavigateTo("/logout");
             }
 

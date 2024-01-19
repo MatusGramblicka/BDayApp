@@ -91,6 +91,11 @@ namespace BDayClient.HttpRepository
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue
                 ("bearer", result.Token);
 
+            if (result.IsAuthSuccessful == false)
+            {
+                _navManager.NavigateTo("/logout");
+            }
+
             return result.Token;
         }
 

@@ -15,7 +15,9 @@ namespace BDayClient.HttpInterceptor
 		private readonly IToastService _toastService;
 		private readonly RefreshTokenService _refreshTokenService;
 
-		public HttpInterceptorService(HttpClientInterceptor interceptor,
+        private const string refreshTokenRoute = "token/refresh";
+
+        public HttpInterceptorService(HttpClientInterceptor interceptor,
 			NavigationManager navManager, IToastService toastService,
 			RefreshTokenService refreshTokenService)
 		{
@@ -57,7 +59,9 @@ namespace BDayClient.HttpInterceptor
 
 		private void HandleResponse(object sender, HttpClientInterceptorEventArgs e)
 		{
-			if (e.Response == null)
+            var requestUriAbsolutePath = e.Request.RequestUri.AbsolutePath;
+
+            if (e.Response == null && !requestUriAbsolutePath.Contains(refreshTokenRoute))
 			{
 				_navManager.NavigateTo("/error");
 				throw new HttpResponseException("Server not available.");
@@ -74,7 +78,14 @@ namespace BDayClient.HttpInterceptor
 						message = "Resource not found.";
 						break;
 					case HttpStatusCode.BadRequest:
-						message = "Invalid request. Please try again.";
+
+                        if (requestUriAbsolutePath.Contains(refreshTokenRoute))
+                        {
+                            _navManager.NavigateTo("/logout");
+                            break;
+                        }
+
+                        message = "Invalid request. Please try again.";
 						_toastService.ShowError(message);
 						break;
 					case HttpStatusCode.Unauthorized:

@@ -4,13 +4,13 @@ namespace Entities
 {
     public class GetUserProvider : IGetUserProvider
     {
-        public string UserId { get; }            
+        public string UserName { get; }            
 
         public GetUserProvider(IHttpContextAccessor accessor)
         {
             if (accessor.HttpContext?.User.Identity != null)
             {
-                UserId = accessor.HttpContext?.User.Identity.Name;
+                UserName = accessor.HttpContext?.User.Identity.Name;
             }
         }
     }

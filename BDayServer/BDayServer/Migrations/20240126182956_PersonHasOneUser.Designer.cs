@@ -3,14 +3,16 @@ using System;
 using Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace BDayServer.Migrations
 {
     [DbContext(typeof(RepositoryContext))]
-    partial class RepositoryContextModelSnapshot : ModelSnapshot
+    [Migration("20240126182956_PersonHasOneUser")]
+    partial class PersonHasOneUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -73,9 +75,7 @@ namespace BDayServer.Migrations
                     b.Property<string>("UserId")
                         .HasColumnType("varchar(95)");
 
-                    b.HasKey("Id");
-
-                    b.HasIndex("Id");
+                    b.HasKey("Id");                  
 
                     b.ToTable("Persons");
                 });

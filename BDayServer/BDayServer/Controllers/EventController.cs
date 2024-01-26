@@ -28,7 +28,7 @@ namespace BDayServer.Controllers
         {
             _repository = repository;
             _mapper = mapper;
-            _userId = userData.UserId;
+            _userId = userData.UserName;
         }
 
         [HttpGet(Name = "GetEvents")]

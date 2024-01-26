@@ -73,9 +73,7 @@ namespace BDayServer.Migrations
                     b.Property<string>("UserId")
                         .HasColumnType("varchar(95)");
 
-                    b.HasKey("Id");
-
-                    b.HasIndex("Id");
+                    b.HasKey("Id");                    
 
                     b.ToTable("Persons");
                 });

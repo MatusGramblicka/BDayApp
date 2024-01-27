@@ -23,7 +23,7 @@ namespace Entities
 
             //modelBuilder.Entity<Person>().HasQueryFilter(b => b.PersonCreator == _userName);
             modelBuilder.Entity<Person>().HasQueryFilter(b => b.User.UserName == _userName);
-            modelBuilder.Entity<Event>().HasQueryFilter(b => b.EventCreator == _userName);
+            modelBuilder.Entity<Event>().HasQueryFilter(b => b.User.UserName == _userName);
         }
 
         public DbSet<Person> Persons { get; set; }

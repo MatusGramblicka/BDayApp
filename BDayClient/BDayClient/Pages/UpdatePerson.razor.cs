@@ -14,7 +14,7 @@ namespace BDayClient.Pages
     public partial class UpdatePerson : IDisposable
     {
         private Person _person;
-        private PersonForUpdateDto PersonForUpdateDto { get; set; } 
+        private PersonForUpdateDto PersonForUpdateDto { get; set; } = new PersonForUpdateDto();
         private EditContext _editContext;
         private bool formInvalid = true;
 
@@ -31,7 +31,7 @@ namespace BDayClient.Pages
         protected override async Task OnInitializedAsync()
         {
             _person = await PersonRepo.GetPerson(Id);
-            Mapper.Map(_person, PersonForUpdateDto);
+            Mapper.Map(_person, PersonForUpdateDto); 
 
             _editContext = new EditContext(PersonForUpdateDto);
             _editContext.OnFieldChanged += HandleFieldChanged;

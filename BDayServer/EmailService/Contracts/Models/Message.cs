@@ -16,7 +16,7 @@ namespace EmailService.Contracts.Models
         {
             To = new List<MailboxAddress>();
 
-            To.AddRange(to.Select(x => new MailboxAddress(x)));
+            To.AddRange(to.Select(x => new MailboxAddress("Principal", x)));
             Subject = subject;
             Content = content;
             Attachments = attachments;

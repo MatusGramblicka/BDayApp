@@ -2,6 +2,6 @@
 {
     public interface IGetUserProvider
     {
-        string UserId { get; }
+        string UserName { get; }
     }
 }

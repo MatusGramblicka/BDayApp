@@ -3,14 +3,16 @@ using System;
 using Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace BDayServer.Migrations
 {
     [DbContext(typeof(RepositoryContext))]
-    partial class RepositoryContextModelSnapshot : ModelSnapshot
+    [Migration("20240126182956_PersonHasOneUser")]
+    partial class PersonHasOneUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -26,6 +28,9 @@ namespace BDayServer.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime");
 
+                    b.Property<string>("EventCreator")
+                        .HasColumnType("longtext");
+
                     b.Property<string>("ImageUrl")
                         .HasColumnType("longtext");
 
@@ -34,12 +39,7 @@ namespace BDayServer.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("varchar(30)");
 
-                    b.Property<string>("UserId")
-                        .HasColumnType("varchar(95)");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("Events");
                 });
@@ -75,9 +75,7 @@ namespace BDayServer.Migrations
                     b.Property<string>("UserId")
                         .HasColumnType("varchar(95)");
 
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
+                    b.HasKey("Id");                  
 
                     b.ToTable("Persons");
                 });
@@ -183,15 +181,15 @@ namespace BDayServer.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "220d7fc8-2d07-41c8-8f03-73723473a67e",
-                            ConcurrencyStamp = "54dcb994-11d5-4b35-9706-68859292e97f",
+                            Id = "2ed6e0f3-765c-45fe-af0f-92abb84c76a9",
+                            ConcurrencyStamp = "f91563c1-9130-4296-b7a9-b994fffe50ee",
                             Name = "Viewer",
                             NormalizedName = "VIEWER"
                         },
                         new
                         {
-                            Id = "fe227c39-87db-49f6-95f2-a8860fedb087",
-                            ConcurrencyStamp = "47e3f8cf-3dfe-42a8-bfc9-9ef521fd0c4d",
+                            Id = "2823fc45-1878-470a-90c8-9582ee96dec3",
+                            ConcurrencyStamp = "e0c9fc65-9412-42b0-8adb-f0765fff3a07",
                             Name = "Administrator",
                             NormalizedName = "ADMINISTRATOR"
                         });
@@ -297,15 +295,6 @@ namespace BDayServer.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens");
-                });
-
-            modelBuilder.Entity("Entities.Models.Event", b =>
-                {
-                    b.HasOne("Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Entities.Models.Person", b =>

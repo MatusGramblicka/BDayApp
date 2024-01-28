@@ -2,10 +2,12 @@
 using BDayServer.ActionFilters;
 using Contracts;
 using Entities;
+using Entities.DataTransferObjects;
 using Entities.DataTransferObjects.Person;
 using Entities.Models;
 using Entities.RequestFeatures;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System;
@@ -21,14 +23,18 @@ namespace BDayServer.Controllers
     {
         private readonly IRepositoryManager _repository;
         private readonly IMapper _mapper;
+        private readonly UserManager<User> _userManager;
 
-        private readonly string _userId;
+        private readonly string _userName;
 
-        public PersonsController(IRepositoryManager repository, IMapper mapper, IGetUserProvider userData)
+        public PersonsController(IRepositoryManager repository, IMapper mapper, 
+            IGetUserProvider userData, UserManager<User> userManager)
         {
             _repository = repository;
             _mapper = mapper;
-            _userId = userData.UserId;
+            _userManager = userManager;
+
+            _userName = userData.UserName;
         }
 
         [HttpGet(Name = "GetPersons")]
@@ -60,13 +66,24 @@ namespace BDayServer.Controllers
         [ServiceFilter(typeof(ValidationFilterAttribute))]
         public async Task<IActionResult> CreatePerson([FromBody] PersonForCreationDto person)
         {
-            if (_userId == null)
+            if (_userName == null)
             {
                 BadRequest("User is null");
             }
 
+            var user = await _userManager.FindByNameAsync(_userName);
+
+            if (user == null)
+            {
+                return Unauthorized(new AuthResponseDto
+                {
+                    ErrorMessage = "Invalid Request"
+                });
+            }
+
             var personEntity = _mapper.Map<Person>(person);
-            personEntity.PersonCreator = _userId;
+            //personEntity.PersonCreator = _userName;
+            personEntity.UserId = user.Id;
 
             _repository.Person.CreatePerson(personEntity);
             await _repository.SaveAsync();

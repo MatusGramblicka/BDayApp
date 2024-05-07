@@ -9,60 +9,79 @@ using Microsoft.AspNetCore.Components.Forms;
 using System;
 using System.Threading.Tasks;
 
-namespace BDayClient.Pages
+namespace BDayClient.Pages;
+
+public partial class UpdatePerson : IDisposable
 {
-    public partial class UpdatePerson : IDisposable
+    private Person _person;
+    private PersonForUpdateDto PersonForUpdateDto { get; set; } = new();
+    private EditContext _editContext;
+    private bool formInvalid = true;
+
+    [Inject] public IPersonHttpRepository PersonRepo { get; set; }
+
+    [Inject] public HttpInterceptorService Interceptor { get; set; }
+
+    [Inject] public IToastService ToastService { get; set; }
+
+    [Inject] public IMapper Mapper { get; set; }
+
+    [Parameter] public Guid Id { get; set; }
+
+    private bool _alreadyDisposed;
+
+    protected override async Task OnInitializedAsync()
     {
-        private Person _person;
-        private PersonForUpdateDto PersonForUpdateDto { get; set; } = new PersonForUpdateDto();
-        private EditContext _editContext;
-        private bool formInvalid = true;
+        _person = await PersonRepo.GetPerson(Id);
+        Mapper.Map(_person, PersonForUpdateDto); 
 
-        [Inject] public IPersonHttpRepository PersonRepo { get; set; }
+        _editContext = new EditContext(PersonForUpdateDto);
+        _editContext.OnFieldChanged += HandleFieldChanged;
+        Interceptor.RegisterEvent();
+    }
 
-        [Inject] public HttpInterceptorService Interceptor { get; set; }
+    private void HandleFieldChanged(object sender, FieldChangedEventArgs e)
+    {
+        formInvalid = !_editContext.Validate();
+        StateHasChanged();
+    }
 
-        [Inject] public IToastService ToastService { get; set; }
+    private async Task Update()
+    {
+        await PersonRepo.UpdatePerson(_person.Id, PersonForUpdateDto);
 
-        [Inject] public IMapper Mapper { get; set; }
+        ToastService.ShowSuccess($"Action successful. " +
+                                 $"Person \"{PersonForUpdateDto.Name}\" successfully updated.");
+    }
 
-        [Parameter] public Guid Id { get; set; }
+    private void AssignImageUrl(string imgUrl)
+    {
+        formInvalid = PersonForUpdateDto.ImageUrl == imgUrl ? true : false;
+        PersonForUpdateDto.ImageUrl = imgUrl;
+        StateHasChanged();
+    }
 
-        protected override async Task OnInitializedAsync()
-        {
-            _person = await PersonRepo.GetPerson(Id);
-            Mapper.Map(_person, PersonForUpdateDto); 
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
 
-            _editContext = new EditContext(PersonForUpdateDto);
-            _editContext.OnFieldChanged += HandleFieldChanged;
-            Interceptor.RegisterEvent();
-        }
+    private void Dispose(bool disposing)
+    {
+        if (_alreadyDisposed)
+            return;
 
-        private void HandleFieldChanged(object sender, FieldChangedEventArgs e)
-        {
-            formInvalid = !_editContext.Validate();
-            StateHasChanged();
-        }
-
-        private async Task Update()
-        {
-            await PersonRepo.UpdatePerson(_person.Id, PersonForUpdateDto);
-
-            ToastService.ShowSuccess($"Action successful. " +
-                                     $"Person \"{PersonForUpdateDto.Name}\" successfully updated.");
-        }
-
-        private void AssignImageUrl(string imgUrl)
-        {
-            formInvalid = PersonForUpdateDto.ImageUrl == imgUrl ? true : false;
-            PersonForUpdateDto.ImageUrl = imgUrl;
-            StateHasChanged();
-        }
-
-        public void Dispose()
+        if (disposing)
         {
             Interceptor.DisposeEvent();
             _editContext.OnFieldChanged -= HandleFieldChanged;
+            _alreadyDisposed = true;
         }
+    }
+
+    ~UpdatePerson()
+    {
+        Dispose(disposing: false);
     }
 }

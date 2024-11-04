@@ -1,8 +1,7 @@
-﻿namespace EmailService.Contracts.Models
+﻿namespace EmailService.Contracts.Models;
+
+public enum DayType
 {
-    public enum DayType
-    {
-        Birthday=1,
-        NameDay=2
-    }
+    Birthday=1,
+    NameDay=2
 }

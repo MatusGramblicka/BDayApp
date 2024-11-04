@@ -1,15 +1,12 @@
-﻿using System;
+﻿namespace Entities.DataTransferObjects.Person;
 
-namespace Entities.DataTransferObjects.Person
+public record PersonEmailDto
 {
-    public class PersonEmailDto
-    {
-        public Guid Id { get; set; }
-        public string Name { get; set; }
-        public string Surname { get; set; }
-        public DateTime DayOfBirth { get; set; }
-        public DateTime DayOfNameDay { get; set; }
-        public string ImageUrl { get; set; }
-        public string PersonCreator { get; set; }
-    }
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string Surname { get; init; } = string.Empty;
+    public DateTime DayOfBirth { get; init; }
+    public DateTime DayOfNameDay { get; init; }
+    public string ImageUrl { get; init; } = string.Empty;
+    public string PersonCreator { get; init; } = string.Empty;
 }

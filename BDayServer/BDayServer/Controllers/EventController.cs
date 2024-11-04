@@ -13,108 +13,108 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Entities.DataTransferObjects.Auth;
 
-namespace BDayServer.Controllers
+namespace BDayServer.Controllers;
+
+[Route("api/events")]
+[ApiController]
+[Authorize]
+public class EventController : Controller
 {
-    [Route("api/events")]
-    [ApiController]
-    [Authorize]
-    public class EventController : Controller
+    private readonly IRepositoryManager _repository;
+    private readonly IMapper _mapper;
+    private readonly UserManager<User> _userManager;
+
+    private readonly string _userName;
+
+    public EventController(IRepositoryManager repository, IMapper mapper, 
+        IGetUserProvider userData, UserManager<User> userManager)
     {
-        private readonly IRepositoryManager _repository;
-        private readonly IMapper _mapper;
-        private readonly UserManager<User> _userManager;
+        _repository = repository;
+        _mapper = mapper;
+        _userManager = userManager;
 
-        private readonly string _userName;
+        _userName = userData.UserName;
+    }
 
-        public EventController(IRepositoryManager repository, IMapper mapper, 
-            IGetUserProvider userData, UserManager<User> userManager)
+    [HttpGet(Name = "GetEvents")]
+    public async Task<IActionResult> GetEvents([FromQuery] EventParameters eventParameters)
+    {
+        var eventsFromDb = await _repository.Event.GetAllEventsAsync(eventParameters, trackChanges: false);
+
+        Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(eventsFromDb.MetaData));
+
+        var eventsDto = _mapper.Map<IEnumerable<EventDto>>(eventsFromDb);
+
+        return Ok(eventsDto);
+    }
+
+    [HttpGet("{id}", Name = "EventById")]
+    public async Task<IActionResult> GetEvent(Guid id)
+    {
+        var eventVar = await _repository.Event.GetEventAsync(id, trackChanges: false);
+        if (eventVar is null)
         {
-            _repository = repository;
-            _mapper = mapper;
-            _userManager = userManager;
-
-            _userName = userData.UserName;
+            return NotFound();
         }
 
-        [HttpGet(Name = "GetEvents")]
-        public async Task<IActionResult> GetEvents([FromQuery] EventParameters eventParameters)
+        var eventDto = _mapper.Map<EventDto>(eventVar);
+        return Ok(eventDto);
+    }
+
+    [HttpPost(Name = "CreateEvent")]
+    [ServiceFilter(typeof(ValidationFilterAttribute))]
+    public async Task<IActionResult> CreateEvent([FromBody] EventForCreationDto eventParam)
+    {
+        if (_userName is null)
         {
-            var eventsFromDb = await _repository.Event.GetAllEventsAsync(eventParameters, trackChanges: false);
-
-            Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(eventsFromDb.MetaData));
-
-            var eventsDto = _mapper.Map<IEnumerable<EventDto>>(eventsFromDb);
-
-            return Ok(eventsDto);
+            BadRequest("User is null");
         }
 
-        [HttpGet("{id}", Name = "EventById")]
-        public async Task<IActionResult> GetEvent(Guid id)
+        var user = await _userManager.FindByNameAsync(_userName);
+
+        if (user is null)
         {
-            var eventVar = await _repository.Event.GetEventAsync(id, trackChanges: false);
-            if (eventVar == null)
+            return Unauthorized(new AuthResponseDto
             {
-                return NotFound();
-            }
-
-            var eventDto = _mapper.Map<EventDto>(eventVar);
-            return Ok(eventDto);
+                ErrorMessage = "Invalid Request"
+            });
         }
 
-        [HttpPost(Name = "CreateEvent")]
-        [ServiceFilter(typeof(ValidationFilterAttribute))]
-        public async Task<IActionResult> CreateEvent([FromBody] EventForCreationDto eventParam)
-        {
-            if (_userName == null)
-            {
-                BadRequest("User is null");
-            }
+        var eventEntity = _mapper.Map<Event>(eventParam);
+        eventEntity.UserId = user.Id;
 
-            var user = await _userManager.FindByNameAsync(_userName);
+        _repository.Event.CreateEvent(eventEntity);
+        await _repository.SaveAsync();
 
-            if (user == null)
-            {
-                return Unauthorized(new AuthResponseDto
-                {
-                    ErrorMessage = "Invalid Request"
-                });
-            }
+        var eventToReturn = _mapper.Map<EventDto>(eventEntity);
 
-            var eventEntity = _mapper.Map<Event>(eventParam);
-            eventEntity.UserId = user.Id;
+        return CreatedAtRoute("EventById", new { id = eventToReturn.Id }, eventToReturn);
+    }
 
-            _repository.Event.CreateEvent(eventEntity);
-            await _repository.SaveAsync();
+    [HttpPut("{id}")]
+    [ServiceFilter(typeof(ValidationFilterAttribute))]
+    [ServiceFilter(typeof(ValidateEventExistsAttribute))]
+    public async Task<IActionResult> UpdateEvent(Guid id, [FromBody] EventForUpdateDto eventDto)
+    {
+        var eventEntity = HttpContext.Items["event"] as Event;
 
-            var eventToReturn = _mapper.Map<EventDto>(eventEntity);
+        _mapper.Map(eventDto, eventEntity);
+        await _repository.SaveAsync();
 
-            return CreatedAtRoute("EventById", new { id = eventToReturn.Id }, eventToReturn);
-        }
+        return NoContent();
+    }
 
-        [HttpPut("{id}")]
-        [ServiceFilter(typeof(ValidationFilterAttribute))]
-        [ServiceFilter(typeof(ValidateEventExistsAttribute))]
-        public async Task<IActionResult> UpdateEvent(Guid id, [FromBody] EventForUpdateDto eventDto)
-        {
-            var eventEntity = HttpContext.Items["event"] as Event;
+    [HttpDelete("{id}")]
+    [ServiceFilter(typeof(ValidateEventExistsAttribute))]
+    public async Task<IActionResult> DeleteEvent(Guid id)
+    {
+        var eventVar = HttpContext.Items["event"] as Event;
 
-            _mapper.Map(eventDto, eventEntity);
-            await _repository.SaveAsync();
+        _repository.Event.DeleteEvent(eventVar);
+        await _repository.SaveAsync();
 
-            return NoContent();
-        }
-
-        [HttpDelete("{id}")]
-        [ServiceFilter(typeof(ValidateEventExistsAttribute))]
-        public async Task<IActionResult> DeleteEvent(Guid id)
-        {
-            var eventVar = HttpContext.Items["event"] as Event;
-
-            _repository.Event.DeleteEvent(eventVar);
-            await _repository.SaveAsync();
-
-            return NoContent();
-        }
+        return NoContent();
     }
 }

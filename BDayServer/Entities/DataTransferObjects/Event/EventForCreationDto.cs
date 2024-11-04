@@ -1,6 +1,5 @@
-﻿namespace Entities.DataTransferObjects.Event
+﻿namespace Entities.DataTransferObjects.Event;
+
+public class EventForCreationDto : EventForManipulationDto
 {
-    public class EventForCreationDto : EventForManipulationDto
-    {
-    }
 }

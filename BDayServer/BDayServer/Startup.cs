@@ -1,175 +1,145 @@
-using AutoMapper;
-using BDayServer.ActionFilters;
 using BDayServer.Extensions;
 using BDayServer.HostedService;
 using BDayServer.Services;
-using EmailService;
 using Entities;
 using Entities.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using System;
-using System.IO;
 using System.Text;
-using EmailService.Contracts;
-using EmailService.Contracts.Models;
 
-namespace BDayServer
+namespace BDayServer;
+
+public class Startup
 {
-    public class Startup
+    public Startup(IConfiguration configuration)
     {
-        public Startup(IConfiguration configuration)
+        Configuration = configuration;
+    }
+
+    public IConfiguration Configuration { get; }
+
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.ConfigureCors();
+
+        services.ConfigureSqlContext(Configuration);
+
+        services.ConfigureRepositoryManager();
+
+        services.AddAutoMapper(typeof(Startup));
+
+        services.RegisterActionFilters();
+
+        services.AddIdentityServices();
+        
+        var jwtSettings = Configuration.GetSection("JWTSettings");
+        services.AddAuthentication(opt =>
         {
-            Configuration = configuration;
-        }
-
-        public IConfiguration Configuration { get; }
-
-        public void ConfigureServices(IServiceCollection services)
+            opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        }).AddJwtBearer(options =>
         {
-            services.ConfigureCors();
-            services.ConfigureSqlContext(Configuration);
-            services.ConfigureRepositoryManager();
-            services.AddAutoMapper(typeof(Startup));
-            services.AddScoped<ValidationFilterAttribute>();
-            services.AddScoped<ValidatePersonExistsAttribute>();
-
-            services.AddIdentity<User, IdentityRole>(opt =>
-                {
-                    opt.Lockout.AllowedForNewUsers = true;
-                    opt.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(2);
-                    opt.Lockout.MaxFailedAccessAttempts = 3;
-                })
-                .AddEntityFrameworkStores<RepositoryContext>()
-                .AddDefaultTokenProviders();
-            services.Configure<DataProtectionTokenProviderOptions>(opt =>
-                opt.TokenLifespan = TimeSpan.FromHours(2));
-            ;
-
-            var jwtSettings = Configuration.GetSection("JWTSettings");
-            services.AddAuthentication(opt =>
+            options.TokenValidationParameters = new TokenValidationParameters
             {
-                opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(options =>
-            {
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
 
-                    ValidIssuer = jwtSettings["validIssuer"],
-                    ValidAudience = jwtSettings["validAudience"],
-                    IssuerSigningKey = new SymmetricSecurityKey
-                        (Encoding.UTF8.GetBytes(jwtSettings["securityKey"]))
-                };
+                ValidIssuer = jwtSettings["validIssuer"],
+                ValidAudience = jwtSettings["validAudience"],
+                IssuerSigningKey = new SymmetricSecurityKey
+                    (Encoding.UTF8.GetBytes(jwtSettings["securityKey"] ?? throw new InvalidOperationException()))
+            };
+        });
+
+        services.RegisterAuthorizationServices(Configuration);
+        
+        services.RegisterEmailServices(Configuration);
+
+        services.AddControllers();
+
+        services.AddSwaggerGen(option =>
+        {
+            option.SwaggerDoc("v1", new OpenApiInfo {Title = "BDayServer", Version = "v1"});
+            option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                In = ParameterLocation.Header,
+                Description = "Please enter a valid token",
+                Name = "Authorization",
+                Type = SecuritySchemeType.Http,
+                BearerFormat = "JWT",
+                Scheme = "Bearer"
             });
-
-            services.Configure<JwtConfiguration>(Configuration.GetSection("JWTSettings"));
-            services.AddScoped<IAuthenticationService, AuthenticationService>();
-
-            services.AddScoped<IGetUserProvider, GetUserProvider>();
-
-            var emailConfig = Configuration.GetSection("EmailConfiguration")
-                .Get<EmailConfiguration>();
-            services.AddSingleton(emailConfig);
-            services.AddScoped<IEmailSender, EmailSender>();
-            services.AddScoped<IEmailPreparator, EmailPreparator>();
-
-            services.AddControllers();
-
-            services.AddSwaggerGen(option =>
+            option.AddSecurityRequirement(new OpenApiSecurityRequirement
             {
-                option.SwaggerDoc("v1", new OpenApiInfo {Title = "BDayServer", Version = "v1"});
-                option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
-                    In = ParameterLocation.Header,
-                    Description = "Please enter a valid token",
-                    Name = "Authorization",
-                    Type = SecuritySchemeType.Http,
-                    BearerFormat = "JWT",
-                    Scheme = "Bearer"
-                });
-                option.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
+                    new OpenApiSecurityScheme
                     {
-                        new OpenApiSecurityScheme
+                        Reference = new OpenApiReference
                         {
-                            Reference = new OpenApiReference
-                            {
-                                Type=ReferenceType.SecurityScheme,
-                                Id="Bearer"
-                            }
-                        },
-                        new string[]{}
-                    }
-                });
+                            Type=ReferenceType.SecurityScheme,
+                            Id="Bearer"
+                        }
+                    },
+                    new string[]{}
+                }
             });
+        });
 
-            services.AddRazorPages();
+        services.AddRazorPages();
 
-            services.AddCronJob<ScheduleJob>(c =>
-            {
-                c.TimeZoneInfo = TimeZoneInfo.Utc;
-                c.CronExpression = @"0 12 * * *";               
-            });
-        }
-
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
+        services.AddCronJob<ScheduleJob>(c =>
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-                app.UseWebAssemblyDebugging();
-                app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "BDayServer v1"));
-            }
-            else
-            {
-                app.UseHsts();
-            }
+            c.TimeZoneInfo = TimeZoneInfo.Utc;
+            c.CronExpression = @"0 12 * * *";               
+        });
+    }
 
-            app.UseHttpsRedirection();
-            app.UseCors("CorsPolicy");
-
-            app.UseBlazorFrameworkFiles();
-            app.UseStaticFiles();
-            app.UseStaticFiles(new StaticFileOptions
-            {
-                FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(),
-                    @"StaticFiles")),
-                RequestPath = new PathString("/StaticFiles")
-            });
-
-            app.UseForwardedHeaders(new ForwardedHeadersOptions
-            {
-                ForwardedHeaders = ForwardedHeaders.All
-            });
-
-            app.UseRouting();
-
-            app.UseAuthentication();
-            app.UseAuthorization();
-
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-                endpoints.MapRazorPages();
-                endpoints.MapFallbackToFile("index.html");
-            });
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
+    {
+        if (env.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+            app.UseWebAssemblyDebugging();
+            app.UseSwagger();
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "BDayServer v1"));
         }
+        else
+        {
+            app.UseHsts();
+        }
+
+        app.UseHttpsRedirection();
+        app.UseCors("CorsPolicy");
+
+        app.UseBlazorFrameworkFiles();
+        app.UseStaticFiles();
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(),
+                @"StaticFiles")),
+            RequestPath = new PathString("/StaticFiles")
+        });
+
+        app.UseForwardedHeaders(new ForwardedHeadersOptions
+        {
+            ForwardedHeaders = ForwardedHeaders.All
+        });
+
+        app.UseRouting();
+
+        app.UseAuthentication();
+        app.UseAuthorization();
+
+        app.UseEndpoints(endpoints =>
+        {
+            endpoints.MapControllers();
+            endpoints.MapRazorPages();
+            endpoints.MapFallbackToFile("index.html");
+        });
     }
 }

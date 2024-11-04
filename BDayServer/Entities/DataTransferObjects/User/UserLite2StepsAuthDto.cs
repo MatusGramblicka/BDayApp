@@ -1,8 +1,8 @@
-﻿namespace Entities.DataTransferObjects.User
+﻿namespace Entities.DataTransferObjects.User;
+
+public record UserLite2StepsAuthDto
 {
-    public class UserLite2StepsAuthDto
-    {
-        public string Email { get; set; }
-        public bool TwoFactorEnabled { get; set; }
-    }
+    public string Email { get; init; } = string.Empty;
+
+    public bool TwoFactorEnabled { get; init; }
 }

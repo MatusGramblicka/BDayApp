@@ -1,116 +1,87 @@
 ﻿using EmailService.Contracts;
 using EmailService.Contracts.Models;
+using EmailService.Extensions;
 using MailKit.Net.Smtp;
 using Microsoft.Extensions.Logging;
 using MimeKit;
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace EmailService
+namespace EmailService;
+
+public class EmailSender : IEmailSender
 {
-    public class EmailSender : IEmailSender
+    private const string AuthenticationMechanisms = "XOAUTH2";
+
+    private readonly ILogger<EmailSender> _logger;
+
+    private readonly EmailConfiguration _emailConfig;
+
+    public EmailSender(EmailConfiguration emailConfig, ILogger<EmailSender> logger)
     {
-        private const string AuthenticationMechanisms = "XOAUTH2";
+        _emailConfig = emailConfig;
+        _logger = logger;
+    }
 
-        private readonly ILogger<EmailSender> _logger;
+    public void SendEmail(Message message)
+    {
+        ArgumentNullException.ThrowIfNull(message);
 
-        private readonly EmailConfiguration _emailConfig;
+        var emailMessage = message.CreateEmailMessage(_emailConfig.From);
 
-        public EmailSender(EmailConfiguration emailConfig, ILogger<EmailSender> logger)
+        Send(emailMessage);
+    }
+
+    public async Task SendEmailAsync(Message message)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+
+        var mailMessage = message.CreateEmailMessage(_emailConfig.From);
+
+        await SendAsync(mailMessage);
+    }
+
+    private void Send(MimeMessage mailMessage)
+    {
+        using var client = new SmtpClient();
+        try
         {
-            _emailConfig = emailConfig;
-            _logger = logger;
+            client.Connect(_emailConfig.SmtpServer, _emailConfig.Port, true);
+            client.AuthenticationMechanisms.Remove(AuthenticationMechanisms);
+            client.Authenticate(_emailConfig.UserName, _emailConfig.Password);
+
+            client.Send(mailMessage);
         }
-
-        public void SendEmail(Message message)
+        catch (Exception ex)
         {
-            var emailMessage = CreateEmailMessage(message);
-
-            Send(emailMessage);
+            _logger.LogError($"Sending EmailConfiguration Exception: {ex}");
+            throw;
         }
-
-        public async Task SendEmailAsync(Message message)
+        finally
         {
-            var mailMessage = CreateEmailMessage(message);
-
-            await SendAsync(mailMessage);
+            client.Disconnect(true);
+            client.Dispose();
         }
+    }
 
-        private MimeMessage CreateEmailMessage(Message message)
+    private async Task SendAsync(MimeMessage mailMessage)
+    {
+        using var client = new SmtpClient();
+        try
         {
-            var emailMessage = new MimeMessage();
-            emailMessage.From.Add(new MailboxAddress("Principal", _emailConfig.From));
-            emailMessage.To.AddRange(message.To);
-            emailMessage.Subject = message.Subject;
+            await client.ConnectAsync(_emailConfig.SmtpServer, _emailConfig.Port, true);
+            client.AuthenticationMechanisms.Remove(AuthenticationMechanisms);
+            await client.AuthenticateAsync(_emailConfig.UserName, _emailConfig.Password);
 
-            var bodyBuilder = new BodyBuilder {TextBody = message.Content};
-
-            if (message.Attachments != null && message.Attachments.Any())
-            {
-                foreach (var attachment in message.Attachments)
-                {
-                    byte[] fileBytes;
-                    using (var ms = new MemoryStream())
-                    {
-                        attachment.CopyTo(ms);
-                        fileBytes = ms.ToArray();
-                    }
-
-                    bodyBuilder.Attachments.Add(attachment.FileName, fileBytes,
-                        ContentType.Parse(attachment.ContentType));
-                }
-            }
-
-            emailMessage.Body = bodyBuilder.ToMessageBody();
-            return emailMessage;
+            await client.SendAsync(mailMessage);
         }
-
-        private void Send(MimeMessage mailMessage)
+        catch (Exception ex)
         {
-            using var client = new SmtpClient();
-            try
-            {
-                client.Connect(_emailConfig.SmtpServer, _emailConfig.Port, true);
-                client.AuthenticationMechanisms.Remove(AuthenticationMechanisms);
-                client.Authenticate(_emailConfig.UserName, _emailConfig.Password);
-
-                client.Send(mailMessage);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Sending EmailConfiguration Exception: {ex}");
-                throw;
-            }
-            finally
-            {
-                client.Disconnect(true);
-                client.Dispose();
-            }
+            _logger.LogError($"Sending EmailConfiguration Exception: {ex}");
+            throw;
         }
-
-        private async Task SendAsync(MimeMessage mailMessage)
+        finally
         {
-            using var client = new SmtpClient();
-            try
-            {
-                await client.ConnectAsync(_emailConfig.SmtpServer, _emailConfig.Port, true);
-                client.AuthenticationMechanisms.Remove(AuthenticationMechanisms);
-                await client.AuthenticateAsync(_emailConfig.UserName, _emailConfig.Password);
-
-                await client.SendAsync(mailMessage);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Sending EmailConfiguration Exception: {ex}");
-                throw;
-            }
-            finally
-            {
-                await client.DisconnectAsync(true);
-                client.Dispose();
-            }
+            await client.DisconnectAsync(true);
+            client.Dispose();
         }
     }
 }

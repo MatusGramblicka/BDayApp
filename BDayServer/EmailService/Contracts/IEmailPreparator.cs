@@ -1,10 +1,8 @@
 ﻿using EmailService.Contracts.Models;
-using System.Collections.Generic;
 
-namespace EmailService.Contracts
+namespace EmailService.Contracts;
+
+public interface IEmailPreparator
 {
-    public interface IEmailPreparator
-    {
-        List<Message> PrepareMessage();
-    }
+    List<Message>? PrepareMessage();
 }

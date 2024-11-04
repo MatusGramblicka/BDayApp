@@ -1,10 +1,8 @@
-﻿using System;
+﻿namespace BDayServer.HostedService;
 
-namespace BDayServer.HostedService
+public interface IScheduleConfig<T>
 {
-    public interface IScheduleConfig<T>
-    {
-        string CronExpression { get; set; }
-        TimeZoneInfo TimeZoneInfo { get; set; }
-    }
+    string CronExpression { get; set; }
+
+    TimeZoneInfo TimeZoneInfo { get; set; }
 }

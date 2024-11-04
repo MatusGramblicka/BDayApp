@@ -3,6 +3,8 @@ using Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using Entities.DataTransferObjects;
+using Entities.DataTransferObjects.Auth;
 
 namespace BDayServer.Controllers;
 
@@ -29,7 +31,7 @@ public class SwaggerLoginController : ControllerBase
                 return BadRequest("Username and/or Password not specified");
 
             var managedUser = await _userManager.FindByEmailAsync(swaggerloginDto.Email);
-            if (managedUser == null)
+            if (managedUser is null)
                 return BadRequest("Bad credentials");
 
             var isPasswordValid = await _userManager.CheckPasswordAsync(managedUser, swaggerloginDto.Password);

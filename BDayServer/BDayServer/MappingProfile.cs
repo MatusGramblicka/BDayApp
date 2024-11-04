@@ -5,23 +5,22 @@ using Entities.DataTransferObjects.Person;
 using Entities.DataTransferObjects.User;
 using Entities.Models;
 
-namespace BDayServer
+namespace BDayServer;
+
+public class MappingProfile : Profile
 {
-    public class MappingProfile : Profile
+    public MappingProfile()
     {
-        public MappingProfile()
-        {
-            CreateMap<Person, PersonDto>();    
-            CreateMap<PersonForCreationDto, Person>();
-            CreateMap<PersonForUpdateDto, Person>().ReverseMap();
-            CreateMap<Person, PersonEmailDto>();
+        CreateMap<Person, PersonDto>();    
+        CreateMap<PersonForCreationDto, Person>();
+        CreateMap<PersonForUpdateDto, Person>().ReverseMap();
+        CreateMap<Person, PersonEmailDto>();
 
-            CreateMap<User, UserLite>();
+        CreateMap<User, UserLite>();
 
-            CreateMap<Event, EventDto>();
-            CreateMap<EventForCreationDto, Event>();
-            CreateMap<EventForUpdateDto, Event>().ReverseMap();
-            CreateMap<Event, EventEmailDto>();
-        }
+        CreateMap<Event, EventDto>();
+        CreateMap<EventForCreationDto, Event>();
+        CreateMap<EventForUpdateDto, Event>().ReverseMap();
+        CreateMap<Event, EventEmailDto>();
     }
 }

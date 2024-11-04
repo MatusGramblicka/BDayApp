@@ -1,7 +1,6 @@
-﻿namespace Entities
+﻿namespace Entities;
+
+public interface IGetUserProvider
 {
-    public interface IGetUserProvider
-    {
-        string UserName { get; }
-    }
+    string UserName { get; }
 }

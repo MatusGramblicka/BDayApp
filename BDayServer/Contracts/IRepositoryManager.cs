@@ -1,11 +1,10 @@
-﻿using System.Threading.Tasks;
+﻿namespace Contracts;
 
-namespace Contracts
+public interface IRepositoryManager
 {
-    public interface IRepositoryManager
-    {
-        IPersonRepository Person { get; }
-        IEventRepository Event { get; }
-        Task SaveAsync();
-    }
+    IPersonRepository Person { get; }
+
+    IEventRepository Event { get; }
+
+    Task SaveAsync();
 }

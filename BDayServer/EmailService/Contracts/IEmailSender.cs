@@ -1,11 +1,9 @@
-﻿using System.Threading.Tasks;
-using EmailService.Contracts.Models;
+﻿using EmailService.Contracts.Models;
 
-namespace EmailService.Contracts
+namespace EmailService.Contracts;
+
+public interface IEmailSender
 {
-    public interface IEmailSender
-    {
-        void SendEmail(Message message);
-        Task SendEmailAsync(Message message);
-    }
+    void SendEmail(Message message);
+    Task SendEmailAsync(Message message);
 }

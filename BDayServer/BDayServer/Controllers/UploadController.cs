@@ -1,49 +1,44 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System;
-using System.IO;
 using System.Net.Http.Headers;
 
-namespace BDayServer.Controllers
+namespace BDayServer.Controllers;
+
+[Route("api/upload")]
+[ApiController]
+public class UploadController : ControllerBase
 {
-    [Route("api/upload")]
-    [ApiController]
-    public class UploadController : ControllerBase
+    [HttpPost]
+    public IActionResult Upload()
     {
-        [HttpPost]
-        public IActionResult Upload()
+        try
         {
-            try
+            var file = Request.Form.Files[0];
+
+            var folderName = Path.Combine("StaticFiles", "Images");
+
+            var pathToSave = Path.Combine(Directory.GetCurrentDirectory(), folderName);
+
+            if (file.Length > 0)
             {
-                var file = Request.Form.Files[0];
+                var fileName = ContentDispositionHeaderValue
+                    .Parse(file.ContentDisposition).FileName?.Trim('"');
 
-                var folderName = Path.Combine("StaticFiles", "Images");
+                var fullPath = Path.Combine(pathToSave, fileName);
+                var dbPath = Path.Combine(folderName, fileName);
 
-                var pathToSave = Path.Combine(Directory.GetCurrentDirectory(), folderName);
-
-                if (file.Length > 0)
+                using (var stream = new FileStream(fullPath, FileMode.Create))
                 {
-                    var fileName = ContentDispositionHeaderValue
-                        .Parse(file.ContentDisposition).FileName.Trim('"');
-
-                    var fullPath = Path.Combine(pathToSave, fileName);
-                    var dbPath = Path.Combine(folderName, fileName);
-
-                    using (var stream = new FileStream(fullPath, FileMode.Create))
-                    {
-                        file.CopyTo(stream);
-                    }
-
-                    return Ok(dbPath);
+                    file.CopyTo(stream);
                 }
-                else
-                {
-                    return BadRequest();
-                }
+
+                return Ok(dbPath);
             }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex}");
-            }
+
+            return BadRequest();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex}");
         }
     }
 }

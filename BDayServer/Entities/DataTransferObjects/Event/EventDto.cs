@@ -1,12 +1,9 @@
-﻿using System;
+﻿namespace Entities.DataTransferObjects.Event;
 
-namespace Entities.DataTransferObjects.Event
+public record EventDto
 {
-    public class EventDto
-    {
-        public Guid Id { get; set; }
-        public string Name { get; set; }       
-        public DateTime Date { get; set; }
-        public string ImageUrl { get; set; }
-    }
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public DateTime Date { get; init; }
+    public string ImageUrl { get; init; } = string.Empty;
 }

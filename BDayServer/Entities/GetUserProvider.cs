@@ -1,17 +1,16 @@
 ﻿using Microsoft.AspNetCore.Http;
 
-namespace Entities
-{
-    public class GetUserProvider : IGetUserProvider
-    {
-        public string UserName { get; }            
+namespace Entities;
 
-        public GetUserProvider(IHttpContextAccessor accessor)
+public class GetUserProvider : IGetUserProvider
+{
+    public string UserName { get; }            
+
+    public GetUserProvider(IHttpContextAccessor accessor)
+    {
+        if (accessor.HttpContext?.User.Identity is not null)
         {
-            if (accessor.HttpContext?.User.Identity != null)
-            {
-                UserName = accessor.HttpContext?.User.Identity.Name;
-            }
+            UserName = accessor.HttpContext?.User.Identity.Name;
         }
     }
 }

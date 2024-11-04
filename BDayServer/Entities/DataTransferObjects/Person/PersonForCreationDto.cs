@@ -1,6 +1,3 @@
-﻿namespace Entities.DataTransferObjects.Person
-{
-    public class PersonForCreationDto : PersonForManipulationDto
-    {
-    }
-}
+﻿namespace Entities.DataTransferObjects.Person;
+
+public record PersonForCreationDto : PersonForManipulationDto;

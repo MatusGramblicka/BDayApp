@@ -1,133 +1,119 @@
-﻿using AutoMapper;
-using Entities;
+﻿using Entities;
 using Entities.DataTransferObjects;
+using Entities.DataTransferObjects.Auth;
 using Entities.DataTransferObjects.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace BDayServer.Controllers
+namespace BDayServer.Controllers;
+
+[Route("api/users")]
+[ApiController]
+[Authorize(Roles = "Administrator")]
+public class UsersController : ControllerBase
 {
-    [Route("api/users")]
-    [ApiController]
-    [Authorize(Roles = "Administrator")]
-    public class UsersController : ControllerBase
+    private readonly UserManager<User> _userManager;
+
+    public UsersController(UserManager<User> userManager)
     {
-        private readonly UserManager<User> _userManager;       
+        _userManager = userManager;
+    }
 
-        public UsersController(UserManager<User> userManager)
+    [HttpGet("Users")]
+    public IActionResult GetUsers()
+    {
+        var allUsersLite = _userManager.Users.Select(u => new UserLite
         {
-            _userManager = userManager;          
-        }
+            Email = u.Email,
+            IsAdmin = u.IsAdmin,
+            TwoFactorEnabled = u.TwoFactorEnabled
+        });
+        //var usersAdministrator = await _userManager.GetUsersInRoleAsync("Administrator");                       
 
-        [HttpGet("Users")]
-        public IActionResult GetUsers()
-        {
-            var allUsersLite = _userManager.Users.Select(u => new UserLite
+        return Ok(allUsersLite);
+    }
+
+    [HttpPost("UpdateUser")]
+    public async Task<IActionResult> UpdateUser([FromBody] UserLite userForUpdate)
+    {
+        var user = await _userManager.FindByNameAsync(userForUpdate.Email);
+
+        if (user is null)
+            return Unauthorized(new AuthResponseDto
             {
-                Email = u.Email,
-                IsAdmin = u.IsAdmin,
-                TwoFactorEnabled = u.TwoFactorEnabled
+                ErrorMessage = "Invalid Request"
             });
-            //var usersAdministrator = await _userManager.GetUsersInRoleAsync("Administrator");                       
 
-            return Ok(allUsersLite);
-        }
+        await _userManager.AddToRoleAsync(user, "Administrator");
+        user.IsAdmin = true;
+        await _userManager.UpdateAsync(user);
 
-        [HttpPost("UpdateUser")]
-        public async Task<IActionResult> UpdateUser([FromBody] UserLite userForUpdate)
+        return Ok();
+    }
+
+    [HttpPost("RemoveAdminRole")]
+    public async Task<IActionResult> RemoveAdminRole([FromBody] UserLite userForUpdate)
+    {
+        var user = await _userManager.FindByNameAsync(userForUpdate.Email);
+
+        if (user is null)
+            return Unauthorized(new AuthResponseDto
+            {
+                ErrorMessage = "Invalid Request"
+            });
+
+        await _userManager.RemoveFromRoleAsync(user, "Administrator");
+        user.IsAdmin = false;
+        await _userManager.UpdateAsync(user);
+
+        return Ok();
+    }
+
+    [HttpPost("DeleteUser")]
+    public async Task<IActionResult> DeleteUser([FromBody] UserLite userForDeletion)
+    {
+        var user = await _userManager.FindByNameAsync(userForDeletion.Email);
+
+        if (user is null)
+            return Unauthorized(new AuthResponseDto
+            {
+                ErrorMessage = "Invalid Request"
+            });
+
+        var logins = await _userManager.GetLoginsAsync(user);
+
+        var rolesForUser = await _userManager.GetRolesAsync(user);
+
+        foreach (var login in logins)
         {
-            var user = await _userManager.FindByNameAsync(userForUpdate.Email);
-
-            if (user == null)
-            {
-                return Unauthorized(new AuthResponseDto
-                {
-                    ErrorMessage = "Invalid Request"
-                });
-            }
-
-            await _userManager.AddToRoleAsync(user, "Administrator");
-            user.IsAdmin = true;
-            await _userManager.UpdateAsync(user);
-
-            return Ok();
+            await _userManager.RemoveLoginAsync(user, login.LoginProvider, login.ProviderKey);
         }
 
-        [HttpPost("RemoveAdminRole")]
-        public async Task<IActionResult> RemoveAdminRole([FromBody] UserLite userForUpdate)
+        if (rolesForUser.Count > 0)
         {
-            var user = await _userManager.FindByNameAsync(userForUpdate.Email);
-
-            if (user == null)
-            {
-                return Unauthorized(new AuthResponseDto
-                {
-                    ErrorMessage = "Invalid Request"
-                });
-            }
-
-            await _userManager.RemoveFromRoleAsync(user, "Administrator");
-            user.IsAdmin = false;
-            await _userManager.UpdateAsync(user);
-
-            return Ok();
+            foreach (var item in rolesForUser)
+                await _userManager.RemoveFromRoleAsync(user, item);
         }
 
-        [HttpPost("DeleteUser")]
-        public async Task<IActionResult> DeleteUser([FromBody] UserLite userForDeletion)
-        {
-            var user = await _userManager.FindByNameAsync(userForDeletion.Email);
+        await _userManager.DeleteAsync(user);
 
-            if (user == null)
+        return Ok();
+    }
+
+    [HttpPost("SetTwoFactorAuthorization")]
+    public async Task<IActionResult> SetTwoFactorAuthorization([FromBody] UserLite2StepsAuthDto userForUpdate)
+    {
+        var user = await _userManager.FindByNameAsync(userForUpdate.Email);
+
+        if (user is null)
+            return Unauthorized(new AuthResponseDto
             {
-                return Unauthorized(new AuthResponseDto
-                {
-                    ErrorMessage = "Invalid Request"
-                });
-            }
+                ErrorMessage = "Invalid Request"
+            });
 
-            var logins = await _userManager.GetLoginsAsync(user);
+        await _userManager.SetTwoFactorEnabledAsync(user, userForUpdate.TwoFactorEnabled);
 
-            var rolesForUser = await _userManager.GetRolesAsync(user);
-
-            foreach (var login in logins)
-            {
-                await _userManager.RemoveLoginAsync(user, login.LoginProvider, login.ProviderKey);
-            }
-
-            if (rolesForUser.Count > 0)
-            {
-                foreach (var item in rolesForUser)
-                {
-                    await _userManager.RemoveFromRoleAsync(user, item);
-                }
-            }
-
-            //Delete User
-            await _userManager.DeleteAsync(user);
-
-            return Ok();
-        }
-
-        [HttpPost("SetTwoFactorAuthorization")]
-        public async Task<IActionResult> SetTwoFactorAuthorization([FromBody] UserLite2StepsAuthDto userForUpdate)
-        {
-            var user = await _userManager.FindByNameAsync(userForUpdate.Email);
-
-            if (user == null)
-            {
-                return Unauthorized(new AuthResponseDto
-                {
-                    ErrorMessage = "Invalid Request"
-                });
-            }
-
-            await _userManager.SetTwoFactorEnabledAsync(user, userForUpdate.TwoFactorEnabled);
-
-            return Ok();
-        }
+        return Ok();
     }
 }

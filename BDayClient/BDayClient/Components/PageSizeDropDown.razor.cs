@@ -1,20 +1,20 @@
 ﻿using Microsoft.AspNetCore.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace BDayClient.Components
+namespace BDayClient.Components;
+
+public partial class PageSizeDropDown
 {
-	public partial class PageSizeDropDown
-	{
-		[Parameter]
-		public EventCallback<int> SelectedPageSize { get; set; }
+    [Parameter]
+    public EventCallback<int> SelectedPageSize { get; set; }
 
-		private async Task OnPageSizeChange(ChangeEventArgs eventArgs)
-		{
-			await SelectedPageSize.InvokeAsync(Int32.Parse(eventArgs.Value.ToString()));
-		}
-	}
+    private async Task OnPageSizeChange(ChangeEventArgs eventArgs)
+    {
+        if (eventArgs is null)
+            throw new ArgumentNullException(nameof(eventArgs));
+
+        if (eventArgs.Value is null)
+            throw new ArgumentNullException(nameof(eventArgs.Value));
+
+        await SelectedPageSize.InvokeAsync(int.Parse(eventArgs.Value.ToString()));
+    }
 }
-

@@ -1,14 +1,14 @@
 ﻿using AutoMapper;
-using Entities.DataTransferObjects.Person;
+using BDayClient.Pocos;
 using Entities.Models;
 
-namespace BDayClient
+namespace BDayClient;
+
+public class MappingProfile : Profile
 {
-    public class MappingProfile : Profile
+    public MappingProfile()
     {
-        public MappingProfile()
-        {
-            CreateMap<Person, PersonForUpdateDto>();
-        }
+        //CreateMap<Person, PersonForUpdateDto>();
+        CreateMap<Person, PersonForUpdate>();
     }
 }

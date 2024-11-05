@@ -1,19 +1,17 @@
-﻿using Entities.DataTransferObjects;
-using Entities.DataTransferObjects.User;
+﻿using BDayClient.Pocos;
+using Entities.DataTransferObjects.Auth;
 using System.Net;
-using System.Threading.Tasks;
 
-namespace BDayClient.HttpRepository
+namespace BDayClient.HttpRepository;
+
+public interface IAuthenticationService
 {
-    public interface IAuthenticationService
-    {
-        Task<ResponseDto> RegisterUser(UserForRegistrationDto userForRegistrationDto);
-        Task<AuthResponseDto> Login(UserForAuthenticationDto userForAuthentication);
-        Task Logout();
-        Task<string> RefreshToken();
-        Task<HttpStatusCode> ForgotPassword(ForgotPasswordDto forgotPasswordDto);
-        Task<ResetPasswordResponseDto> ResetPassword(ResetPasswordDto resetPasswordDto);
-        Task<HttpStatusCode> EmailConfirmation(string email, string token);
-        Task<AuthResponseDto> LoginVerification(TwoFactorVerificationDto twoFactorDto);
-    }
+    Task<ResponseDto> RegisterUser(UserForRegistration userForRegistration);
+    Task<AuthResponseDto> Login(UserForAuthentication userForAuthentication);
+    Task Logout();
+    Task<string> RefreshToken();
+    Task<HttpStatusCode> ForgotPassword(ForgotPassword forgotPasswordDto);
+    Task<ResetPasswordResponseDto> ResetPassword(ResetPassword resetPassword);
+    Task<HttpStatusCode> EmailConfirmation(string email, string token);
+    Task<AuthResponseDto> LoginVerification(TwoFactorVerificationDto twoFactorDto);
 }

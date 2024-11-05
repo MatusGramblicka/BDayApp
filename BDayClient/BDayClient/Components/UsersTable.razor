@@ -20,13 +20,13 @@
                 </td>
                 <td class="align-middle">
                     <button type="button" class="btn btn-info"
-                            @onclick="() => UpdateUser(user)" disabled="@(user.IsAdmin || (LoggedUser == user.Email))">
+                            @onclick="() => UpdateUser(user)" disabled="@(user.IsAdmin || LoggedUser == user.Email)">
                         Update to Admininstrator
                     </button>
                 </td>
                 <td class="align-middle">
                     <button type="button" class="btn btn-danger"
-                            @onclick="() => RemoveAdminRole(user)" disabled="@((!user.IsAdmin) || (LoggedUser == user.Email))">
+                            @onclick="() => RemoveAdminRole(user)" disabled="@(!user.IsAdmin || LoggedUser == user.Email)">
                         Remove Admininstrator role
                     </button>
                 </td>
@@ -41,7 +41,9 @@
                 </td>
                 <td>
                     @*https://blazor.radzen.com/switch*@
-                    <RadzenSwitch @bind-Value=@user.TwoFactorEnabled Style="margin-bottom: 20px" Change=@(args => OnChange(args, user)) />
+                    <RadzenSwitch @bind-Value=@user.TwoFactorEnabled 
+                                  Style="margin-bottom: 20px" 
+                                  Change=@(args => OnChange(args, user)) />
                 </td>
             </tr>
             }

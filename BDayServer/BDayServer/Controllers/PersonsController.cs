@@ -2,7 +2,7 @@
 using BDayServer.ActionFilters;
 using Contracts;
 using Entities;
-using Entities.DataTransferObjects;
+using Entities.DataTransferObjects.Auth;
 using Entities.DataTransferObjects.Person;
 using Entities.Models;
 using Entities.RequestFeatures;
@@ -10,10 +10,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Entities.DataTransferObjects.Auth;
 
 namespace BDayServer.Controllers;
 

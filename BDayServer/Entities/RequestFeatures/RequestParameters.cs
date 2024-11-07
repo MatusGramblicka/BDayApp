@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Entities.RequestFeatures;
+﻿namespace Entities.RequestFeatures;
 
 public abstract class RequestParameters
 {
@@ -24,7 +18,7 @@ public abstract class RequestParameters
         }
     }
 
-    public string OrderBy { get; set; }
+    public string OrderBy { get; set; } = string.Empty;
 
-    public string Fields { get; set; }
+    public string Fields { get; set; } = string.Empty;
 }

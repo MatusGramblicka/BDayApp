@@ -3,6 +3,7 @@ using EmailService.Contracts.Models;
 using EmailService.Extensions;
 using MailKit.Net.Smtp;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MimeKit;
 
 namespace EmailService;
@@ -15,9 +16,9 @@ public class EmailSender : IEmailSender
 
     private readonly EmailConfiguration _emailConfig;
 
-    public EmailSender(EmailConfiguration emailConfig, ILogger<EmailSender> logger)
+    public EmailSender(IOptions<EmailConfiguration> emailConfig, ILogger<EmailSender> logger)
     {
-        _emailConfig = emailConfig;
+        _emailConfig = emailConfig.Value;
         _logger = logger;
     }
 

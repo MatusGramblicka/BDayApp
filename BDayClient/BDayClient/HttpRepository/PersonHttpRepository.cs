@@ -36,7 +36,7 @@ public class PersonHttpRepository : IPersonHttpRepository
         {
             ["pageNumber"] = personParameters.PageNumber.ToString(),
             ["pageSize"] = personParameters.PageSize.ToString(),
-            ["searchTerm"] = personParameters.SearchTerm is null ? "" : personParameters.SearchTerm,
+            ["searchTerm"] = personParameters.SearchTerm ?? "",
             ["orderBy"] = personParameters.OrderBy is null ? "" : personParameters.OrderBy
         };
 

@@ -18,7 +18,7 @@ public abstract class RequestParameters
         }
     }
 
-    public string OrderBy { get; set; } = string.Empty;
+    public string OrderBy { get; set; } = null!;
 
     public string Fields { get; set; } = string.Empty;
 }

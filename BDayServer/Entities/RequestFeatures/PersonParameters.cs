@@ -11,5 +11,5 @@ public class PersonParameters : RequestParameters
 
     public bool ValidAgeRange => MaxAge > MinAge;
 
-    public string SearchTerm { get; set; } = string.Empty;
+    public string? SearchTerm { get; set; }
 }

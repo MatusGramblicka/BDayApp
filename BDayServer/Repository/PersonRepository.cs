@@ -1,31 +1,39 @@
-﻿using Contracts;
+﻿using Contracts.DatabaseAccess;
 using Entities;
+using Entities.DataTransferObjects.Person;
 using Entities.Models;
 using Entities.RequestFeatures;
 using Microsoft.EntityFrameworkCore;
 using Repository.Extensions;
+using Repository.Projections;
 
 namespace Repository;
 
-class PersonRepository : RepositoryBase<Person>, IPersonRepository
+internal class PersonRepository(RepositoryContext repositoryContext)
+    : RepositoryBase<Person>(repositoryContext), IPersonRepository
 {
-    public PersonRepository(RepositoryContext repositoryContext)
-        : base(repositoryContext)
+    public PagedList<PersonDto> GetAllPersonsAsync(PersonParameters personParameters, bool trackChanges)
     {
-    }
+        ArgumentNullException.ThrowIfNull(personParameters, nameof(personParameters));
 
-    public async Task<PagedList<Person>> GetAllPersonsAsync(PersonParameters personParameters, bool trackChanges)
-    {
-        var persons = await FindAll(trackChanges)
+        var persons = RepositoryContext.Persons
+            .Select(PersonProjection.GetPersonSelected())
             .Search(personParameters.SearchTerm)
-            .Sort(personParameters.OrderBy)
-            .ToListAsync();
+            .Sort(personParameters.OrderBy);
 
-        return PagedList<Person>
+        return PagedList<PersonDto>
             .ToPagedList(persons, personParameters.PageNumber, personParameters.PageSize);
     }
 
-    public async Task<Person> GetPersonAsync(Guid personId, bool trackChanges) =>
+    public async Task<PersonDto?> GetPersonAsync(Guid personId)
+    {
+        return await RepositoryContext.Persons
+            .Where(i => i.Id.Equals(personId))
+            .Select(PersonProjection.GetPersonSelected())
+            .SingleOrDefaultAsync();
+    }
+
+    public async Task<Person?> GetPersonAsync(Guid personId, bool trackChanges) =>
         await FindByCondition(c => c.Id.Equals(personId), trackChanges)
             .SingleOrDefaultAsync();
 

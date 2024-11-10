@@ -16,4 +16,8 @@
     <ProjectReference Include="..\Contracts\Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Projections\" />
+  </ItemGroup>
+
 </Project>

@@ -1,6 +1,8 @@
 ﻿using BDayServer.ActionFilters;
 using BDayServer.Services;
-using Contracts;
+using Contracts.DatabaseAccess;
+using Contracts.Managers;
+using Core;
 using EmailService;
 using EmailService.Contracts;
 using EmailService.Contracts.Models;
@@ -50,7 +52,6 @@ public static class ServiceExtensions
     public static void RegisterActionFilters(this IServiceCollection services)
     {
         services.AddScoped<ValidationFilterAttribute>();
-        services.AddScoped<ValidatePersonExistsAttribute>();
         services.AddScoped<ValidateEventExistsAttribute>();
     }
 
@@ -68,5 +69,10 @@ public static class ServiceExtensions
 
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IGetUserProvider, GetUserProvider>();
+    }
+
+    public static void RegisterMangers(this IServiceCollection services)
+    {
+        services.AddScoped<IPersonManager, PersonManager>();
     }
 }

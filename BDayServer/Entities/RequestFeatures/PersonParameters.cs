@@ -6,6 +6,7 @@ public class PersonParameters : RequestParameters
     {
         OrderBy = "dayOfBirth ascending";
     }
+
     public uint MinAge { get; set; }
     public uint MaxAge { get; set; } = int.MaxValue;
 

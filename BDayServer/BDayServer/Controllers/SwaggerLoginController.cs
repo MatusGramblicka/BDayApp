@@ -1,44 +1,34 @@
 ﻿using BDayServer.Services;
 using Entities;
+using Entities.DataTransferObjects.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
-using Entities.DataTransferObjects;
-using Entities.DataTransferObjects.Auth;
 
 namespace BDayServer.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class SwaggerLoginController : ControllerBase
+public class SwaggerLoginController(UserManager<User> userManager, IAuthenticationService authenticationService)
+    : ControllerBase
 {
-    private readonly UserManager<User> _userManager;
-    private readonly IAuthenticationService _authenticationService;
-
-    public SwaggerLoginController(UserManager<User> userManager, IAuthenticationService authenticationService)
-    {
-        _userManager = userManager;
-        _authenticationService = authenticationService;
-    }
-
     [HttpPost("login")]
-    public async Task<IActionResult> Login(SwaggerLoginDto swaggerloginDto)
+    public async Task<IActionResult> Login(SwaggerLoginDto swaggerLoginDto)
     {
         try
         {
-            if (string.IsNullOrEmpty(swaggerloginDto.Email) ||
-                string.IsNullOrEmpty(swaggerloginDto.Password))
+            if (string.IsNullOrEmpty(swaggerLoginDto.Email) ||
+                string.IsNullOrEmpty(swaggerLoginDto.Password))
                 return BadRequest("Username and/or Password not specified");
 
-            var managedUser = await _userManager.FindByEmailAsync(swaggerloginDto.Email);
+            var managedUser = await userManager.FindByEmailAsync(swaggerLoginDto.Email);
             if (managedUser is null)
                 return BadRequest("Bad credentials");
 
-            var isPasswordValid = await _userManager.CheckPasswordAsync(managedUser, swaggerloginDto.Password);
+            var isPasswordValid = await userManager.CheckPasswordAsync(managedUser, swaggerLoginDto.Password);
             if (!isPasswordValid)
                 return BadRequest("Bad credentials");
 
-            var jwtSecurityToken = await _authenticationService.GetToken(managedUser);
+            var jwtSecurityToken = await authenticationService.GetToken(managedUser);
             return Ok(jwtSecurityToken);
         }
         catch

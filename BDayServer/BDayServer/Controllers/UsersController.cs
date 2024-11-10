@@ -1,5 +1,4 @@
 ﻿using Entities;
-using Entities.DataTransferObjects;
 using Entities.DataTransferObjects.Auth;
 using Entities.DataTransferObjects.User;
 using Microsoft.AspNetCore.Authorization;
@@ -86,10 +85,8 @@ public class UsersController : ControllerBase
         var rolesForUser = await _userManager.GetRolesAsync(user);
 
         foreach (var login in logins)
-        {
             await _userManager.RemoveLoginAsync(user, login.LoginProvider, login.ProviderKey);
-        }
-
+        
         if (rolesForUser.Count > 0)
         {
             foreach (var item in rolesForUser)

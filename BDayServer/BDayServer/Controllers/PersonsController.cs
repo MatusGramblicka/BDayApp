@@ -1,13 +1,9 @@
-﻿using AutoMapper;
-using BDayServer.ActionFilters;
-using Contracts;
-using Entities;
-using Entities.DataTransferObjects.Auth;
+﻿using BDayServer.ActionFilters;
+using Contracts.Exceptions;
+using Contracts.Managers;
 using Entities.DataTransferObjects.Person;
-using Entities.Models;
 using Entities.RequestFeatures;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 
@@ -16,32 +12,15 @@ namespace BDayServer.Controllers;
 [Route("api/persons")]
 [ApiController]
 [Authorize]
-public class PersonsController : ControllerBase
+public class PersonsController(IPersonManager personManager) : ControllerBase
 {
-    private readonly IRepositoryManager _repository;
-    private readonly IMapper _mapper;
-    private readonly UserManager<User> _userManager;
-
-    private readonly string _userName;
-
-    public PersonsController(IRepositoryManager repository, IMapper mapper, 
-        IGetUserProvider userData, UserManager<User> userManager)
-    {
-        _repository = repository;
-        _mapper = mapper;
-        _userManager = userManager;
-
-        _userName = userData.UserName;
-    }
-
     [HttpGet(Name = "GetPersons")]
-    public async Task<IActionResult> GetPersons([FromQuery] PersonParameters personParameters)
+    [ServiceFilter(typeof(ValidationFilterAttribute))]
+    public IActionResult GetPersons([FromQuery] PersonParameters personParameters)
     {
-        var personsFromDb = await _repository.Person.GetAllPersonsAsync(personParameters, trackChanges: false);
+        var personsDto = personManager.GetPersons(personParameters);
 
-        Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(personsFromDb.MetaData));
-
-        var personsDto = _mapper.Map<IEnumerable<PersonDto>>(personsFromDb);
+        Response.Headers["X-Pagination"] = JsonConvert.SerializeObject(personsDto.MetaData);
 
         return Ok(personsDto);
     }
@@ -49,69 +28,75 @@ public class PersonsController : ControllerBase
     [HttpGet("{id}", Name = "PersonById")]
     public async Task<IActionResult> GetPerson(Guid id)
     {
-        var person = await _repository.Person.GetPersonAsync(id, trackChanges: false);
-        if (person is null)
-        {
-            return NotFound();
-        }
+        var personDto = await personManager.GetPersonAsync(id);
 
-        var personDto = _mapper.Map<PersonDto>(person);
-        return Ok(personDto);
+        return personDto is null ? NotFound() : Ok(personDto);
     }
 
     [HttpPost(Name = "CreatePerson")]
     [ServiceFilter(typeof(ValidationFilterAttribute))]
-    public async Task<IActionResult> CreatePerson([FromBody] PersonForCreationDto person)
+    public async Task<IActionResult> CreatePerson([FromBody] PersonForCreationDto personForCreationDto)
     {
-        if (_userName is null)
+        if (personForCreationDto is null)
+            return BadRequest("Object is null");
+
+        PersonDto personToReturn;
+
+        try
         {
-            BadRequest("User is null");
+            personToReturn = await personManager.CreatePersonAsync(personForCreationDto);
         }
-
-        var user = await _userManager.FindByNameAsync(_userName);
-
-        if (user is null)
+        catch (ArgumentNullException ex)
         {
-            return Unauthorized(new AuthResponseDto
-            {
-                ErrorMessage = "Invalid Request"
-            });
+            return BadRequest(ex.Message);
         }
-
-        var personEntity = _mapper.Map<Person>(person);
-        //personEntity.PersonCreator = _userName;
-        personEntity.UserId = user.Id;
-
-        _repository.Person.CreatePerson(personEntity);
-        await _repository.SaveAsync();
-
-        var personToReturn = _mapper.Map<PersonDto>(personEntity);
+        catch (UserNotExistException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception)
+        {
+            return BadRequest("Unspecified problem");
+        }
 
         return CreatedAtRoute("PersonById", new {id = personToReturn.Id}, personToReturn);
     }
 
     [HttpPut("{id}")]
     [ServiceFilter(typeof(ValidationFilterAttribute))]
-    [ServiceFilter(typeof(ValidatePersonExistsAttribute))]
     public async Task<IActionResult> UpdatePerson(Guid id, [FromBody] PersonForUpdateDto personDto)
     {
-        var personEntity = HttpContext.Items["person"] as Person;
-
-        //todo is personCreator overwritten?
-        _mapper.Map(personDto, personEntity);
-        await _repository.SaveAsync();
+        try
+        {
+            await personManager.UpdatePersonAsync(id, personDto);
+        }
+        catch (PersonNotExistException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception)
+        {
+            return BadRequest("Unspecified problem");
+        }
 
         return NoContent();
     }
 
     [HttpDelete("{id}")]
-    [ServiceFilter(typeof(ValidatePersonExistsAttribute))]
     public async Task<IActionResult> DeletePerson(Guid id)
     {
-        var person = HttpContext.Items["person"] as Person;
-
-        _repository.Person.DeletePerson(person);
-        await _repository.SaveAsync();
+        try
+        {
+            await personManager.DeletePersonAsync(id);
+        }
+        catch (PersonNotExistException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception)
+        {
+            return BadRequest("Unspecified problem");
+        }
 
         return NoContent();
     }

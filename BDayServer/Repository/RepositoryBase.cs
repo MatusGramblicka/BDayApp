@@ -1,7 +1,7 @@
-﻿using Contracts;
-using Entities;
+﻿using Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using Contracts.DatabaseAccess;
 
 namespace Repository;
 

@@ -1,4 +1,4 @@
-﻿using Contracts;
+﻿using Contracts.DatabaseAccess;
 using Entities;
 using Entities.Models;
 using Entities.RequestFeatures;
@@ -14,12 +14,11 @@ public class EventRepository : RepositoryBase<Event>, IEventRepository
     {
     }
 
-    public async Task<PagedList<Event>> GetAllEventsAsync(EventParameters eventParameters, bool trackChanges)
+    public PagedList<Event> GetAllEventsAsync(EventParameters eventParameters, bool trackChanges)
     {
-        var events = await FindAll(trackChanges)
+        var events = FindAll(trackChanges)
             .Search(eventParameters.SearchTerm)
-            .Sort(eventParameters.OrderBy)
-            .ToListAsync();
+            .Sort(eventParameters.OrderBy);
 
         return PagedList<Event>
             .ToPagedList(events, eventParameters.PageNumber, eventParameters.PageSize);

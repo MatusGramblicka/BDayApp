@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using BDayServer.ActionFilters;
-using Contracts;
 using Entities;
 using Entities.DataTransferObjects;
 using Entities.DataTransferObjects.Event;
@@ -13,6 +12,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Contracts.DatabaseAccess;
 using Entities.DataTransferObjects.Auth;
 
 namespace BDayServer.Controllers;
@@ -39,9 +39,9 @@ public class EventController : Controller
     }
 
     [HttpGet(Name = "GetEvents")]
-    public async Task<IActionResult> GetEvents([FromQuery] EventParameters eventParameters)
+    public IActionResult GetEvents([FromQuery] EventParameters eventParameters)
     {
-        var eventsFromDb = await _repository.Event.GetAllEventsAsync(eventParameters, trackChanges: false);
+        var eventsFromDb = _repository.Event.GetAllEventsAsync(eventParameters, trackChanges: false);
 
         Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(eventsFromDb.MetaData));
 

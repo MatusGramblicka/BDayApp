@@ -6,7 +6,7 @@ namespace Repository.Extensions;
 
 public static class RepositoryEventExtensions
 {
-    public static IQueryable<Event> Search(this IQueryable<Event> events, string searchTerm)
+    public static IQueryable<Event> Search(this IQueryable<Event> events, string? searchTerm)
     {
         if (string.IsNullOrWhiteSpace(searchTerm))
             return events;

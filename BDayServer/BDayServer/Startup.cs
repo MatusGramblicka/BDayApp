@@ -34,7 +34,9 @@ public class Startup
         services.RegisterActionFilters();
 
         services.AddIdentityServices();
-        
+
+        services.RegisterMangers();
+
         var jwtSettings = Configuration.GetSection("JWTSettings");
         services.AddAuthentication(opt =>
         {

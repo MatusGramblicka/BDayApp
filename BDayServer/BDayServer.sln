@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30907.101
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BDayServer", "BDayServer\BDayServer.csproj", "{C64ADE8F-8182-40C8-AF51-46D091E6F0BE}"
 EndProject
@@ -12,6 +12,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Contracts", "Contracts\Contracts.csproj", "{4E40BF5B-8512-42C8-BADC-03944C473B7D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmailService", "EmailService\EmailService.csproj", "{20A97B0F-03A8-4A7E-86B4-7EE5B0276F14}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "Core\Core.csproj", "{D6B18DF4-BEF1-4F7F-BEA2-BBCE6E602D5D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{20A97B0F-03A8-4A7E-86B4-7EE5B0276F14}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{20A97B0F-03A8-4A7E-86B4-7EE5B0276F14}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{20A97B0F-03A8-4A7E-86B4-7EE5B0276F14}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D6B18DF4-BEF1-4F7F-BEA2-BBCE6E602D5D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D6B18DF4-BEF1-4F7F-BEA2-BBCE6E602D5D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D6B18DF4-BEF1-4F7F-BEA2-BBCE6E602D5D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D6B18DF4-BEF1-4F7F-BEA2-BBCE6E602D5D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

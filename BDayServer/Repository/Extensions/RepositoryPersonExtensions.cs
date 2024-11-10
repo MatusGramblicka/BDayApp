@@ -1,13 +1,12 @@
-﻿using Entities.Models;
+﻿using Entities.DataTransferObjects.Person;
 using Repository.Extensions.Utility;
-using System.Linq;
 using System.Linq.Dynamic.Core;
 
 namespace Repository.Extensions;
 
 public static class RepositoryPersonExtensions
 {
-    public static IQueryable<Person> Search(this IQueryable<Person> persons, string searchTerm)
+    public static IQueryable<PersonDto> Search(this IQueryable<PersonDto> persons, string? searchTerm)
     {
         if (string.IsNullOrWhiteSpace(searchTerm))
             return persons;
@@ -17,12 +16,12 @@ public static class RepositoryPersonExtensions
         return persons.Where(e => e.Name.ToLower().Contains(lowerCaseTerm));
     }
 
-    public static IQueryable<Person> Sort(this IQueryable<Person> persons, string orderByQueryString)
+    public static IQueryable<PersonDto> Sort(this IQueryable<PersonDto> persons, string orderByQueryString)
     {
         if (string.IsNullOrWhiteSpace(orderByQueryString))
             return persons.OrderBy(x => x.DayOfBirth.Month).ThenBy(x => x.DayOfBirth.Day);
 
-        var orderQuery = OrderQueryBuilder.CreateOrderQuery<Person>(orderByQueryString);
+        var orderQuery = OrderQueryBuilder.CreateOrderQuery<PersonDto>(orderByQueryString);
 
         if (string.IsNullOrWhiteSpace(orderQuery))
             return persons.OrderBy(x => x.DayOfBirth.Month).ThenBy(x => x.DayOfBirth.Day);

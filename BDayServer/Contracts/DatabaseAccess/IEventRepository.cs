@@ -1,11 +1,11 @@
 ﻿using Entities.Models;
 using Entities.RequestFeatures;
 
-namespace Contracts;
+namespace Contracts.DatabaseAccess;
 
 public interface IEventRepository
 {
-    Task<PagedList<Event>> GetAllEventsAsync(EventParameters eventParameters, bool trackChanges);
+    PagedList<Event> GetAllEventsAsync(EventParameters eventParameters, bool trackChanges);
 
     Task<Event> GetEventAsync(Guid eventId, bool trackChanges);
 

@@ -1,4 +1,4 @@
-﻿using Contracts;
+﻿using Contracts.DatabaseAccess;
 using Entities;
 
 namespace Repository;
@@ -15,27 +15,9 @@ public class RepositoryManager : IRepositoryManager
         _repositoryContext = repositoryContext;
     }
 
-    public IPersonRepository Person
-    {
-        get
-        {
-            if (_personRepository is null)
-                _personRepository = new PersonRepository(_repositoryContext);
+    public IPersonRepository Person => _personRepository ??= new PersonRepository(_repositoryContext);
 
-            return _personRepository;
-        }
-    }
-
-    public IEventRepository Event
-    {
-        get
-        {
-            if (_eventRepository is null)
-                _eventRepository = new EventRepository(_repositoryContext);
-
-            return _eventRepository;
-        }
-    }
+    public IEventRepository Event => _eventRepository ??= new EventRepository(_repositoryContext);
 
     public Task SaveAsync() => _repositoryContext.SaveChangesAsync();
 }

@@ -1,7 +1,7 @@
-﻿using Entities;
-using System.Security.Claims;
+﻿using System.Security.Claims;
+using Entities;
 
-namespace BDayServer.Services;
+namespace Core.Services;
 
 public interface IAuthenticationService
 {

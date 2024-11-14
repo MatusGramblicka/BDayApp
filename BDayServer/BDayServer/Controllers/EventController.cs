@@ -1,7 +1,8 @@
 ﻿using AutoMapper;
 using BDayServer.ActionFilters;
+using Contracts.DatabaseAccess;
 using Entities;
-using Entities.DataTransferObjects;
+using Entities.DataTransferObjects.Auth;
 using Entities.DataTransferObjects.Event;
 using Entities.Models;
 using Entities.RequestFeatures;
@@ -9,43 +10,30 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Contracts.DatabaseAccess;
-using Entities.DataTransferObjects.Auth;
 
 namespace BDayServer.Controllers;
 
 [Route("api/events")]
 [ApiController]
 [Authorize]
-public class EventController : Controller
+public class EventController(
+    IRepositoryManager repository,
+    IMapper mapper,
+    IGetUserProvider userData,
+    UserManager<User> userManager)
+    : Controller
 {
-    private readonly IRepositoryManager _repository;
-    private readonly IMapper _mapper;
-    private readonly UserManager<User> _userManager;
-
-    private readonly string _userName;
-
-    public EventController(IRepositoryManager repository, IMapper mapper, 
-        IGetUserProvider userData, UserManager<User> userManager)
-    {
-        _repository = repository;
-        _mapper = mapper;
-        _userManager = userManager;
-
-        _userName = userData.UserName;
-    }
+    private readonly string _userName = userData.UserName;
 
     [HttpGet(Name = "GetEvents")]
+    [ServiceFilter(typeof(ValidationFilterAttribute))]
     public IActionResult GetEvents([FromQuery] EventParameters eventParameters)
     {
-        var eventsFromDb = _repository.Event.GetAllEventsAsync(eventParameters, trackChanges: false);
+        var eventsFromDb = repository.Event.GetAllEventsAsync(eventParameters, trackChanges: false);
 
         Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(eventsFromDb.MetaData));
 
-        var eventsDto = _mapper.Map<IEnumerable<EventDto>>(eventsFromDb);
+        var eventsDto = mapper.Map<IEnumerable<EventDto>>(eventsFromDb);
 
         return Ok(eventsDto);
     }
@@ -53,13 +41,13 @@ public class EventController : Controller
     [HttpGet("{id}", Name = "EventById")]
     public async Task<IActionResult> GetEvent(Guid id)
     {
-        var eventVar = await _repository.Event.GetEventAsync(id, trackChanges: false);
+        var eventVar = await repository.Event.GetEventAsync(id, trackChanges: false);
         if (eventVar is null)
         {
             return NotFound();
         }
 
-        var eventDto = _mapper.Map<EventDto>(eventVar);
+        var eventDto = mapper.Map<EventDto>(eventVar);
         return Ok(eventDto);
     }
 
@@ -72,7 +60,7 @@ public class EventController : Controller
             BadRequest("User is null");
         }
 
-        var user = await _userManager.FindByNameAsync(_userName);
+        var user = await userManager.FindByNameAsync(_userName);
 
         if (user is null)
         {
@@ -82,13 +70,13 @@ public class EventController : Controller
             });
         }
 
-        var eventEntity = _mapper.Map<Event>(eventParam);
+        var eventEntity = mapper.Map<Event>(eventParam);
         eventEntity.UserId = user.Id;
 
-        _repository.Event.CreateEvent(eventEntity);
-        await _repository.SaveAsync();
+        repository.Event.CreateEvent(eventEntity);
+        await repository.SaveAsync();
 
-        var eventToReturn = _mapper.Map<EventDto>(eventEntity);
+        var eventToReturn = mapper.Map<EventDto>(eventEntity);
 
         return CreatedAtRoute("EventById", new { id = eventToReturn.Id }, eventToReturn);
     }
@@ -100,8 +88,8 @@ public class EventController : Controller
     {
         var eventEntity = HttpContext.Items["event"] as Event;
 
-        _mapper.Map(eventDto, eventEntity);
-        await _repository.SaveAsync();
+        mapper.Map(eventDto, eventEntity);
+        await repository.SaveAsync();
 
         return NoContent();
     }
@@ -112,8 +100,8 @@ public class EventController : Controller
     {
         var eventVar = HttpContext.Items["event"] as Event;
 
-        _repository.Event.DeleteEvent(eventVar);
-        await _repository.SaveAsync();
+        repository.Event.DeleteEvent(eventVar);
+        await repository.SaveAsync();
 
         return NoContent();
     }

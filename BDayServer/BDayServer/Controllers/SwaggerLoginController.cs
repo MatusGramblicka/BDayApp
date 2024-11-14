@@ -1,39 +1,34 @@
-﻿using BDayServer.Services;
-using Entities;
+﻿using BDayServer.ActionFilters;
+using Contracts.Exceptions;
+using Contracts.Managers;
 using Entities.DataTransferObjects.Auth;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BDayServer.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class SwaggerLoginController(UserManager<User> userManager, IAuthenticationService authenticationService)
+public class SwaggerLoginController(ISwaggerLoginManager swaggerLoginManager)
     : ControllerBase
 {
     [HttpPost("login")]
+    [ServiceFilter(typeof(ValidationFilterAttribute))]
     public async Task<IActionResult> Login(SwaggerLoginDto swaggerLoginDto)
     {
+        string? jwtSecurityToken;
         try
         {
-            if (string.IsNullOrEmpty(swaggerLoginDto.Email) ||
-                string.IsNullOrEmpty(swaggerLoginDto.Password))
-                return BadRequest("Username and/or Password not specified");
-
-            var managedUser = await userManager.FindByEmailAsync(swaggerLoginDto.Email);
-            if (managedUser is null)
-                return BadRequest("Bad credentials");
-
-            var isPasswordValid = await userManager.CheckPasswordAsync(managedUser, swaggerLoginDto.Password);
-            if (!isPasswordValid)
-                return BadRequest("Bad credentials");
-
-            var jwtSecurityToken = await authenticationService.GetToken(managedUser);
-            return Ok(jwtSecurityToken);
+            jwtSecurityToken = await swaggerLoginManager.Login(swaggerLoginDto);
         }
-        catch
+        catch (SwaggerLoginAuthenticationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception)
         {
             return BadRequest("An error occurred in generating the token");
         }
+
+        return Ok(jwtSecurityToken);
     }
 }

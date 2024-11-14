@@ -1,6 +1,5 @@
 using BDayServer.Extensions;
 using BDayServer.HostedService;
-using BDayServer.Services;
 using Entities;
 using Entities.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

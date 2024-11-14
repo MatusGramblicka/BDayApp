@@ -1,8 +1,9 @@
 ﻿using BDayServer.ActionFilters;
-using BDayServer.Services;
 using Contracts.DatabaseAccess;
 using Contracts.Managers;
 using Core;
+using Core.Managers;
+using Core.Services;
 using EmailService;
 using EmailService.Contracts;
 using EmailService.Contracts.Models;
@@ -74,5 +75,10 @@ public static class ServiceExtensions
     public static void RegisterMangers(this IServiceCollection services)
     {
         services.AddScoped<IPersonManager, PersonManager>();
+        services.AddScoped<IUserManager, UserManager>();
+        services.AddScoped<ITokenManager, TokenManager>();
+        services.AddScoped<IUploadManager, UploadManager>();
+        services.AddScoped<ISwaggerLoginManager, SwaggerLoginManager>();
+        services.AddScoped<IAccountManager, AccountManager>();
     }
 }

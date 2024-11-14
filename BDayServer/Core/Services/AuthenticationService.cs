@@ -1,28 +1,22 @@
 ﻿using Entities;
 using Entities.Configuration;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Identity = Microsoft.AspNetCore.Identity;
 
-namespace BDayServer.Services;
+namespace Core.Services;
 
-public class AuthenticationService : IAuthenticationService
+public class AuthenticationService(
+    IOptions<JwtConfiguration> jwtSettings,
+    Identity.UserManager<User> userManager)
+    : IAuthenticationService
 {
-    private readonly JwtConfiguration _jwtSettings;
-    private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
-    private readonly UserManager<User> _userManager;
-
-    public AuthenticationService(IOptions<JwtConfiguration> jwtSettings,
-        UserManager<User> userManager)
-    {
-        _jwtSettings = jwtSettings.Value;
-        _jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
-        _userManager = userManager;
-    }
+    private readonly JwtConfiguration _jwtSettings = jwtSettings.Value;
+    private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler = new();
 
     public async Task<string> GetToken(User user)
     {
@@ -50,13 +44,11 @@ public class AuthenticationService : IAuthenticationService
             new(ClaimTypes.Name, user.Email)
         };
 
-        var roles = await _userManager.GetRolesAsync(user);
+        var roles = await userManager.GetRolesAsync(user);
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
         return claims;
     }
-
-   
 
     public string GenerateRefreshToken()
     {

@@ -1,14 +1,16 @@
 ﻿using BDayServer.ActionFilters;
-using Contracts.DatabaseAccess;
-using Contracts.Managers;
+using Contracts.EmailService.Models;
 using Core;
+using Core.EmailService;
 using Core.Managers;
 using Core.Services;
-using EmailService;
-using EmailService.Contracts;
-using EmailService.Contracts.Models;
 using Entities;
 using Entities.Configuration;
+using Entities.Models;
+using Interfaces;
+using Interfaces.DatabaseAccess;
+using Interfaces.EmailService;
+using Interfaces.Managers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Repository;
@@ -53,7 +55,6 @@ public static class ServiceExtensions
     public static void RegisterActionFilters(this IServiceCollection services)
     {
         services.AddScoped<ValidationFilterAttribute>();
-        services.AddScoped<ValidateEventExistsAttribute>();
     }
 
     public static void RegisterEmailServices(this IServiceCollection services, IConfiguration configuration)

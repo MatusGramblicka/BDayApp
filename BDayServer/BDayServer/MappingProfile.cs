@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Entities;
 using Entities.DataTransferObjects.Event;
 using Entities.DataTransferObjects.Person;
 using Entities.DataTransferObjects.User;

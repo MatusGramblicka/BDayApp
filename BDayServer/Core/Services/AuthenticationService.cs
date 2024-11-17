@@ -1,5 +1,6 @@
-﻿using Entities;
-using Entities.Configuration;
+﻿using Entities.Configuration;
+using Entities.Models;
+using Interfaces;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -10,9 +11,7 @@ using Identity = Microsoft.AspNetCore.Identity;
 
 namespace Core.Services;
 
-public class AuthenticationService(
-    IOptions<JwtConfiguration> jwtSettings,
-    Identity.UserManager<User> userManager)
+public class AuthenticationService(IOptions<JwtConfiguration> jwtSettings, Identity.UserManager<User> userManager)
     : IAuthenticationService
 {
     private readonly JwtConfiguration _jwtSettings = jwtSettings.Value;
@@ -84,7 +83,7 @@ public class AuthenticationService(
             !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256,
                 StringComparison.InvariantCultureIgnoreCase))
             throw new SecurityTokenException("Invalid token");
-        
+
         return principal;
     }
 

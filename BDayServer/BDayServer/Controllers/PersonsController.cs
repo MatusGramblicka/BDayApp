@@ -1,8 +1,8 @@
 ﻿using BDayServer.ActionFilters;
 using Contracts.Exceptions;
-using Contracts.Managers;
 using Entities.DataTransferObjects.Person;
 using Entities.RequestFeatures;
+using Interfaces.Managers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -18,6 +18,9 @@ public class PersonsController(IPersonManager personManager) : ControllerBase
     [ServiceFilter(typeof(ValidationFilterAttribute))]
     public IActionResult GetPersons([FromQuery] PersonParameters personParameters)
     {
+        if (personParameters is null)
+            return BadRequest("Object is null");
+
         var personsDto = personManager.GetPersons(personParameters);
 
         Response.Headers["X-Pagination"] = JsonConvert.SerializeObject(personsDto.MetaData);
@@ -66,6 +69,9 @@ public class PersonsController(IPersonManager personManager) : ControllerBase
     [ServiceFilter(typeof(ValidationFilterAttribute))]
     public async Task<IActionResult> UpdatePerson(Guid id, [FromBody] PersonForUpdateDto personDto)
     {
+        if (personDto is null)
+            return BadRequest("Object is null");
+
         try
         {
             await personManager.UpdatePersonAsync(id, personDto);

@@ -1,11 +1,11 @@
 ﻿using AutoMapper;
 using BDayServer.ActionFilters;
-using Contracts.DatabaseAccess;
-using Entities;
 using Entities.DataTransferObjects.Auth;
 using Entities.DataTransferObjects.Event;
 using Entities.Models;
 using Entities.RequestFeatures;
+using Interfaces;
+using Interfaces.DatabaseAccess;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -83,7 +83,6 @@ public class EventController(
 
     [HttpPut("{id}")]
     [ServiceFilter(typeof(ValidationFilterAttribute))]
-    [ServiceFilter(typeof(ValidateEventExistsAttribute))]
     public async Task<IActionResult> UpdateEvent(Guid id, [FromBody] EventForUpdateDto eventDto)
     {
         var eventEntity = HttpContext.Items["event"] as Event;
@@ -95,7 +94,6 @@ public class EventController(
     }
 
     [HttpDelete("{id}")]
-    [ServiceFilter(typeof(ValidateEventExistsAttribute))]
     public async Task<IActionResult> DeleteEvent(Guid id)
     {
         var eventVar = HttpContext.Items["event"] as Event;

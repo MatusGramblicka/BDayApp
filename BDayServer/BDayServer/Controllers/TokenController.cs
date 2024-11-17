@@ -1,7 +1,7 @@
 ﻿using BDayServer.ActionFilters;
 using Contracts.Exceptions;
-using Contracts.Managers;
 using Entities.DataTransferObjects.Auth;
+using Interfaces.Managers;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BDayServer.Controllers;
@@ -14,6 +14,9 @@ public class TokenController(ITokenManager tokenManager) : ControllerBase
     [ServiceFilter(typeof(ValidationFilterAttribute))]
     public async Task<IActionResult> Refresh([FromBody] RefreshTokenDto tokenDto)
     {
+        if (tokenDto is null)
+            return BadRequest("Object is null");
+
         string token;
         string refreshToken;
 

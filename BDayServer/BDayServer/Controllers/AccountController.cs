@@ -1,33 +1,26 @@
 ﻿using BDayServer.ActionFilters;
 using Contracts.Exceptions;
-using Contracts.Managers;
-using Core.Services;
-using EmailService.Contracts;
-using EmailService.Contracts.Models;
-using Entities;
 using Entities.DataTransferObjects.Auth;
 using Entities.DataTransferObjects.User;
-using Microsoft.AspNetCore.Identity;
+using Interfaces.Managers;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.WebUtilities;
 
 namespace BDayServer.Controllers;
 
 [Route("api/account")]
 [ApiController]
-public class AccountController(
-    UserManager<User> userManager,
-    IAuthenticationService authenticationService,
-    IEmailSender emailSender, IAccountManager AccountManager)
-    : ControllerBase
+public class AccountController(IAccountManager accountManager) : ControllerBase
 {
     [HttpPost("register")]
     [ServiceFilter(typeof(ValidationFilterAttribute))]
     public async Task<IActionResult> RegisterUser([FromBody] UserForRegistrationDto userForRegistrationDto)
     {
+        if (userForRegistrationDto is null)
+            return BadRequest("Object is null");
+
         try
         {
-            await AccountManager.RegisterUser(userForRegistrationDto);
+            await accountManager.RegisterUser(userForRegistrationDto);
         }
         catch (AccountManagerErrorsException ex)
         {
@@ -48,11 +41,14 @@ public class AccountController(
     [ServiceFilter(typeof(ValidationFilterAttribute))]
     public async Task<IActionResult> Login([FromBody] UserForAuthenticationDto userForAuthenticationDto)
     {
+        if (userForAuthenticationDto is null)
+            return BadRequest("Object is null");
+
         AuthResponseDto authResponseDto;
 
         try
         {
-            authResponseDto= await AccountManager.Login(userForAuthenticationDto);
+            authResponseDto = await accountManager.Login(userForAuthenticationDto);
         }
         catch (AccountManagerUnauthorizedLoginException ex)
         {
@@ -74,26 +70,23 @@ public class AccountController(
     public async Task<IActionResult> ForgotPassword(
         [FromBody] ForgotPasswordDto forgotPasswordDto)
     {
-        var user = await userManager.FindByEmailAsync(forgotPasswordDto.Email);
-        if (user is null)
-            return BadRequest("Invalid Request");
+        if (forgotPasswordDto is null)
+            return BadRequest("Object is null");
 
-        var token = await userManager.GeneratePasswordResetTokenAsync(user);
-
-        var param = new Dictionary<string, string>
+        try
         {
-            {"token", token},
-            {"email", forgotPasswordDto.Email}
-        };
+            await accountManager.ForgotPassword(forgotPasswordDto);
+        }
+        catch (AccountManagerUnauthorizedLoginException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception)
+        {
+            return BadRequest("Unspecified problem");
+        }
 
-        var callback = QueryHelpers.AddQueryString(forgotPasswordDto.ClientUri, param);
-
-        var message = new Message(new[] {user.Email}, "Reset password token",
-            callback, null);
-
-        await emailSender.SendEmailAsync(message);
-
-        return Ok();
+        return NoContent();
     }
 
     [HttpPost("ResetPassword")]
@@ -101,45 +94,48 @@ public class AccountController(
     public async Task<IActionResult> ResetPassword(
         [FromBody] ResetPasswordDto resetPasswordDto)
     {
-        var errorResponse = new ResetPasswordResponseDto
+        if (resetPasswordDto is null)
+            return BadRequest("Object is null");
+
+        ResetPasswordResponseDto resetPasswordResponseDto;
+
+        try
         {
-            Errors = new[] {"Reset Password Failed"}
-        };
-
-        if (!ModelState.IsValid)
-            return BadRequest(errorResponse);
-
-        var user = await userManager.FindByEmailAsync(resetPasswordDto.Email);
-        if (user is null)
-            return BadRequest(errorResponse);
-
-        var resetPassResult = await userManager.ResetPasswordAsync(user,
-            resetPasswordDto.Token, resetPasswordDto.Password);
-
-        if (!resetPassResult.Succeeded)
+            resetPasswordResponseDto = await accountManager.ResetPassword(resetPasswordDto);
+        }
+        catch (AccountManagerUnauthorizedLoginException ex)
         {
-            var errors = resetPassResult.Errors.Select(e => e.Description);
-            return BadRequest(new ResetPasswordResponseDto {Errors = errors});
+            return BadRequest(new AuthResponseDto
+            {
+                ErrorMessage = ex.Message
+            });
+        }
+        catch (Exception)
+        {
+            return BadRequest("Unspecified problem");
         }
 
-        await userManager.SetLockoutEndDateAsync(user, null);
-
-        return Ok(new ResetPasswordResponseDto {IsResetPasswordSuccessful = true});
+        return Ok(resetPasswordResponseDto);
     }
 
     [HttpGet("EmailConfirmation")]
     public async Task<IActionResult> EmailConfirmation([FromQuery] string email,
         [FromQuery] string token)
     {
-        var user = await userManager.FindByEmailAsync(email);
-        if (user is null)
-            return BadRequest();
+        try
+        {
+            await accountManager.EmailConfirmation(email, token);
+        }
+        catch (AccountManagerUnauthorizedLoginException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception)
+        {
+            return BadRequest("Unspecified problem");
+        }
 
-        var confirmResult = await userManager.ConfirmEmailAsync(user, token);
-        if (!confirmResult.Succeeded)
-            return BadRequest();
-
-        return Ok();
+        return NoContent();
     }
 
     [HttpPost("TwoStepVerification")]
@@ -147,63 +143,27 @@ public class AccountController(
     public async Task<IActionResult> TwoStepVerification(
         [FromBody] TwoFactorVerificationDto twoFactorVerificationDto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(new AuthResponseDto
-            {
-                ErrorMessage = "Invalid Request"
-            });
+        if (twoFactorVerificationDto is null)
+            return BadRequest("Object is null");
 
-        var user = await userManager.FindByEmailAsync(twoFactorVerificationDto.Email);
-        if (user is null)
-            return BadRequest(new AuthResponseDto
-            {
-                ErrorMessage = "Invalid Request"
-            });
+        AuthResponseDto authResponseDto;
 
-        var validVerification = await userManager.VerifyTwoFactorTokenAsync(user,
-            twoFactorVerificationDto.Provider, twoFactorVerificationDto.TwoFactorToken);
-        if (!validVerification)
-            return BadRequest(new AuthResponseDto
-            {
-                ErrorMessage = "Invalid Token Verification"
-            });
-
-        var token = await authenticationService.GetToken(user);
-        user.RefreshToken = authenticationService.GenerateRefreshToken();
-        user.RefreshTokenExpiryTime = DateTime.Now.AddDays(7);
-        await userManager.UpdateAsync(user);
-        await userManager.ResetAccessFailedCountAsync(user);
-
-        return Ok(new AuthResponseDto
+        try
         {
-            IsAuthSuccessful = true,
-            Token = token,
-            RefreshToken = user.RefreshToken
-        });
-    }
-
-    private async Task<IActionResult> GenerateOtpFor2StepVerification(User user)
-    {
-        var providers = await userManager.GetValidTwoFactorProvidersAsync(user);
-        if (!providers.Contains("Email"))
+            authResponseDto = await accountManager.TwoStepVerification(twoFactorVerificationDto);
+        }
+        catch (AccountManagerUnauthorizedLoginException ex)
         {
-            return Unauthorized(new AuthResponseDto
+            return BadRequest(new AuthResponseDto
             {
-                ErrorMessage = "Invalid 2-Step Verification Provider"
+                ErrorMessage = ex.Message
             });
         }
-
-        var token = await userManager.GenerateTwoFactorTokenAsync(user, "Email");
-
-        var message = new Message(new[] {user.Email}, "Authentication token",
-            token, null);
-
-        await emailSender.SendEmailAsync(message);
-
-        return Ok(new AuthResponseDto
+        catch (Exception e)
         {
-            Is2StepVerificationRequired = true,
-            Provider = "Email"
-        });
+            return BadRequest("Unspecified problem");
+        }
+
+        return Ok(authResponseDto);
     }
 }

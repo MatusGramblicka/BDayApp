@@ -1,7 +1,7 @@
 ﻿using BDayServer.ActionFilters;
 using Contracts.Exceptions;
-using Contracts.Managers;
 using Entities.DataTransferObjects.Auth;
+using Interfaces.Managers;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BDayServer.Controllers;
@@ -15,7 +15,11 @@ public class SwaggerLoginController(ISwaggerLoginManager swaggerLoginManager)
     [ServiceFilter(typeof(ValidationFilterAttribute))]
     public async Task<IActionResult> Login(SwaggerLoginDto swaggerLoginDto)
     {
+        if (swaggerLoginDto is null)
+            return BadRequest("Object is null");
+
         string? jwtSecurityToken;
+
         try
         {
             jwtSecurityToken = await swaggerLoginManager.Login(swaggerLoginDto);

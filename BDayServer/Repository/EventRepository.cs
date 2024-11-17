@@ -1,7 +1,7 @@
-﻿using Contracts.DatabaseAccess;
-using Entities;
+﻿using Entities;
 using Entities.Models;
 using Entities.RequestFeatures;
+using Interfaces.DatabaseAccess;
 using Microsoft.EntityFrameworkCore;
 using Repository.Extensions;
 

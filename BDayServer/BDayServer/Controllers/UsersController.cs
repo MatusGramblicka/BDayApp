@@ -1,8 +1,8 @@
 ﻿using BDayServer.ActionFilters;
 using Contracts.Exceptions;
-using Contracts.Managers;
 using Entities.DataTransferObjects.Auth;
 using Entities.DataTransferObjects.User;
+using Interfaces.Managers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -25,6 +25,9 @@ public class UsersController(IUserManager userManager) : ControllerBase
     [ServiceFilter(typeof(ValidationFilterAttribute))]
     public async Task<IActionResult> UpdateUser([FromBody] UserLite userForUpdate)
     {
+        if (userForUpdate is null)
+            return BadRequest("Object is null");
+
         try
         {
             await userManager.UpdateUser(userForUpdate);
@@ -48,6 +51,9 @@ public class UsersController(IUserManager userManager) : ControllerBase
     [ServiceFilter(typeof(ValidationFilterAttribute))]
     public async Task<IActionResult> RemoveAdminRole([FromBody] UserLite userForUpdate)
     {
+        if (userForUpdate is null)
+            return BadRequest("Object is null");
+
         try
         {
             await userManager.RemoveAdminRole(userForUpdate);
@@ -71,6 +77,9 @@ public class UsersController(IUserManager userManager) : ControllerBase
     [ServiceFilter(typeof(ValidationFilterAttribute))]
     public async Task<IActionResult> DeleteUser([FromBody] UserLite userForDeletion)
     {
+        if (userForDeletion is null)
+            return BadRequest("Object is null");
+
         try
         {
             await userManager.DeleteUser(userForDeletion);
@@ -94,6 +103,9 @@ public class UsersController(IUserManager userManager) : ControllerBase
     [ServiceFilter(typeof(ValidationFilterAttribute))]
     public async Task<IActionResult> SetTwoFactorAuthorization([FromBody] UserLite2StepsAuthDto userForUpdate)
     {
+        if (userForUpdate is null)
+            return BadRequest("Object is null");
+
         try
         {
             await userManager.SetTwoFactorAuthorization(userForUpdate);

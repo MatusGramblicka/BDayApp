@@ -1,5 +1,5 @@
-﻿using Contracts.DatabaseAccess;
-using Entities;
+﻿using Entities;
+using Interfaces.DatabaseAccess;
 
 namespace Repository;
 

@@ -1,4 +1,5 @@
-﻿using EmailService.Contracts;
+﻿using Interfaces;
+using Interfaces.EmailService;
 
 namespace BDayServer.HostedService;
 

@@ -1,4 +1,6 @@
-﻿namespace BDayServer.HostedService;
+﻿using Interfaces;
+
+namespace BDayServer.HostedService;
 
 public static class ScheduledServiceExtensions
 {

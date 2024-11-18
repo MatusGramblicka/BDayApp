@@ -1,5 +1,6 @@
 ﻿using Entities;
 using Interfaces.DatabaseAccess;
+using Repository.Configuration;
 
 namespace Repository;
 

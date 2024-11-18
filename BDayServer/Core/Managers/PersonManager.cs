@@ -1,11 +1,12 @@
 ﻿using AutoMapper;
+using Contracts.DataTransferObjects.Person;
 using Contracts.Exceptions;
-using Entities.DataTransferObjects.Person;
 using Entities.Models;
 using Entities.RequestFeatures;
 using Interfaces;
 using Interfaces.DatabaseAccess;
 using Interfaces.Managers;
+using Interfaces.UserProvider;
 using Microsoft.AspNetCore.Identity;
 
 namespace Core.Managers;

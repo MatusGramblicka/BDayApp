@@ -1,4 +1,4 @@
-﻿using Contracts.EmailService.Models;
+﻿using Contracts.EmailService;
 using EmailService.Extensions;
 using Interfaces.EmailService;
 using MailKit.Net.Smtp;

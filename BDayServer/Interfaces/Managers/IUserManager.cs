@@ -1,4 +1,4 @@
-﻿using Entities.DataTransferObjects.User;
+﻿using Contracts.DataTransferObjects.User;
 
 namespace Interfaces.Managers;
 

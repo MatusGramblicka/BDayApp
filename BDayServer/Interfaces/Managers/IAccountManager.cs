@@ -1,5 +1,5 @@
-﻿using Entities.DataTransferObjects.Auth;
-using Entities.DataTransferObjects.User;
+﻿using Contracts.DataTransferObjects.Auth;
+using Contracts.DataTransferObjects.User;
 
 namespace Interfaces.Managers;
 

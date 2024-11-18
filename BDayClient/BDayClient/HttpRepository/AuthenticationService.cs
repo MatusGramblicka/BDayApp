@@ -1,8 +1,8 @@
 ﻿using BDayClient.AuthProvider;
 using BDayClient.Pocos;
 using Blazored.LocalStorage;
-using Entities.DataTransferObjects.Auth;
-using Entities.DataTransferObjects.User;
+using Contracts.DataTransferObjects.Auth;
+using Contracts.DataTransferObjects.User;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.WebUtilities;

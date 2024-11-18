@@ -1,5 +1,6 @@
 ﻿using Interfaces;
 using Interfaces.EmailService;
+using Interfaces.Scheduler;
 
 namespace BDayServer.HostedService;
 

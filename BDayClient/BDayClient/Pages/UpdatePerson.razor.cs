@@ -3,7 +3,7 @@ using BDayClient.HttpInterceptor;
 using BDayClient.HttpRepository;
 using BDayClient.Pocos;
 using Blazored.Toast.Services;
-using Entities.DataTransferObjects.Person;
+using Contracts.DataTransferObjects.Person;
 using Entities.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;

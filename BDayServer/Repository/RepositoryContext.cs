@@ -1,8 +1,10 @@
 ﻿using Entities.Configuration;
 using Entities.Models;
 using Interfaces;
+using Interfaces.UserProvider;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Repository.Configuration;
 
 namespace Repository;
 

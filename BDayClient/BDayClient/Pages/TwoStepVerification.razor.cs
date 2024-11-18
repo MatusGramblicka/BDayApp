@@ -1,6 +1,6 @@
 ﻿using BDayClient.HttpRepository;
 using BDayClient.Pocos;
-using Entities.DataTransferObjects.Auth;
+using Contracts.DataTransferObjects.Auth;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.WebUtilities;
 

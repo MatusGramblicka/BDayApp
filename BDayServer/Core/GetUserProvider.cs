@@ -1,4 +1,5 @@
 ﻿using Interfaces;
+using Interfaces.UserProvider;
 using Microsoft.AspNetCore.Http;
 
 namespace Core;

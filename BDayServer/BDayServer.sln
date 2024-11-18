@@ -11,11 +11,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Repository", "Repository\Re
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Contracts", "Contracts\Contracts.csproj", "{4E40BF5B-8512-42C8-BADC-03944C473B7D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmailService", "EmailService\EmailService.csproj", "{20A97B0F-03A8-4A7E-86B4-7EE5B0276F14}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core", "Core\Core.csproj", "{D6B18DF4-BEF1-4F7F-BEA2-BBCE6E602D5D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Interfaces", "Interfaces\Interfaces.csproj", "{FB6C9D19-A11E-46E4-BF25-DFD0315838D3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Interfaces", "Interfaces\Interfaces.csproj", "{FB6C9D19-A11E-46E4-BF25-DFD0315838D3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,10 +37,6 @@ Global
 		{4E40BF5B-8512-42C8-BADC-03944C473B7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4E40BF5B-8512-42C8-BADC-03944C473B7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4E40BF5B-8512-42C8-BADC-03944C473B7D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{20A97B0F-03A8-4A7E-86B4-7EE5B0276F14}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{20A97B0F-03A8-4A7E-86B4-7EE5B0276F14}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{20A97B0F-03A8-4A7E-86B4-7EE5B0276F14}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{20A97B0F-03A8-4A7E-86B4-7EE5B0276F14}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D6B18DF4-BEF1-4F7F-BEA2-BBCE6E602D5D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D6B18DF4-BEF1-4F7F-BEA2-BBCE6E602D5D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D6B18DF4-BEF1-4F7F-BEA2-BBCE6E602D5D}.Release|Any CPU.ActiveCfg = Release|Any CPU

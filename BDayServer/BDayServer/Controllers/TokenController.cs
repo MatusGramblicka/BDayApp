@@ -1,6 +1,6 @@
 ﻿using BDayServer.ActionFilters;
+using Contracts.DataTransferObjects.Auth;
 using Contracts.Exceptions;
-using Entities.DataTransferObjects.Auth;
 using Interfaces.Managers;
 using Microsoft.AspNetCore.Mvc;
 

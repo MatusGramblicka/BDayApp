@@ -1,4 +1,4 @@
-﻿using Contracts.EmailService.Models;
+﻿using Contracts.EmailService;
 using MimeKit;
 
 namespace EmailService.Extensions;

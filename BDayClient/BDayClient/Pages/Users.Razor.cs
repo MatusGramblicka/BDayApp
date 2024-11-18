@@ -2,7 +2,7 @@
 using BDayClient.HttpInterceptor;
 using BDayClient.HttpRepository;
 using Blazored.LocalStorage;
-using Entities.DataTransferObjects.User;
+using Contracts.DataTransferObjects.User;
 using Microsoft.AspNetCore.Components;
 using Newtonsoft.Json;
 

@@ -1,5 +1,5 @@
 ﻿using BDayClient.Pocos;
-using Entities.DataTransferObjects.Auth;
+using Contracts.DataTransferObjects.Auth;
 using System.Net;
 
 namespace BDayClient.HttpRepository;

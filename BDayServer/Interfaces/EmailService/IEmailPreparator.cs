@@ -1,4 +1,4 @@
-﻿using Contracts.EmailService.Models;
+﻿using Contracts.EmailService;
 
 namespace Interfaces.EmailService;
 

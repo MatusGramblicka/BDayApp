@@ -1,5 +1,5 @@
 ﻿using BDayServer.ActionFilters;
-using Contracts.EmailService.Models;
+using Contracts.EmailService;
 using Core;
 using Core.EmailService;
 using Core.Managers;
@@ -8,9 +8,11 @@ using Entities;
 using Entities.Configuration;
 using Entities.Models;
 using Interfaces;
+using Interfaces.Authentication;
 using Interfaces.DatabaseAccess;
 using Interfaces.EmailService;
 using Interfaces.Managers;
+using Interfaces.UserProvider;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Repository;

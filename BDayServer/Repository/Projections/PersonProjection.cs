@@ -1,5 +1,5 @@
-﻿using Entities.DataTransferObjects.Person;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
+using Contracts.DataTransferObjects.Person;
 using Entities.Models;
 
 namespace Repository.Projections;

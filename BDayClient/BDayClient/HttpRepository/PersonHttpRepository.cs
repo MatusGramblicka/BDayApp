@@ -1,6 +1,6 @@
 ﻿using BDayClient.Features;
+using Contracts.DataTransferObjects.Person;
 using Entities.Configuration;
-using Entities.DataTransferObjects.Person;
 using Entities.Models;
 using Entities.RequestFeatures;
 using Microsoft.AspNetCore.WebUtilities;

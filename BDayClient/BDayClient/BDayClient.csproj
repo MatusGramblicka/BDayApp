@@ -25,6 +25,7 @@
   </ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\..\BDayServer\Contracts\Contracts.csproj" />
 		<ProjectReference Include="..\..\BDayServer\Entities\Entities.csproj" />
 	</ItemGroup>
 

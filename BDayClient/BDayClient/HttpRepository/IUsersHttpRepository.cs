@@ -1,4 +1,4 @@
-﻿using Entities.DataTransferObjects.User;
+﻿using Contracts.DataTransferObjects.User;
 using System.Net;
 
 namespace BDayClient.HttpRepository;

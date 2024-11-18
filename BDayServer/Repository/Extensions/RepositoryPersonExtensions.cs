@@ -1,6 +1,6 @@
-﻿using Entities.DataTransferObjects.Person;
-using Repository.Extensions.Utility;
+﻿using Repository.Extensions.Utility;
 using System.Linq.Dynamic.Core;
+using Contracts.DataTransferObjects.Person;
 
 namespace Repository.Extensions;
 

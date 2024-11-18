@@ -1,5 +1,5 @@
 ﻿using BDayClient.Features;
-using Entities.DataTransferObjects.Person;
+using Contracts.DataTransferObjects.Person;
 using Entities.Models;
 using Entities.RequestFeatures;
 

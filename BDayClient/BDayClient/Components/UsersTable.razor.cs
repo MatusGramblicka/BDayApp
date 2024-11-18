@@ -1,5 +1,5 @@
 ﻿using BDayClient.Shared;
-using Entities.DataTransferObjects.User;
+using Contracts.DataTransferObjects.User;
 using Microsoft.AspNetCore.Components;
 
 namespace BDayClient.Components;

@@ -1,29 +1,24 @@
 ﻿using Entities.Models;
 using Microsoft.AspNetCore.Components;
-using System;
-using System.Collections.Generic;
 
-namespace BDayClient.Components
+namespace BDayClient.Components;
+
+public partial class PersonTableAdmin
 {
-    public partial class PersonTableAdmin
+    [Parameter]
+    public List<Person> Persons { get; set; }
+
+    private bool DisplayPerson(DateTime dayOfBirth, DateTime dayOfNameDay)
     {
-        [Parameter]
-        public List<Person> Persons { get; set; }
+        DateTime timeNow = DateTime.Today;
 
-        public DateTime timeNow = DateTime.Today;
-        public int age;
-        public int ageNameDay;
+        var age = timeNow.Year - dayOfBirth.Year;
+        var numOfDays = (dayOfBirth - timeNow.AddYears(-age)).Days;
 
-        private bool DisplayPerson(DateTime DayOfBirth, DateTime DayOfNameDay)
-        {
-            age = timeNow.Year - DayOfBirth.Year;
-            int numOfDays = (DayOfBirth - timeNow.AddYears(-age)).Days;
+        var ageNameDay = timeNow.Year - dayOfNameDay.Year;
+        var numOfDaysNameDay = (dayOfNameDay - timeNow.AddYears(-ageNameDay)).Days;
 
-            ageNameDay = timeNow.Year - DayOfNameDay.Year;
-            int numOfDaysNameDay = (DayOfNameDay - timeNow.AddYears(-ageNameDay)).Days;
-
-            bool result = ((numOfDays < 30) && (numOfDays >= 0)) || ((numOfDaysNameDay < 30) && (numOfDaysNameDay >= 0));
-            return result;
-        }
+        var result = (numOfDays < 30 && numOfDays >= 0) || (numOfDaysNameDay < 30 && numOfDaysNameDay >= 0);
+        return result;
     }
 }

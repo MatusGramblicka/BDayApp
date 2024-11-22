@@ -1,53 +1,43 @@
-﻿using EmailService.Contracts;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using Interfaces;
+using Interfaces.EmailService;
+using Interfaces.Scheduler;
 
-namespace BDayServer.HostedService
+namespace BDayServer.HostedService;
+
+public class ScheduleJob(
+    IScheduleConfig<ScheduleJob> config,
+    ILogger<ScheduleJob> logger,
+    IServiceProvider serviceProvider)
+    : CronJobService(config.CronExpression, config.TimeZoneInfo)
 {
-    public class ScheduleJob : CronJobService
+    private readonly IEmailSender _emailSender =
+        serviceProvider.CreateScope().ServiceProvider.GetRequiredService<IEmailSender>();
+
+    private readonly IEmailPreparator _emailPreparator =
+        serviceProvider.CreateScope().ServiceProvider.GetRequiredService<IEmailPreparator>();
+
+    //https://www.thecodebuzz.com/cannot-consume-scoped-service-from-singleton-ihostedservice/
+
+    public override Task StartAsync(CancellationToken cancellationToken)
     {
-        private readonly ILogger<ScheduleJob> _logger;
-        private readonly IEmailSender _emailSender;
-        private readonly IEmailPreparator _emailPreparator;
+        logger.LogInformation("ScheduleJob starts.");
+        return base.StartAsync(cancellationToken);
+    }
 
-        public ScheduleJob(IScheduleConfig<ScheduleJob> config, ILogger<ScheduleJob> logger,
-            IServiceProvider serviceProvider)
-            : base(config.CronExpression, config.TimeZoneInfo)
-        {
-            _logger = logger;
-            //https://www.thecodebuzz.com/cannot-consume-scoped-service-from-singleton-ihostedservice/
-            _emailPreparator = serviceProvider.CreateScope().ServiceProvider.GetRequiredService<IEmailPreparator>();
-            _emailSender = serviceProvider.CreateScope().ServiceProvider.GetRequiredService<IEmailSender>();
-        }
+    public override async Task DoWork(CancellationToken cancellationToken)
+    {
+        logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob is working.");
 
-        public override Task StartAsync(CancellationToken cancellationToken)
-        {
-            _logger.LogInformation("ScheduleJob starts.");
-            return base.StartAsync(cancellationToken);
-        }
+        var messages = _emailPreparator.PrepareMessage();
 
-        public override async Task DoWork(CancellationToken cancellationToken)
-        {
-            _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob is working.");
+        if (messages is not null)
+            foreach (var message in messages)
+                await _emailSender.SendEmailAsync(message);
+    }
 
-            var messages = _emailPreparator.PrepareMessage();
-
-            if (messages != null)
-            {
-                foreach (var message in messages)
-                {
-                    await _emailSender.SendEmailAsync(message);
-                }
-            }
-        }
-
-        public override Task StopAsync(CancellationToken cancellationToken)
-        {
-            _logger.LogInformation("ScheduleJob is stopping.");
-            return base.StopAsync(cancellationToken);
-        }
+    public override Task StopAsync(CancellationToken cancellationToken)
+    {
+        logger.LogInformation("ScheduleJob is stopping.");
+        return base.StopAsync(cancellationToken);
     }
 }

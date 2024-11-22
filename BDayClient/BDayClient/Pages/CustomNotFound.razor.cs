@@ -1,15 +1,14 @@
 ﻿using Microsoft.AspNetCore.Components;
 
-namespace BDayClient.Pages
-{
-	public partial class CustomNotFound
-	{
-		[Inject]
-		public NavigationManager NavigationManager { get; set; }
+namespace BDayClient.Pages;
 
-		public void NavigateToHome()
-		{
-			NavigationManager.NavigateTo("/login");
-		}
-	}
+public partial class CustomNotFound
+{
+    [Inject]
+    public NavigationManager NavigationManager { get; set; }
+
+    public void NavigateToHome()
+    {
+        NavigationManager.NavigateTo("/login");
+    }
 }

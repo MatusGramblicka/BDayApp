@@ -3,9 +3,6 @@ using BDayClient.HttpRepository;
 using Entities.Models;
 using Entities.RequestFeatures;
 using Microsoft.AspNetCore.Components;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace BDayClient.Pages;
 
@@ -24,7 +21,7 @@ public partial class Persons : IDisposable
 
     private bool _alreadyDisposed;
 
-    protected async override Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
         Interceptor.RegisterEvent();
         Interceptor.RegisterBeforeSendEvent();

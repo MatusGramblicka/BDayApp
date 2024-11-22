@@ -2,7 +2,7 @@
 
 <h2>Update Person Form</h2>
 
-@if (PersonForUpdateDto != null)
+@if (_personForUpdate is not null)
 {
 
 <EditForm EditContext="_editContext" OnValidSubmit="Update" class="card card-body bg-light mt-5">
@@ -11,29 +11,29 @@
     <div class="form-group row">
         <label for="name" class="col-md-2 col-form-label">Name:</label>
         <div class="col-md-10">
-            <InputText id="name" class="form-control" @bind-Value="PersonForUpdateDto.Name" />
-            <ValidationMessage For="@(() => PersonForUpdateDto.Name)" />
+            <InputText id="name" class="form-control" @bind-Value="_personForUpdate.Name" />
+            <ValidationMessage For="@(() => _personForUpdate.Name)" />
         </div>
     </div>
     <div class="form-group row">
         <label for="supplier" class="col-md-2 col-form-label">Surname:</label>
         <div class="col-md-10">
-            <InputText id="surname" class="form-control" @bind-Value="PersonForUpdateDto.Surname" />
-            <ValidationMessage For="@(() => PersonForUpdateDto.Surname)" />
+            <InputText id="surname" class="form-control" @bind-Value="_personForUpdate.Surname" />
+            <ValidationMessage For="@(() => _personForUpdate.Surname)" />
         </div>
     </div>
     <div class="form-group row">
         <label for="price" class="col-md-2 col-form-label">BirthDay:</label>
         <div class="col-md-10">
-            <InputDate id="birthDay" class="form-control" @bind-Value="PersonForUpdateDto.DayOfBirth" />
-            <ValidationMessage For="@(() => PersonForUpdateDto.DayOfBirth)" />
+            <InputDate id="birthDay" class="form-control" @bind-Value="_personForUpdate.DayOfBirth" />
+            <ValidationMessage For="@(() => _personForUpdate.DayOfBirth)" />
         </div>
     </div>
     <div class="form-group row">
 	    <label for="price" class="col-md-2 col-form-label">NameDay:</label>
 	    <div class="col-md-10">
-		    <InputDate id="NameDay" class="form-control" @bind-Value="PersonForUpdateDto.DayOfNameDay" />
-		    <ValidationMessage For="@(() => PersonForUpdateDto.DayOfNameDay)" />
+		    <InputDate id="NameDay" class="form-control" @bind-Value="_personForUpdate.DayOfNameDay" />
+		    <ValidationMessage For="@(() => _personForUpdate.DayOfNameDay)" />
 	    </div>
     </div>
     <AuthorizeView Roles="Administrator">
@@ -41,7 +41,7 @@
 		    <div class="form-group row">
 			    <label for="image" class="col-md-2 col-form-label">Image:</label>
 			    <div class="col-md-10">
-				    <ImageUpload OnChange="AssignImageUrl" ImgUrl="@PersonForUpdateDto.ImageUrl" />
+				    <ImageUpload OnChange="AssignImageUrl" ImgUrl="@_personForUpdate.ImageUrl" />
 			    </div>
 		    </div>
 		</Authorized>

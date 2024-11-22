@@ -1,52 +1,44 @@
 ﻿using BDayClient.HttpRepository;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading.Tasks;
 
-namespace BDayClient.Shared
+namespace BDayClient.Shared;
+
+public partial class ImageUpload
 {
-	public partial class ImageUpload
-	{
-		private string _fileUploadMessage = "No file chosen";
+    private string _fileUploadMessage = "No file chosen";
 
-		[Parameter]
-		public string ImgUrl { get; set; }
+    [Parameter]
+    public string ImgUrl { get; set; }
 
-		[Parameter]
-		public EventCallback<string> OnChange { get; set; }
+    [Parameter]
+    public EventCallback<string> OnChange { get; set; }
 
-		[Inject]
-		public IPersonHttpRepository Repository { get; set; }
+    [Inject]
+    public IPersonHttpRepository Repository { get; set; }
 
-		private async Task HandleSelected(InputFileChangeEventArgs e)
-		{
-			var imageFile = e.File;
-			_fileUploadMessage = string.Empty;
+    private async Task HandleSelected(InputFileChangeEventArgs e)
+    {
+        var imageFile = e.File;
+        _fileUploadMessage = string.Empty;
 
-			if (imageFile == null)
-				return;
+        if (imageFile is null)
+            return;
 
-			_fileUploadMessage += $"{imageFile.Name}";
+        _fileUploadMessage += $"{imageFile.Name}";
 
-			var resizedFile = await imageFile.RequestImageFileAsync("image/png", 300, 500);
+        var resizedFile = await imageFile.RequestImageFileAsync("image/png", 300, 500);
 
-			using (var ms = resizedFile.OpenReadStream(resizedFile.Size))
-			{
-				var content = new MultipartFormDataContent();
-				content.Headers.ContentDisposition =
-					new ContentDispositionHeaderValue("form-data");
-				content.Add(new StreamContent(ms, Convert.ToInt32(resizedFile.Size)),
-					"image", imageFile.Name);
+        await using var ms = resizedFile.OpenReadStream(resizedFile.Size);
+        var content = new MultipartFormDataContent();
+        content.Headers.ContentDisposition =
+            new ContentDispositionHeaderValue("form-data");
+        content.Add(new StreamContent(ms, Convert.ToInt32(resizedFile.Size)),
+            "image", imageFile.Name);
 
-				ImgUrl = await Repository.UploadPersonImage(content);
+        ImgUrl = await Repository.UploadPersonImage(content);
 
-				await OnChange.InvokeAsync(ImgUrl);
-			}
-		}
-	}
+        await OnChange.InvokeAsync(ImgUrl);
+    }
 }

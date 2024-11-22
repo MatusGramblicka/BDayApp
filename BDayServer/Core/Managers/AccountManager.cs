@@ -3,7 +3,6 @@ using Contracts.DataTransferObjects.User;
 using Contracts.EmailService;
 using Contracts.Exceptions;
 using Entities.Models;
-using Interfaces;
 using Interfaces.Authentication;
 using Interfaces.EmailService;
 using Interfaces.Managers;

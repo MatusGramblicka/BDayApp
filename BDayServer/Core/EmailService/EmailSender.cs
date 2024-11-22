@@ -8,19 +8,12 @@ using MimeKit;
 
 namespace Core.EmailService;
 
-public class EmailSender : IEmailSender
+public class EmailSender(IOptions<EmailConfiguration> emailConfig, ILogger<EmailSender> logger)
+    : IEmailSender
 {
     private const string AuthenticationMechanisms = "XOAUTH2";
 
-    private readonly ILogger<EmailSender> _logger;
-
-    private readonly EmailConfiguration _emailConfig;
-
-    public EmailSender(IOptions<EmailConfiguration> emailConfig, ILogger<EmailSender> logger)
-    {
-        _emailConfig = emailConfig.Value;
-        _logger = logger;
-    }
+    private readonly EmailConfiguration _emailConfig = emailConfig.Value;
 
     public void SendEmail(Message message)
     {
@@ -53,7 +46,7 @@ public class EmailSender : IEmailSender
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Sending EmailConfiguration Exception: {ex}");
+            logger.LogError($"Sending EmailConfiguration Exception: {ex}");
             throw;
         }
         finally
@@ -76,7 +69,7 @@ public class EmailSender : IEmailSender
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Sending EmailConfiguration Exception: {ex}");
+            logger.LogError($"Sending EmailConfiguration Exception: {ex}");
             throw;
         }
         finally

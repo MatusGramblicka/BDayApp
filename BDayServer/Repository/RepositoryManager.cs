@@ -1,24 +1,15 @@
-﻿using Entities;
-using Interfaces.DatabaseAccess;
-using Repository.Configuration;
+﻿using Interfaces.DatabaseAccess;
 
 namespace Repository;
 
-public class RepositoryManager : IRepositoryManager
+public class RepositoryManager(RepositoryContext repositoryContext) : IRepositoryManager
 {
-    private readonly RepositoryContext _repositoryContext;
-
     private IPersonRepository _personRepository;
     private IEventRepository _eventRepository;
 
-    public RepositoryManager(RepositoryContext repositoryContext)
-    {
-        _repositoryContext = repositoryContext;
-    }
+    public IPersonRepository Person => _personRepository ??= new PersonRepository(repositoryContext);
 
-    public IPersonRepository Person => _personRepository ??= new PersonRepository(_repositoryContext);
+    public IEventRepository Event => _eventRepository ??= new EventRepository(repositoryContext);
 
-    public IEventRepository Event => _eventRepository ??= new EventRepository(_repositoryContext);
-
-    public Task SaveAsync() => _repositoryContext.SaveChangesAsync();
+    public Task SaveAsync() => repositoryContext.SaveChangesAsync();
 }

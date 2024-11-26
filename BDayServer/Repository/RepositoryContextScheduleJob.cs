@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace Entities;
+namespace Repository;
 
 public class RepositoryContextScheduleJob : IdentityDbContext<User>
 {

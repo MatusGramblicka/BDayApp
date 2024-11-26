@@ -1,11 +1,10 @@
 ﻿using AutoMapper;
-using Contracts.DataTransferObjects.Person;
 using Contracts.EmailService;
-using Entities;
 using Entities.Models;
 using Interfaces.EmailService;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
+using Repository;
 
 namespace Core.EmailService;
 
@@ -27,12 +26,21 @@ public class EmailPreparator : IEmailPreparator
 
     public List<Message>? PrepareMessage()
     {
-        var allUsersEmails = _userManager.Users.Select(s => s.Email).ToArray();
+        //var allUsersEmails = _userManager.Users.Select(s => s.Email).ToArray();
 
-        var personsFromDb = _repositoryContextScheduleJob.Persons.ToList();
-        var personsDto = _mapper.Map<IEnumerable<PersonEmailDto>>(personsFromDb).ToList();
+        //var personsFromDb = _repositoryContextScheduleJob.Persons.ToList();
+        //var personsDto = _mapper.Map<IEnumerable<PersonEmailDto>>(personsFromDb).ToList();
 
-        var messageBirthAndNameDays = PrepareMessagesBirthAndNameDay(personsDto);
+        var personForEmailCreation = _repositoryContextScheduleJob.Persons.Select(p => new PersonForEmailCreation
+        {
+            CreatorEmail = p.User.Email,
+            Name = p.Name,
+            Surname = p.Surname,
+            DayOfBirth = p.DayOfBirth,
+            DayOfNameDay = p.DayOfNameDay
+        });
+
+        var messageBirthAndNameDays = PrepareMessagesBirthAndNameDay(personForEmailCreation/*personsDto*/);
 
         var massages = new List<Message>();
 
@@ -42,8 +50,8 @@ public class EmailPreparator : IEmailPreparator
         var messageDaysByPersonCreators = messageBirthAndNameDays.GroupBy(m => m.Recipient);
         foreach (var messageDaysByPersonCreator in messageDaysByPersonCreators)
         {
-            if (!allUsersEmails.Contains(messageDaysByPersonCreator.Key))
-                continue;
+            //if (!allUsersEmails.Contains(messageDaysByPersonCreator.Key))
+            //    continue;
 
             var recipients = new[] {messageDaysByPersonCreator.Key};
 
@@ -55,7 +63,6 @@ public class EmailPreparator : IEmailPreparator
                     messageBirth += recipientsMess.Message;
                 else
                     messageName += recipientsMess.Message;
-                
             }
 
             massages.Add(new Message(recipients, "Celebration",
@@ -66,37 +73,27 @@ public class EmailPreparator : IEmailPreparator
         return massages;
     }
 
-    private List<RecipientMessage> PrepareMessagesBirthAndNameDay(IEnumerable<PersonEmailDto> personsEmailDto)
+    private List<RecipientMessage> PrepareMessagesBirthAndNameDay(IEnumerable<PersonForEmailCreation> /*personsEmailDto*/personForEmailCreation)
     {
-        var birthDayPersons = personsEmailDto
+        var birthDayPersons = personForEmailCreation
             .Where(p => HasCloseDay(p.DayOfBirth));
 
-        var recipientsMessageListBirthDay = new List<RecipientMessage>();
-
-        foreach (var birthDayPerson in birthDayPersons)
+        var recipientsMessageListBirthDay = birthDayPersons.Select(birthDayPerson => new RecipientMessage
         {
-            recipientsMessageListBirthDay.Add(new RecipientMessage
-            {
-                Message = $"{birthDayPerson.Name} {birthDayPerson.Surname} {birthDayPerson.DayOfBirth:dd/MM}\n",
-                Recipient = birthDayPerson.PersonCreator,
-                CelebrationType = DayType.Birthday
-            });
-        }
+            Message = $"{birthDayPerson.Name} {birthDayPerson.Surname} {birthDayPerson.DayOfBirth:dd/MM}\n",
+            Recipient = birthDayPerson.CreatorEmail, 
+            CelebrationType = DayType.Birthday
+        });
 
-        var nameDayPersons = personsEmailDto
+        var nameDayPersons = personForEmailCreation
             .Where(p => HasCloseDay(p.DayOfNameDay));
 
-        var recipientsMessageListNameDay = new List<RecipientMessage>();
-
-        foreach (var nameDayPerson in nameDayPersons)
+        var recipientsMessageListNameDay = nameDayPersons.Select(nameDayPerson => new RecipientMessage
         {
-            recipientsMessageListNameDay.Add(new RecipientMessage
-            {
-                Message = $"{nameDayPerson.Name} {nameDayPerson.Surname} {nameDayPerson.DayOfNameDay:dd/MM}\n",
-                Recipient = nameDayPerson.PersonCreator,
-                CelebrationType = DayType.NameDay
-            });
-        }
+            Message = $"{nameDayPerson.Name} {nameDayPerson.Surname} {nameDayPerson.DayOfNameDay:dd/MM}\n",
+            Recipient = nameDayPerson.CreatorEmail, 
+            CelebrationType = DayType.NameDay
+        });
 
         var recipientsMessageList = new List<RecipientMessage>();
         recipientsMessageList.AddRange(recipientsMessageListBirthDay);

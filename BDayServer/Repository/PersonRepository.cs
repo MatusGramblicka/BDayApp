@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Repository.Extensions;
 using Repository.Projections;
 
-namespace Repository.Configuration;
+namespace Repository;
 
 internal class PersonRepository(RepositoryContext repositoryContext)
     : RepositoryBase<Person>(repositoryContext), IPersonRepository

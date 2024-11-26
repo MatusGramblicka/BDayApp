@@ -22,8 +22,6 @@ public class Person
 
     public string? ImageUrl { get; set; }
 
-    public string? PersonCreator { get; set; }
-
     [ForeignKey(nameof(User))]
     public string UserId { get; set; }
 

@@ -2,7 +2,7 @@
 
 public class RecipientMessage
 {
-    public string Message { get; set; }
-    public string Recipient { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public string? Recipient { get; set; }
     public DayType CelebrationType { get; set; }
 }

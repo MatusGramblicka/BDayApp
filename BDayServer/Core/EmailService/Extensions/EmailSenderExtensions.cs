@@ -1,7 +1,7 @@
 ﻿using Contracts.EmailService;
 using MimeKit;
 
-namespace EmailService.Extensions;
+namespace Core.EmailService.Extensions;
 
 public static class EmailSenderExtensions
 {

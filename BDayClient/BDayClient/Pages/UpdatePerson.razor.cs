@@ -1,22 +1,25 @@
 ﻿using AutoMapper;
 using BDayClient.HttpInterceptor;
 using BDayClient.HttpRepository;
+using BDayClient.Pocos;
 using Blazored.Toast.Services;
-using Entities.DataTransferObjects.Person;
+using Contracts.DataTransferObjects.Person;
 using Entities.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
-using System;
-using System.Threading.Tasks;
 
 namespace BDayClient.Pages;
 
 public partial class UpdatePerson : IDisposable
 {
+    // todo do not use dto, only after map in update
+    //private PersonForUpdateDto PersonForUpdateDto { get; set; } = new();
+    private PersonForUpdate _personForUpdate = new();
+
     private Person _person;
-    private PersonForUpdateDto PersonForUpdateDto { get; set; } = new();
     private EditContext _editContext;
     private bool formInvalid = true;
+    private bool _alreadyDisposed;
 
     [Inject] public IPersonHttpRepository PersonRepo { get; set; }
 
@@ -27,15 +30,13 @@ public partial class UpdatePerson : IDisposable
     [Inject] public IMapper Mapper { get; set; }
 
     [Parameter] public Guid Id { get; set; }
-
-    private bool _alreadyDisposed;
-
+    
     protected override async Task OnInitializedAsync()
     {
         _person = await PersonRepo.GetPerson(Id);
-        Mapper.Map(_person, PersonForUpdateDto); 
+        Mapper.Map(_person, _personForUpdate); 
 
-        _editContext = new EditContext(PersonForUpdateDto);
+        _editContext = new EditContext(_personForUpdate);
         _editContext.OnFieldChanged += HandleFieldChanged;
         Interceptor.RegisterEvent();
     }
@@ -48,16 +49,25 @@ public partial class UpdatePerson : IDisposable
 
     private async Task Update()
     {
-        await PersonRepo.UpdatePerson(_person.Id, PersonForUpdateDto);
+        var personForUpdateDto = new PersonForUpdateDto
+        {
+            DayOfBirth = _personForUpdate.DayOfBirth,
+            DayOfNameDay = _personForUpdate.DayOfNameDay,
+            ImageUrl = _personForUpdate.ImageUrl,
+            Name = _personForUpdate.Name,
+            Surname = _personForUpdate.Surname
+        };
+     
+        await PersonRepo.UpdatePerson(_person.Id, personForUpdateDto);
 
-        ToastService.ShowSuccess($"Action successful. " +
-                                 $"Person \"{PersonForUpdateDto.Name}\" successfully updated.");
+        ToastService.ShowSuccess("Action successful. " +
+                                 $"Person \"{personForUpdateDto.Name}\" successfully updated.");
     }
 
     private void AssignImageUrl(string imgUrl)
     {
-        formInvalid = PersonForUpdateDto.ImageUrl == imgUrl ? true : false;
-        PersonForUpdateDto.ImageUrl = imgUrl;
+        formInvalid = _personForUpdate.ImageUrl == imgUrl;
+        _personForUpdate.ImageUrl = imgUrl;
         StateHasChanged();
     }
 

@@ -1,8 +1,4 @@
 ﻿using Cronos;
-using Microsoft.Extensions.Hosting;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace BDayServer.HostedService;
 
@@ -10,6 +6,7 @@ namespace BDayServer.HostedService;
 public class CronJobService : IHostedService, IDisposable
 {
     private System.Timers.Timer _timer;
+
     private readonly CronExpression _expression;
     private readonly TimeZoneInfo _timeZoneInfo;
 
@@ -33,10 +30,8 @@ public class CronJobService : IHostedService, IDisposable
         {
             var delay = next.Value - DateTimeOffset.Now;
             if (delay.TotalMilliseconds <= 0)
-            {
                 await ScheduleJob(cancellationToken);
-            }
-
+            
             _timer = new System.Timers.Timer(delay.TotalMilliseconds);
             _timer.Elapsed += async (sender, args) =>
             {
@@ -44,15 +39,13 @@ public class CronJobService : IHostedService, IDisposable
                 _timer = null;
 
                 if (!cancellationToken.IsCancellationRequested)
-                {
                     await DoWork(cancellationToken);
-                }
-
+                
                 if (!cancellationToken.IsCancellationRequested)
-                {
                     await ScheduleJob(cancellationToken); // reschedule next
-                }
+
             };
+
             _timer.Start();
         }
 

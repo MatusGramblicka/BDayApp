@@ -1,16 +1,13 @@
-﻿using Entities.DataTransferObjects.User;
-using System.Collections.Generic;
+﻿using Contracts.DataTransferObjects.User;
 using System.Net;
-using System.Threading.Tasks;
 
-namespace BDayClient.HttpRepository
+namespace BDayClient.HttpRepository;
+
+public interface IUsersHttpRepository
 {
-    public interface IUsersHttpRepository
-    {
-        Task<List<UserLite>> GetUsers();
-        Task<HttpStatusCode> UpdateUser(UserLite user);
-        Task<HttpStatusCode> RemoveAdminRole(UserLite user);
-        Task<HttpStatusCode> DeleteUser(UserLite user);
-        Task<HttpStatusCode> SetTwoFactorAuthorization(UserLite2StepsAuthDto user2StepsAuth);
-    }
+    Task<List<UserLite>> GetUsers();
+    Task<HttpStatusCode> UpdateUser(UserLite user);
+    Task<HttpStatusCode> RemoveAdminRole(UserLite user);
+    Task<HttpStatusCode> DeleteUser(UserLite user);
+    Task<HttpStatusCode> SetTwoFactorAuthorization(UserLite2StepsAuthDto user2StepsAuth);
 }

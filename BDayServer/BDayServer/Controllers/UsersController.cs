@@ -1,133 +1,127 @@
-﻿using AutoMapper;
-using Entities;
-using Entities.DataTransferObjects;
-using Entities.DataTransferObjects.User;
+﻿using BDayServer.ActionFilters;
+using Contracts.DataTransferObjects.Auth;
+using Contracts.DataTransferObjects.User;
+using Contracts.Exceptions;
+using Interfaces.Managers;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace BDayServer.Controllers
+namespace BDayServer.Controllers;
+
+[Route("api/users")]
+[ApiController]
+[Authorize(Roles = "Administrator")]
+public class UsersController(IUserManager userManager) : ControllerBase
 {
-    [Route("api/users")]
-    [ApiController]
-    [Authorize(Roles = "Administrator")]
-    public class UsersController : ControllerBase
+    [HttpGet("Users")]
+    public IActionResult GetUsers()
     {
-        private readonly UserManager<User> _userManager;       
+        var allUsersLite = userManager.GetUsers();
 
-        public UsersController(UserManager<User> userManager)
+        return Ok(allUsersLite);
+    }
+
+    [HttpPost("UpdateUser")]
+    [ServiceFilter(typeof(ValidationFilterAttribute))]
+    public async Task<IActionResult> UpdateUser([FromBody] UserLite userForUpdate)
+    {
+        if (userForUpdate is null)
+            return BadRequest("Object is null");
+
+        try
         {
-            _userManager = userManager;          
+            await userManager.UpdateUser(userForUpdate);
         }
-
-        [HttpGet("Users")]
-        public IActionResult GetUsers()
+        catch (UnauthorizedUserException ex)
         {
-            var allUsersLite = _userManager.Users.Select(u => new UserLite
+            return Unauthorized(new AuthResponseDto
             {
-                Email = u.Email,
-                IsAdmin = u.IsAdmin,
-                TwoFactorEnabled = u.TwoFactorEnabled
+                ErrorMessage = ex.Message
             });
-            //var usersAdministrator = await _userManager.GetUsersInRoleAsync("Administrator");                       
-
-            return Ok(allUsersLite);
         }
-
-        [HttpPost("UpdateUser")]
-        public async Task<IActionResult> UpdateUser([FromBody] UserLite userForUpdate)
+        catch (Exception)
         {
-            var user = await _userManager.FindByNameAsync(userForUpdate.Email);
-
-            if (user == null)
-            {
-                return Unauthorized(new AuthResponseDto
-                {
-                    ErrorMessage = "Invalid Request"
-                });
-            }
-
-            await _userManager.AddToRoleAsync(user, "Administrator");
-            user.IsAdmin = true;
-            await _userManager.UpdateAsync(user);
-
-            return Ok();
+            return BadRequest("Unspecified problem");
         }
 
-        [HttpPost("RemoveAdminRole")]
-        public async Task<IActionResult> RemoveAdminRole([FromBody] UserLite userForUpdate)
+        return NoContent();
+    }
+
+    [HttpPost("RemoveAdminRole")]
+    [ServiceFilter(typeof(ValidationFilterAttribute))]
+    public async Task<IActionResult> RemoveAdminRole([FromBody] UserLite userForUpdate)
+    {
+        if (userForUpdate is null)
+            return BadRequest("Object is null");
+
+        try
         {
-            var user = await _userManager.FindByNameAsync(userForUpdate.Email);
-
-            if (user == null)
-            {
-                return Unauthorized(new AuthResponseDto
-                {
-                    ErrorMessage = "Invalid Request"
-                });
-            }
-
-            await _userManager.RemoveFromRoleAsync(user, "Administrator");
-            user.IsAdmin = false;
-            await _userManager.UpdateAsync(user);
-
-            return Ok();
+            await userManager.RemoveAdminRole(userForUpdate);
         }
-
-        [HttpPost("DeleteUser")]
-        public async Task<IActionResult> DeleteUser([FromBody] UserLite userForDeletion)
+        catch (UnauthorizedUserException ex)
         {
-            var user = await _userManager.FindByNameAsync(userForDeletion.Email);
-
-            if (user == null)
+            return Unauthorized(new AuthResponseDto
             {
-                return Unauthorized(new AuthResponseDto
-                {
-                    ErrorMessage = "Invalid Request"
-                });
-            }
-
-            var logins = await _userManager.GetLoginsAsync(user);
-
-            var rolesForUser = await _userManager.GetRolesAsync(user);
-
-            foreach (var login in logins)
-            {
-                await _userManager.RemoveLoginAsync(user, login.LoginProvider, login.ProviderKey);
-            }
-
-            if (rolesForUser.Count > 0)
-            {
-                foreach (var item in rolesForUser)
-                {
-                    await _userManager.RemoveFromRoleAsync(user, item);
-                }
-            }
-
-            //Delete User
-            await _userManager.DeleteAsync(user);
-
-            return Ok();
+                ErrorMessage = ex.Message
+            });
         }
-
-        [HttpPost("SetTwoFactorAuthorization")]
-        public async Task<IActionResult> SetTwoFactorAuthorization([FromBody] UserLite2StepsAuthDto userForUpdate)
+        catch (Exception)
         {
-            var user = await _userManager.FindByNameAsync(userForUpdate.Email);
-
-            if (user == null)
-            {
-                return Unauthorized(new AuthResponseDto
-                {
-                    ErrorMessage = "Invalid Request"
-                });
-            }
-
-            await _userManager.SetTwoFactorEnabledAsync(user, userForUpdate.TwoFactorEnabled);
-
-            return Ok();
+            return BadRequest("Unspecified problem");
         }
+
+        return NoContent();
+    }
+
+    [HttpPost("DeleteUser")]
+    [ServiceFilter(typeof(ValidationFilterAttribute))]
+    public async Task<IActionResult> DeleteUser([FromBody] UserLite userForDeletion)
+    {
+        if (userForDeletion is null)
+            return BadRequest("Object is null");
+
+        try
+        {
+            await userManager.DeleteUser(userForDeletion);
+        }
+        catch (UnauthorizedUserException ex)
+        {
+            return Unauthorized(new AuthResponseDto
+            {
+                ErrorMessage = ex.Message
+            });
+        }
+        catch (Exception)
+        {
+            return BadRequest("Unspecified problem");
+        }
+
+        return NoContent();
+    }
+
+    [HttpPost("SetTwoFactorAuthorization")]
+    [ServiceFilter(typeof(ValidationFilterAttribute))]
+    public async Task<IActionResult> SetTwoFactorAuthorization([FromBody] UserLite2StepsAuthDto userForUpdate)
+    {
+        if (userForUpdate is null)
+            return BadRequest("Object is null");
+
+        try
+        {
+            await userManager.SetTwoFactorAuthorization(userForUpdate);
+        }
+        catch (UnauthorizedUserException ex)
+        {
+            return Unauthorized(new AuthResponseDto
+            {
+                ErrorMessage = ex.Message
+            });
+        }
+        catch (Exception)
+        {
+            return BadRequest("Unspecified problem");
+        }
+
+        return NoContent();
     }
 }

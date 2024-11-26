@@ -9,15 +9,15 @@
     </div>
 }
 
-<EditForm Model="_twoFactorDto" OnValidSubmit="Submit"
+<EditForm Model="_twoFactorVerification" OnValidSubmit="Submit"
           class="card card-body bg-light mt-5">
     <DataAnnotationsValidator />
     <div class="form-group row">
         <label for="token" class="col-md-2 col-form-label">Token:</label>
         <div class="col-md-10">
             <InputText type="text" id="token" class="form-control"
-                       @bind-Value="_twoFactorDto.TwoFactorToken" />
-            <ValidationMessage For="@(() => _twoFactorDto.TwoFactorToken)" />
+                       @bind-Value="_twoFactorVerification.TwoFactorToken" />
+            <ValidationMessage For="@(() => _twoFactorVerification.TwoFactorToken)" />
         </div>
     </div>
     <div class="row">

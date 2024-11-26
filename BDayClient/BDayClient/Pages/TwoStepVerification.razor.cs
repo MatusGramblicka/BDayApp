@@ -1,49 +1,55 @@
 ﻿using BDayClient.HttpRepository;
-using Entities.DataTransferObjects;
+using BDayClient.Pocos;
+using Contracts.DataTransferObjects.Auth;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.WebUtilities;
-using System.Threading.Tasks;
 
-namespace BDayClient.Pages
+namespace BDayClient.Pages;
+
+public partial class TwoStepVerification
 {
-    public partial class TwoStepVerification
+    private TwoFactorVerification _twoFactorVerification = new();
+
+    private bool _showError;
+    private string _error;
+
+    [Inject] public IAuthenticationService AuthService { get; set; }
+
+    [Inject] public NavigationManager NavigationManager { get; set; }
+
+    protected override void OnInitialized()
     {
-        private TwoFactorVerificationDto _twoFactorDto = new();
-        private bool _showError;
-        private string _error;
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
 
-        [Inject] public IAuthenticationService AuthService { get; set; }
-        [Inject] public NavigationManager NavigationManager { get; set; }
-
-        protected override void OnInitialized()
+        var queryStrings = QueryHelpers.ParseQuery(uri.Query);
+        if (queryStrings.TryGetValue("email", out var email) &&
+            queryStrings.TryGetValue("provider", out var provider))
         {
-            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-
-            var queryStrings = QueryHelpers.ParseQuery(uri.Query);
-            if (queryStrings.TryGetValue("email", out var email) &&
-                queryStrings.TryGetValue("provider", out var provider))
-            {
-                _twoFactorDto.Email = email;
-                _twoFactorDto.Provider = provider;
-            }
-            else
-            {
-                NavigationManager.NavigateTo("/");
-            }
+            _twoFactorVerification.Email = email;
+            _twoFactorVerification.Provider = provider;
         }
+        else
+            NavigationManager.NavigateTo("/");
+    }
 
-        private async Task Submit()
+    private async Task Submit()
+    {
+        _showError = false;
+
+        var twoFactorDto = new TwoFactorVerificationDto
         {
-            _showError = false;
+            Email = _twoFactorVerification.Email,
+            Provider = _twoFactorVerification.Provider,
+            TwoFactorToken = _twoFactorVerification.TwoFactorToken
+        };
 
-            var result = await AuthService.LoginVerification(_twoFactorDto);
-            if (result.IsAuthSuccessful)
-                NavigationManager.NavigateTo("/");
-            else
-            {
-                _error = result.ErrorMessage;
-                _showError = true;
-            }
+        var result = await AuthService.LoginVerification(twoFactorDto);
+        if (result.IsAuthSuccessful)
+            NavigationManager.NavigateTo("/");
+        else
+        {
+            _error = result.ErrorMessage;
+            _showError = true;
         }
     }
 }

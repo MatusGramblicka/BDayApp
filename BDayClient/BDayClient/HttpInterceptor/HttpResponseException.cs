@@ -1,30 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Serialization;
-using System.Threading.Tasks;
+﻿using System.Runtime.Serialization;
 
-namespace BDayClient.HttpInterceptor
+namespace BDayClient.HttpInterceptor;
+
+[Serializable]
+internal class HttpResponseException : Exception
 {
-	[Serializable]
-	internal class HttpResponseException : Exception
-	{
-		public HttpResponseException()
-		{
-		}
+    public HttpResponseException()
+    {
+    }
 
-		public HttpResponseException(string message) : base(message)
-		{
-		}
+    public HttpResponseException(string message) : base(message)
+    {
+    }
 
-		public HttpResponseException(string message, Exception innerException)
-			: base(message, innerException)
-		{
-		}
+    public HttpResponseException(string message, Exception innerException)
+        : base(message, innerException)
+    {
+    }
 
-		protected HttpResponseException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
-	}
+    protected HttpResponseException(SerializationInfo info, StreamingContext context)
+        : base(info, context)
+    {
+    }
 }

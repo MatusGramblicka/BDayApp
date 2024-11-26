@@ -2,13 +2,9 @@
 using BDayClient.HttpInterceptor;
 using BDayClient.HttpRepository;
 using Blazored.LocalStorage;
-using Entities.DataTransferObjects.User;
+using Contracts.DataTransferObjects.User;
 using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace BDayClient.Pages;
 
@@ -20,9 +16,7 @@ public partial class Users : IDisposable
     [Inject] public IUsersHttpRepository UsersHttpRepository { get; set; }
     [Inject] public HttpInterceptorService Interceptor { get; set; }
     [Inject] public NavigationManager NavigationManager { get; set; }
-
     [Inject] public ILocalStorageService LocalStorageService { get; set; }
-
     [Inject] public ILogger<Users> Logger { get; set; }
 
     private bool _alreadyDisposed;

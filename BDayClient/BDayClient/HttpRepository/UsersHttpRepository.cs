@@ -1,58 +1,47 @@
-﻿using Entities.DataTransferObjects.User;
-using System.Collections.Generic;
+﻿using Contracts.DataTransferObjects.User;
 using System.Net;
-using System.Net.Http;
 using System.Net.Http.Json;
-using System.Threading.Tasks;
 
-namespace BDayClient.HttpRepository
+namespace BDayClient.HttpRepository;
+
+public class UsersHttpRepository(HttpClient client) : IUsersHttpRepository
 {
-    public class UsersHttpRepository : IUsersHttpRepository
+    public async Task<List<UserLite>> GetUsers()
     {
-        private readonly HttpClient _client;
+        var usersResult = await client.GetFromJsonAsync<List<UserLite>>("users/users");
 
-        public UsersHttpRepository(HttpClient client)
-        {
-            _client = client;
-        }
+        return usersResult;
+    }
 
-        public async Task<List<UserLite>> GetUsers()
-        {
-            var usersResult = await _client.GetFromJsonAsync<List<UserLite>>("users/users");
+    public async Task<HttpStatusCode> UpdateUser(UserLite user)
+    {
+        var result = await client.PostAsJsonAsync("users/updateuser",
+            user);
 
-            return usersResult;
-        }
+        return result.StatusCode;
+    }
 
-        public async Task<HttpStatusCode> UpdateUser(UserLite user)
-        {
-            var result = await _client.PostAsJsonAsync("users/updateuser",
-                user);
+    public async Task<HttpStatusCode> RemoveAdminRole(UserLite user)
+    {
+        var result = await client.PostAsJsonAsync("users/removeadminrole",
+            user);
 
-            return result.StatusCode;
-        }
+        return result.StatusCode;
+    }
 
-        public async Task<HttpStatusCode> RemoveAdminRole(UserLite user)
-        {
-            var result = await _client.PostAsJsonAsync("users/removeadminrole",
-                user);
+    public async Task<HttpStatusCode> DeleteUser(UserLite user)
+    {
+        var result = await client.PostAsJsonAsync("users/deleteuser",
+            user);
 
-            return result.StatusCode;
-        }
+        return result.StatusCode;
+    }
 
-        public async Task<HttpStatusCode> DeleteUser(UserLite user)
-        {
-            var result = await _client.PostAsJsonAsync("users/deleteuser",
-                user);
+    public async Task<HttpStatusCode> SetTwoFactorAuthorization(UserLite2StepsAuthDto user2StepsAuth)
+    {
+        var result = await client.PostAsJsonAsync("users/SetTwoFactorAuthorization",
+            user2StepsAuth);
 
-            return result.StatusCode;
-        }
-
-        public async Task<HttpStatusCode> SetTwoFactorAuthorization(UserLite2StepsAuthDto user2StepsAuth)
-        {
-            var result = await _client.PostAsJsonAsync("users/SetTwoFactorAuthorization",
-                user2StepsAuth);
-
-            return result.StatusCode;
-        }
+        return result.StatusCode;
     }
 }

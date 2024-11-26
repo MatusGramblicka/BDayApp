@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30907.101
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BDayClient", "BDayClient\BDayClient.csproj", "{C216594F-C1F0-4208-93F7-7EB3658BCE5C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Entities", "..\BDayServer\Entities\Entities.csproj", "{3A3BEAD4-CF58-4105-9A8B-EFDE72C9B5B9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Contracts", "..\BDayServer\Contracts\Contracts.csproj", "{A7507A79-FB50-43F1-A9DF-F90B57B95077}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{3A3BEAD4-CF58-4105-9A8B-EFDE72C9B5B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3A3BEAD4-CF58-4105-9A8B-EFDE72C9B5B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3A3BEAD4-CF58-4105-9A8B-EFDE72C9B5B9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A7507A79-FB50-43F1-A9DF-F90B57B95077}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7507A79-FB50-43F1-A9DF-F90B57B95077}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7507A79-FB50-43F1-A9DF-F90B57B95077}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7507A79-FB50-43F1-A9DF-F90B57B95077}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

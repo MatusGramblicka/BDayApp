@@ -1,62 +1,55 @@
-﻿using BDayServer.Services;
-using Entities;
-using Entities.DataTransferObjects;
-using Microsoft.AspNetCore.Identity;
+﻿using BDayServer.ActionFilters;
+using Contracts.DataTransferObjects.Auth;
+using Contracts.Exceptions;
+using Interfaces.Managers;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Threading.Tasks;
 
-namespace BDayServer.Controllers
+namespace BDayServer.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class TokenController(ITokenManager tokenManager) : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class TokenController : ControllerBase
+    [HttpPost("refresh")]
+    [ServiceFilter(typeof(ValidationFilterAttribute))]
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenDto tokenDto)
     {
-        private readonly UserManager<User> _userManager;
-        private readonly IAuthenticationService _authenticationService;
+        if (tokenDto is null)
+            return BadRequest("Object is null");
 
-        public TokenController(UserManager<User> userManager,
-            IAuthenticationService authenticationService)
+        string token;
+        string refreshToken;
+
+        try
         {
-            _userManager = userManager;
-            _authenticationService = authenticationService;
+            (token, refreshToken) = await tokenManager.Refresh(tokenDto);
         }
-
-        [HttpPost("refresh")]
-        public async Task<IActionResult> Refresh(
-            [FromBody] RefreshTokenDto tokenDto)
+        catch (ArgumentNullException)
         {
-            if (tokenDto == null)
-                return BadRequest(new AuthResponseDto
-                {
-                    IsAuthSuccessful = false,
-                    ErrorMessage = "Invalid client request"
-                });
-
-            var principal = _authenticationService
-                .GetPrincipalFromExpiredToken(tokenDto.Token);
-            var username = principal.Identity.Name;
-
-            var user = await _userManager.FindByEmailAsync(username);
-            if (user == null || user.RefreshToken != tokenDto.RefreshToken ||
-                user.RefreshTokenExpiryTime <= DateTime.Now)
-                return BadRequest(new AuthResponseDto
-                {
-                    IsAuthSuccessful = false,
-                    ErrorMessage = "Invalid client request"
-                });
-
-            var token = await _authenticationService.GetToken(user);
-            user.RefreshToken = _authenticationService.GenerateRefreshToken();
-
-            await _userManager.UpdateAsync(user);
-
-            return Ok(new AuthResponseDto
+            return BadRequest(new AuthResponseDto
             {
-                Token = token,
-                RefreshToken = user.RefreshToken,
-                IsAuthSuccessful = true
+                IsAuthSuccessful = false,
+                ErrorMessage = "Invalid client request"
             });
         }
+        catch (TokenOperationException ex)
+        {
+            return BadRequest(new AuthResponseDto
+            {
+                IsAuthSuccessful = false,
+                ErrorMessage = ex.Message
+            });
+        }
+        catch (Exception)
+        {
+            return BadRequest("Unspecified problem");
+        }
+
+        return Ok(new AuthResponseDto
+        {
+            Token = token,
+            RefreshToken = refreshToken,
+            IsAuthSuccessful = true
+        });
     }
 }

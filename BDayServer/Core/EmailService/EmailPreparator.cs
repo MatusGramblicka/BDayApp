@@ -1,8 +1,5 @@
-﻿using AutoMapper;
-using Contracts.EmailService;
-using Entities.Models;
+﻿using Contracts.EmailService;
 using Interfaces.EmailService;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Repository;
 
@@ -11,26 +8,16 @@ namespace Core.EmailService;
 public class EmailPreparator : IEmailPreparator
 {
     private readonly ILogger<EmailPreparator> _logger;
-    private readonly UserManager<User> _userManager;      
-    private readonly IMapper _mapper;
     private readonly RepositoryContextScheduleJob _repositoryContextScheduleJob;
 
-    public EmailPreparator(ILogger<EmailPreparator> logger, UserManager<User> userManager, 
-        IMapper mapper, RepositoryContextScheduleJob repositoryContextScheduleJob)
+    public EmailPreparator(ILogger<EmailPreparator> logger, RepositoryContextScheduleJob repositoryContextScheduleJob)
     {
         _logger = logger;
-        _userManager = userManager;
-        _mapper = mapper;
         _repositoryContextScheduleJob = repositoryContextScheduleJob;
     }
 
     public List<Message>? PrepareMessage()
     {
-        //var allUsersEmails = _userManager.Users.Select(s => s.Email).ToArray();
-
-        //var personsFromDb = _repositoryContextScheduleJob.Persons.ToList();
-        //var personsDto = _mapper.Map<IEnumerable<PersonEmailDto>>(personsFromDb).ToList();
-
         var personForEmailCreation = _repositoryContextScheduleJob.Persons.Select(p => new PersonForEmailCreation
         {
             CreatorEmail = p.User.Email,
@@ -40,7 +27,7 @@ public class EmailPreparator : IEmailPreparator
             DayOfNameDay = p.DayOfNameDay
         });
 
-        var messageBirthAndNameDays = PrepareMessagesBirthAndNameDay(personForEmailCreation/*personsDto*/);
+        var messageBirthAndNameDays = PrepareMessagesBirthAndNameDay(personForEmailCreation);
 
         var massages = new List<Message>();
 
@@ -50,9 +37,6 @@ public class EmailPreparator : IEmailPreparator
         var messageDaysByPersonCreators = messageBirthAndNameDays.GroupBy(m => m.Recipient);
         foreach (var messageDaysByPersonCreator in messageDaysByPersonCreators)
         {
-            //if (!allUsersEmails.Contains(messageDaysByPersonCreator.Key))
-            //    continue;
-
             var recipients = new[] {messageDaysByPersonCreator.Key};
 
             var messageBirth = "";
@@ -73,7 +57,8 @@ public class EmailPreparator : IEmailPreparator
         return massages;
     }
 
-    private List<RecipientMessage> PrepareMessagesBirthAndNameDay(IEnumerable<PersonForEmailCreation> /*personsEmailDto*/personForEmailCreation)
+    private List<RecipientMessage> PrepareMessagesBirthAndNameDay(
+        IEnumerable<PersonForEmailCreation> personForEmailCreation)
     {
         var birthDayPersons = personForEmailCreation
             .Where(p => HasCloseDay(p.DayOfBirth));
@@ -81,7 +66,7 @@ public class EmailPreparator : IEmailPreparator
         var recipientsMessageListBirthDay = birthDayPersons.Select(birthDayPerson => new RecipientMessage
         {
             Message = $"{birthDayPerson.Name} {birthDayPerson.Surname} {birthDayPerson.DayOfBirth:dd/MM}\n",
-            Recipient = birthDayPerson.CreatorEmail, 
+            Recipient = birthDayPerson.CreatorEmail,
             CelebrationType = DayType.Birthday
         });
 
@@ -91,7 +76,7 @@ public class EmailPreparator : IEmailPreparator
         var recipientsMessageListNameDay = nameDayPersons.Select(nameDayPerson => new RecipientMessage
         {
             Message = $"{nameDayPerson.Name} {nameDayPerson.Surname} {nameDayPerson.DayOfNameDay:dd/MM}\n",
-            Recipient = nameDayPerson.CreatorEmail, 
+            Recipient = nameDayPerson.CreatorEmail,
             CelebrationType = DayType.NameDay
         });
 
@@ -102,7 +87,7 @@ public class EmailPreparator : IEmailPreparator
         return recipientsMessageList.All(r => r.Message.Length == 0)
             ? new List<RecipientMessage>()
             : recipientsMessageList;
-    }        
+    }
 
     private bool HasCloseDay(DateTime dateTime)
     {
@@ -114,5 +99,5 @@ public class EmailPreparator : IEmailPreparator
         var numOfDays = (dateTime - timeNow.AddYears(-age)).Days;
 
         return numOfDays is 14 or 1 or 0;
-    }        
+    }
 }

@@ -17,5 +17,5 @@ public record PersonForManipulationDto
 
     public DateTime DayOfNameDay { get; init; }
 
-    public string ImageUrl { get; init; } = string.Empty;
+    public string? ImageUrl { get; init; }
 }

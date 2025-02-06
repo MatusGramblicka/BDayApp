@@ -43,7 +43,7 @@ public class PersonManager(
             throw new UserNotExistException("User does not exist");
 
         var personEntity = mapper.Map<Person>(personForCreationDto);
-        personEntity.UserId = user.Id;
+        personEntity.UserId = user.Id; // deprecated, not used anymore
 
         repository.Person.CreatePerson(personEntity);
         await repository.SaveAsync();

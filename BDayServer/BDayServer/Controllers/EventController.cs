@@ -72,7 +72,7 @@ public class EventController(
         }
 
         var eventEntity = mapper.Map<Event>(eventParam);
-        eventEntity.UserId = user.Id;
+        eventEntity.UserId = user.Id; // deprecated, not used anymore
 
         repository.Event.CreateEvent(eventEntity);
         await repository.SaveAsync();

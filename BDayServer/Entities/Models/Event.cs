@@ -15,7 +15,7 @@ public class Event
     [Required(ErrorMessage = "Date is a required field.")]
     public DateTime Date { get; set; }
 
-    public string ImageUrl { get; set; }
+    public string? ImageUrl { get; set; }
         
     [ForeignKey(nameof(User))]
     public string UserId { get; set; }

@@ -5,7 +5,7 @@
             <tr>
                 <AuthorizeView Roles="Administrator">
                     <Authorized>
-                        <th scope="col"></th>
+                        <th scope="col">Image</th>
                     </Authorized>
                 </AuthorizeView>
                 <th scope="col">Name</th>
@@ -23,8 +23,8 @@
                 <AuthorizeView Roles="Administrator">
                     <Authorized>
                         <td>
-                            <a href="/person/@person.Id">
-                                <img src="@person.ImageUrl" alt="person image" style="width:100px;" />
+                            <a href="/person/@person.Id">                                
+                                <img src="@person.ImageUrl" alt="" style="width:100px;" />                                                                                              
                             </a>
                         </td>
                     </Authorized>

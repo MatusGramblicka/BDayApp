@@ -1,37 +1,32 @@
 ﻿@page "/person/{personId:guid}"
 
 <div class="card">
-    <div class="card-body">
-        <div class="row">
-            <div class="col">
-                <h2>@Person.Name</h2>
-            </div>
-        </div>
+    <div class="card-body">        
         <div class="row">
             <AuthorizeView Roles="Administrator">
                 <Authorized>
                     <div class="col-md-4">
-                        <img class="person-image" src="@Person.ImageUrl" alt="@Person.Name" />
+                        <img class="person-image" src="@Person.ImageUrl" alt="" />
                     </div>
                 </Authorized>
             </AuthorizeView>
-            <div class="col-md-8">
+            <div class="col-md-8">              
                 <div class="row">
                     <div class="col">
-                        <h3 class="person-title">@Person.Surname</h3>
+                        <h3 class="person-title">@Person.Name @Person.Surname</h3>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col">
                         <span class="person-description">
-                            Date of birthday: @Person.DayOfBirth.ToString("dd.MM.")
+                            Birthday date: @Person.DayOfBirth.ToString("dd.MM.")
                         </span>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col">
                         <span class="person-description">
-                            Date of nameday: @Person.DayOfNameDay.ToString("dd.MM.")
+                            Nameday Date: @Person.DayOfNameDay.ToString("dd.MM.")
                         </span>
                     </div>
                 </div>

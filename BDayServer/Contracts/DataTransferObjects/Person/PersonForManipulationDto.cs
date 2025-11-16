@@ -11,11 +11,11 @@ public record PersonForManipulationDto
     [Required(ErrorMessage = "Surname is a required field.")]
     [MaxLength(30, ErrorMessage = "Maximum length for the Surname is 30 characters.")]
     public string Surname { get; init; } = string.Empty;
+        
+    public DateOnly? DayOfBirth { get; init; }
 
     [Required(ErrorMessage = "DayOfBirth is a required field.")]
-    public DateTime DayOfBirth { get; init; }
-
-    public DateTime DayOfNameDay { get; init; }
+    public DateOnly DayOfNameDay { get; init; }
 
     public string? ImageUrl { get; init; }
 }

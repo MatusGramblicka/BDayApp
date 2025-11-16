@@ -18,20 +18,21 @@ public static class RepositoryPersonExtensions
 
     public static IQueryable<PersonDto> Sort(this IQueryable<PersonDto> persons, string orderByQueryString)
     {
+        // solve null values
         if (string.IsNullOrWhiteSpace(orderByQueryString))
-            return persons.OrderBy(x => x.DayOfBirth.Month).ThenBy(x => x.DayOfBirth.Day);
+            return persons.OrderBy(x => x.DayOfBirth.Value.Month).ThenBy(x => x.DayOfBirth.Value.Day);
 
         var orderQuery = OrderQueryBuilder.CreateOrderQuery<PersonDto>(orderByQueryString);
 
         if (string.IsNullOrWhiteSpace(orderQuery))
-            return persons.OrderBy(x => x.DayOfBirth.Month).ThenBy(x => x.DayOfBirth.Day);
+            return persons.OrderBy(x => x.DayOfBirth.Value.Month).ThenBy(x => x.DayOfBirth.Value.Day);
 
         if (orderQuery.Contains("DayOfBirth"))
         {
             if (orderQuery.Contains("ascending"))
-                return persons.OrderBy(x => x.DayOfBirth.Month).ThenBy(x => x.DayOfBirth.Day);
+                return persons.OrderBy(x => x.DayOfBirth.Value.Month).ThenBy(x => x.DayOfBirth.Value.Day);
             if (orderQuery.Contains("descending"))
-                return persons.OrderByDescending(x => x.DayOfBirth.Month).ThenByDescending(x => x.DayOfBirth.Day);
+                return persons.OrderByDescending(x => x.DayOfBirth.Value.Month).ThenByDescending(x => x.DayOfBirth.Value.Day);
         }
 
         if (orderQuery.Contains("DayOfNameDay"))

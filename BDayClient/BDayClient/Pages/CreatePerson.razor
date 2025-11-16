@@ -22,14 +22,14 @@
     <div class="form-group row">
         <label for="supplier" class="col-md-2 col-form-label">DayOfBirth:</label>
         <div class="col-md-10">
-            <InputDate id="supplier" class="form-control" @bind-Value="_person.DayOfBirth" />
+            <SfDatePicker TValue="DateOnly?" @bind-Value="_person.DayOfBirth" Format="dd/MM" Placeholder='Choose a Date'></SfDatePicker>
             <ValidationMessage For="@(() => _person.DayOfBirth)" />
         </div>
     </div>
     <div class="form-group row">
         <label for="supplier" class="col-md-2 col-form-label">DayOfNameDay:</label>
         <div class="col-md-10">
-            <InputDate id="supplier" class="form-control" @bind-Value="_person.DayOfNameDay" />
+            <SfDatePicker TValue="DateOnly" @bind-Value="_person.DayOfNameDay" Format="dd/MM" Placeholder='Choose a Date'></SfDatePicker>
             <ValidationMessage For="@(() => _person.DayOfNameDay)" />
         </div>
     </div>

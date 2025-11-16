@@ -24,9 +24,9 @@ public partial class CreatePerson
     public IToastService ToastService { get; set; }      
 
     protected override void OnInitialized()
-    {          
-        _person.DayOfBirth = new DateTime(2000, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified);
-        _person.DayOfNameDay = new DateTime(2000, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified);
+    {
+        _person.DayOfBirth = /*DateOnly.FromDateTime(DateTime.UtcNow)*/null;
+        _person.DayOfNameDay = DateOnly.FromDateTime(DateTime.UtcNow);
         _editContext = new EditContext(_person);
         _editContext.OnFieldChanged += HandleFieldChanged;
         Interceptor.RegisterEvent();

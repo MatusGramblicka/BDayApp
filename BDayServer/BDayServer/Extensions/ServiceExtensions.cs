@@ -37,7 +37,11 @@ public static class ServiceExtensions
         services.AddDbContext<RepositoryContext>(opts =>
                 opts.UseMySql(configuration.GetConnectionString("sqlConnection"),
                     ServerVersion.AutoDetect(configuration.GetConnectionString("sqlConnection")),
-                    b => b.MigrationsAssembly("BDayServer")))
+                    b => b.MigrationsAssembly("BDayServer")
+                                      .EnableRetryOnFailure(
+                                        maxRetryCount: 5,
+                                        maxRetryDelay: TimeSpan.FromSeconds(30),
+                                        errorNumbersToAdd: null)))
             .AddDbContext<RepositoryContextScheduleJob>(opts =>
                 opts.UseMySql(configuration.GetConnectionString("sqlConnection"),
                     ServerVersion.AutoDetect(configuration.GetConnectionString("sqlConnection")),
@@ -46,7 +50,16 @@ public static class ServiceExtensions
                                         maxRetryCount: 5, 
                                         maxRetryDelay: TimeSpan.FromSeconds(30), 
                                         errorNumbersToAdd: null)
-                    ));
+                    ))
+            .AddDbContext<DbRepositoryContext>(opts =>
+                opts.UseAzureSql(configuration.GetConnectionString("AzureSql"),
+                    options => options.MigrationsAssembly("BDayServer")
+                                      .EnableRetryOnFailure(
+                                        maxRetryCount: 5,
+                                        maxRetryDelay: TimeSpan.FromSeconds(30),
+                                        errorNumbersToAdd: null)
+                    ))        
+        ;
 
     public static void ConfigureRepositoryManager(this IServiceCollection services) =>
         services.AddScoped<IRepositoryManager, RepositoryManager>();
@@ -59,6 +72,16 @@ public static class ServiceExtensions
                 opt.Lockout.MaxFailedAccessAttempts = 3;
             })
             .AddEntityFrameworkStores<RepositoryContext>()
+            .AddDefaultTokenProviders();
+
+    public static void AddIdentityServices2(this IServiceCollection services) =>
+        services.AddIdentity<User, IdentityRole>(opt =>
+        {
+            opt.Lockout.AllowedForNewUsers = true;
+            opt.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(2);
+            opt.Lockout.MaxFailedAccessAttempts = 3;
+        })
+            .AddEntityFrameworkStores<DbRepositoryContext>()
             .AddDefaultTokenProviders();
 
     public static void RegisterActionFilters(this IServiceCollection services)

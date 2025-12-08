@@ -2,7 +2,7 @@
 
 namespace Repository;
 
-public class RepositoryManager(RepositoryContext repositoryContext) : IRepositoryManager
+public class RepositoryManager(DbRepositoryContext repositoryContext) : IRepositoryManager
 {
     private IPersonRepository _personRepository;
     private IEventRepository _eventRepository;

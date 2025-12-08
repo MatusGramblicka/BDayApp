@@ -12,20 +12,17 @@ public partial class CreatePerson
 {
     private PersonForCreation _person = new();
     private EditContext _editContext;
-    private bool _formInvalid = true;        
+    private bool _formInvalid = true;
 
-    [Inject]
-    public IPersonHttpRepository PersonRepo { get; set; }
+    [Inject] public IPersonHttpRepository PersonRepo { get; set; }
 
-    [Inject]
-    public HttpInterceptorService Interceptor { get; set; }
+    [Inject] public HttpInterceptorService Interceptor { get; set; }
 
-    [Inject]
-    public IToastService ToastService { get; set; }      
+    [Inject] public IToastService ToastService { get; set; }      
 
     protected override void OnInitialized()
     {
-        _person.DayOfBirth = /*DateOnly.FromDateTime(DateTime.UtcNow)*/null;
+        _person.DayOfBirth = null;
         _person.DayOfNameDay = DateOnly.FromDateTime(DateTime.UtcNow);
         _editContext = new EditContext(_person);
         _editContext.OnFieldChanged += HandleFieldChanged;
@@ -39,7 +36,7 @@ public partial class CreatePerson
     }
 
     private async Task Create()
-    {
+    {     
         var personForCreationDto = new PersonForCreationDto
         {
             DayOfBirth = _person.DayOfBirth,
@@ -69,7 +66,7 @@ public partial class CreatePerson
 
     private void AssignImageUrl(string imgUrl)
         => _person.ImageUrl = imgUrl;
-
+   
     public void Dispose()
     {
         Interceptor.DisposeEvent();

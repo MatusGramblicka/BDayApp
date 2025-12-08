@@ -63,7 +63,7 @@ public class EmailPreparator : IEmailPreparator
         var personWithBirthDate = personForEmailCreation.Where(p => p.DayOfBirth.HasValue);
 
 #pragma warning disable CS8629 // Nullable value type may be null.
-        var birthDayPersons = /*personForEmailCreation*/personWithBirthDate
+        var birthDayPersons = personWithBirthDate
             .Where(p => HasCloseDay(p.DayOfBirth.Value));
 #pragma warning restore CS8629 // Nullable value type may be null.
 
@@ -101,7 +101,6 @@ public class EmailPreparator : IEmailPreparator
 
         var age = timeNow.Year - date.Year;
         var numOfDays = (date.ToDateTime(TimeOnly.MinValue) - timeNow.AddYears(-age)).Days;
-        //DateOnly.FromDateTime(timeNow.AddYears(-age))
 
         return numOfDays is 14 or 1 or 0;
     }

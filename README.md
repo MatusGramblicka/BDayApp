@@ -1,6 +1,4 @@
-Application for birthdays and namedays notifications
-
-https://bdayserver20230105181241.azurewebsites.net/Login
+Application for birthday and nameday notifications
 
 ![](https://github.com/MatusGramblicka/BDayApp/raw/master/Sample.png)
 

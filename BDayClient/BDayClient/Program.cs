@@ -7,7 +7,6 @@ using Entities.Configuration;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.Options;
-using Syncfusion.Blazor;
 using Toolbelt.Blazor.Extensions.DependencyInjection;
 
 namespace BDayClient;
@@ -56,8 +55,6 @@ public class Program
         builder.Services.AddScoped<IUsersHttpRepository, UsersHttpRepository>();
 
         builder.Services.AddScoped<RefreshTokenService>();
-
-        builder.Services.AddSyncfusionBlazor();
 
         await builder.Build().RunAsync();
     }

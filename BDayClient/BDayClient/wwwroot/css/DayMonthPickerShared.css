@@ -1,0 +1,6 @@
+﻿/* site.css */
+.day-month-picker {
+    display: flex;
+    gap: 0.5rem;
+    max-width: 300px;
+}

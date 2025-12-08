@@ -1,4 +1,5 @@
 ﻿@page "/createPerson"
+@using BDayClient.Components
 
 <h2>Create New Person</h2>
 
@@ -21,15 +22,18 @@
     </div>
     <div class="form-group row">
         <label for="supplier" class="col-md-2 col-form-label">DayOfBirth:</label>
-        <div class="col-md-10">
-            <SfDatePicker TValue="DateOnly?" @bind-Value="_person.DayOfBirth" Format="dd/MM" Placeholder='Choose a Date'></SfDatePicker>
+        <div class="col-md-10">            
+            @* <InputDate id="supplier" class="form-control" @bind-Value="_person.DayOfBirth" /> *@
+            @* <DayMonthPicker Month="@BirthdayMonth" Day="@BirthdayDay" OnChange="HandleBirthdayChanged" />   *@
+            <DayMonthPickerNullable @bind-Value="_person.DayOfBirth" />
             <ValidationMessage For="@(() => _person.DayOfBirth)" />
         </div>
     </div>
     <div class="form-group row">
         <label for="supplier" class="col-md-2 col-form-label">DayOfNameDay:</label>
         <div class="col-md-10">
-            <SfDatePicker TValue="DateOnly" @bind-Value="_person.DayOfNameDay" Format="dd/MM" Placeholder='Choose a Date'></SfDatePicker>
+            @* <SfDatePicker TValue="DateOnly" @bind-Value="_person.DayOfNameDay" Format="dd/MM" Placeholder='Choose a Date, dd/mm'></SfDatePicker> *@
+            <DayMonthPickerNonNullable @bind-Value="_person.DayOfNameDay" />
             <ValidationMessage For="@(() => _person.DayOfNameDay)" />
         </div>
     </div>

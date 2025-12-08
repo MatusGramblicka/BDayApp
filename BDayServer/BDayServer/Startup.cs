@@ -26,7 +26,6 @@ public class Startup(IConfiguration configuration)
         services.RegisterActionFilters();
 
         services.AddIdentityServices();
-        //services.AddIdentityServices2();
 
         services.RegisterMangers();
 

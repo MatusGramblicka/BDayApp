@@ -8,7 +8,7 @@ using Repository.Projections;
 
 namespace Repository;
 
-internal class PersonRepository(RepositoryContext repositoryContext)
+internal class PersonRepository(DbRepositoryContext repositoryContext)
     : RepositoryBase<Person>(repositoryContext), IPersonRepository
 {
     public PagedList<PersonDto> GetAllPersonsAsync(PersonParameters personParameters, bool trackChanges)

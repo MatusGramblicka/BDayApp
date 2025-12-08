@@ -1,4 +1,5 @@
 ﻿@page "/updatePerson/{id:guid}"
+@using BDayClient.Components
 
 <h2>Update Person Form</h2>
 
@@ -24,15 +25,18 @@
     </div>
     <div class="form-group row">
         <label for="supplier" class="col-md-2 col-form-label">DayOfBirth:</label>
-        <div class="col-md-10">
-                <SfDatePicker TValue="DateOnly?" @bind-Value="_personForUpdate.DayOfBirth" Format="dd/MM" Placeholder='Choose a Date'></SfDatePicker>
-                <ValidationMessage For="@(() => _personForUpdate.DayOfBirth)" />
+        <div class="col-md-10">                
+            @* <InputDate id="birthDay" class="form-control" @bind-Value="_personForUpdate.DayOfBirth" /> *@
+            @* <DayMonthPicker Month="@BirthdayMonth" Day="@BirthdayDay" OnChange="HandleBirthdayChanged" /> *@
+            <DayMonthPickerNullable @bind-Value="_personForUpdate.DayOfBirth" />
+            <ValidationMessage For="@(() => _personForUpdate.DayOfBirth)" />
         </div>
     </div>
     <div class="form-group row">
         <label for="supplier" class="col-md-2 col-form-label">DayOfNameDay:</label>
         <div class="col-md-10">
-                <SfDatePicker TValue="DateOnly" @bind-Value="_personForUpdate.DayOfNameDay" Format="dd/MM" Placeholder='Choose a Date'></SfDatePicker>
+                @* <SfDatePicker TValue="DateOnly" @bind-Value="_personForUpdate.DayOfNameDay" Format="dd/MM" Placeholder='Choose a Date, dd/mm'></SfDatePicker> *@
+                <DayMonthPickerNonNullable @bind-Value="_personForUpdate.DayOfNameDay" />
                 <ValidationMessage For="@(() => _personForUpdate.DayOfNameDay)" />
         </div>
     </div>

@@ -43,7 +43,6 @@ public class CronJobService : IHostedService, IDisposable
                 
                 if (!cancellationToken.IsCancellationRequested)
                     await ScheduleJob(cancellationToken); // reschedule next
-
             };
 
             _timer.Start();

@@ -34,7 +34,7 @@ public partial class UpdatePerson : IDisposable
     protected override async Task OnInitializedAsync()
     {
         _person = await PersonRepo.GetPerson(Id);
-        Mapper.Map(_person, _personForUpdate); 
+        Mapper.Map(_person, _personForUpdate);        
 
         _editContext = new EditContext(_personForUpdate);
         _editContext.OnFieldChanged += HandleFieldChanged;

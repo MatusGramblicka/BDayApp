@@ -6,8 +6,8 @@
 			<th scope="col">Image</th>                    
 			<th scope="col">Name</th>
 			<th scope="col">Surname</th>
-			<th scope="col">BirthDay</th>
-			<th scope="col">NameDay</th>               
+			<th scope="col">Birthday</th>
+			<th scope="col">Nameday</th>               
 		</tr>
 		</thead>
 		<tbody>
@@ -30,7 +30,7 @@
 					@person.Surname
 				</td>
 				<td class="align-middle">
-					@person.DayOfBirth.ToString("dd.MM.")
+					@(person.DayOfBirth.HasValue? person.DayOfBirth.Value.ToString("dd.MM.") : "")
 				</td>
 				<td class="align-middle">
 					@person.DayOfNameDay.ToString("dd.MM.")

@@ -19,14 +19,14 @@
                 <div class="row">
                     <div class="col">
                         <span class="person-description">
-                            Birthday date: @Person.DayOfBirth.ToString("dd.MM.")
+                            Birthday: @(Person.DayOfBirth.HasValue? Person.DayOfBirth.Value.ToString("dd.MM.") : "")
                         </span>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col">
                         <span class="person-description">
-                            Nameday Date: @Person.DayOfNameDay.ToString("dd.MM.")
+                            Nameday: @Person.DayOfNameDay.ToString("dd.MM.")
                         </span>
                     </div>
                 </div>

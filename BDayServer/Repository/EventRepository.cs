@@ -8,7 +8,7 @@ namespace Repository;
 
 public class EventRepository : RepositoryBase<Event>, IEventRepository
 {
-    public EventRepository(RepositoryContext repositoryContext)
+    public EventRepository(DbRepositoryContext repositoryContext)
         : base(repositoryContext)
     {
     }

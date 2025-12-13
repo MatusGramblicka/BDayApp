@@ -48,6 +48,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+    <Folder Include="Migrations\AzureSqlMigrations\" />
     <Folder Include="StaticFiles\Images\" />
   </ItemGroup>
 

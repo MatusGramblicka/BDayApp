@@ -6,9 +6,9 @@ namespace Repository;
 
 public abstract class RepositoryBase<T> : IRepositoryBase<T> where T : class
 {
-    protected RepositoryContext RepositoryContext;
+    protected DbRepositoryContext RepositoryContext;
 
-    protected RepositoryBase(RepositoryContext repositoryContext)
+    protected RepositoryBase(DbRepositoryContext repositoryContext)
     {
         RepositoryContext = repositoryContext;
     }

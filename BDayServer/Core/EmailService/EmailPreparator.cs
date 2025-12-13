@@ -60,8 +60,12 @@ public class EmailPreparator : IEmailPreparator
     private List<RecipientMessage> PrepareMessagesBirthAndNameDay(
         IEnumerable<PersonForEmailCreation> personForEmailCreation)
     {
-        var birthDayPersons = personForEmailCreation
-            .Where(p => HasCloseDay(p.DayOfBirth));
+        var personWithBirthDate = personForEmailCreation.Where(p => p.DayOfBirth.HasValue);
+
+#pragma warning disable CS8629 // Nullable value type may be null.
+        var birthDayPersons = personWithBirthDate
+            .Where(p => HasCloseDay(p.DayOfBirth.Value));
+#pragma warning restore CS8629 // Nullable value type may be null.
 
         var recipientsMessageListBirthDay = birthDayPersons.Select(birthDayPerson => new RecipientMessage
         {
@@ -89,14 +93,14 @@ public class EmailPreparator : IEmailPreparator
             : recipientsMessageList;
     }
 
-    private bool HasCloseDay(DateTime dateTime)
+    private bool HasCloseDay(DateOnly date)
     {
         _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob is searching " +
                                "for people with close birthday.");
         var timeNow = DateTime.Today;
 
-        var age = timeNow.Year - dateTime.Year;
-        var numOfDays = (dateTime - timeNow.AddYears(-age)).Days;
+        var age = timeNow.Year - date.Year;
+        var numOfDays = (date.ToDateTime(TimeOnly.MinValue) - timeNow.AddYears(-age)).Days;
 
         return numOfDays is 14 or 1 or 0;
     }

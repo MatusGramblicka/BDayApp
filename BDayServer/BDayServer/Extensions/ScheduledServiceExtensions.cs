@@ -16,8 +16,7 @@ public static class ScheduledServiceExtensions
         options.Invoke(config);
         if (string.IsNullOrWhiteSpace(config.CronExpression))
             throw new ArgumentNullException(nameof(ScheduleConfig<T>.CronExpression),
-                "Empty Cron Expression is not allowed.");
-        
+                "Empty Cron Expression is not allowed.");        
 
         services.AddSingleton<IScheduleConfig<T>>(config);
         services.AddHostedService<T>();

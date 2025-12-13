@@ -8,17 +8,27 @@ public partial class PersonTableAdmin
     [Parameter]
     public List<Person> Persons { get; set; }
 
-    private bool DisplayPerson(DateTime dayOfBirth, DateTime dayOfNameDay)
+    private bool DisplayPerson(DateOnly? dayOfBirth, DateOnly dayOfNameDay)
     {
         DateTime timeNow = DateTime.Today;
 
-        var age = timeNow.Year - dayOfBirth.Year;
-        var numOfDays = (dayOfBirth - timeNow.AddYears(-age)).Days;
+        bool birthDayPartialResult = false;
+        bool nameDayPartialResult = false;
+
+        if (dayOfBirth is not null)
+        {
+            var age = timeNow.Year - dayOfBirth.Value.Year;
+            var numOfDays = (dayOfBirth.Value.ToDateTime(TimeOnly.MinValue) - timeNow.AddYears(-age)).Days;
+
+            birthDayPartialResult = numOfDays < 30 && numOfDays >= 0;
+        }
 
         var ageNameDay = timeNow.Year - dayOfNameDay.Year;
-        var numOfDaysNameDay = (dayOfNameDay - timeNow.AddYears(-ageNameDay)).Days;
+        var numOfDaysNameDay = (dayOfNameDay.ToDateTime(TimeOnly.MinValue) - timeNow.AddYears(-ageNameDay)).Days;
 
-        var result = (numOfDays < 30 && numOfDays >= 0) || (numOfDaysNameDay < 30 && numOfDaysNameDay >= 0);
+        nameDayPartialResult = numOfDaysNameDay < 30 && numOfDaysNameDay >= 0;
+
+        var result = birthDayPartialResult || nameDayPartialResult;
         return result;
     }
 }

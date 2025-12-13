@@ -1,5 +1,9 @@
 using BDayServer.Extensions;
 using BDayServer.HostedService;
+using Core.IntegrationEvents;
+using Core.IntegrationEvents.EventHandlers;
+using Infrastructure.Shared.EventBus;
+using Infrastructure.Shared.RabbitMq;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.FileProviders;
 
@@ -30,6 +34,10 @@ public class Startup(IConfiguration configuration)
         services.RegisterAuthorizationServices(Configuration);
         
         services.RegisterEmailServices(Configuration);
+
+        services.AddRabbitMqEventBus(Configuration)
+            .AddRabbitMqSubscriberService(Configuration)
+            .AddEventHandler<TravelOrderCreatedEvent, TravelOrderCreatedEventHandler>();
 
         services.AddControllers();
 

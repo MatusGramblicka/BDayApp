@@ -10,18 +10,25 @@ public partial class PersonTableAdmin
 
     private bool DisplayPerson(DateOnly? dayOfBirth, DateOnly dayOfNameDay)
     {
-        if(dayOfBirth is null)
-            return false;
-
         DateTime timeNow = DateTime.Today;
 
-        var age = timeNow.Year - dayOfBirth.Value.Year;
-        var numOfDays = (dayOfBirth.Value.ToDateTime(TimeOnly.MinValue) - timeNow.AddYears(-age)).Days;
+        bool birthDayPartialResult = false;
+        bool nameDayPartialResult = false;
+
+        if (dayOfBirth is not null)
+        {
+            var age = timeNow.Year - dayOfBirth.Value.Year;
+            var numOfDays = (dayOfBirth.Value.ToDateTime(TimeOnly.MinValue) - timeNow.AddYears(-age)).Days;
+
+            birthDayPartialResult = numOfDays < 30 && numOfDays >= 0;
+        }
 
         var ageNameDay = timeNow.Year - dayOfNameDay.Year;
         var numOfDaysNameDay = (dayOfNameDay.ToDateTime(TimeOnly.MinValue) - timeNow.AddYears(-ageNameDay)).Days;
 
-        var result = (numOfDays < 30 && numOfDays >= 0) || (numOfDaysNameDay < 30 && numOfDaysNameDay >= 0);
+        nameDayPartialResult = numOfDaysNameDay < 30 && numOfDaysNameDay >= 0;
+
+        var result = birthDayPartialResult || nameDayPartialResult;
         return result;
     }
 }

@@ -1,10 +1,12 @@
 ﻿<section>
     <select class="form-control" @onchange="ApplySort">
-	    <option value="name">Name</option>
-        <option value="surname">Surname</option>
-        <option selected="selected" value="dayOfBirth">DayOfBirth: Low to High</option>
-        <option value="dayOfBirth desc">DayOfBirth: High to Low</option>
-        <option value="dayOfNameDay">DayOfName: Low to High</option>
-        <option value="dayOfNameDay desc">DayOfName: High to Low</option>
+	    <option value="name">Name asc</option>
+        <option value="name desc">Name desc</option>
+        <option value="surname">Surname asc</option>
+        <option value="surname desc">Surname desc</option>
+        <option selected="selected" value="dayOfBirth">Birthday asc</option>
+        <option value="dayOfBirth desc">Birthday desc</option>
+        <option value="dayOfNameDay">Nameday asc</option>
+        <option value="dayOfNameDay desc">Nameday desc</option>
     </select>
 </section>

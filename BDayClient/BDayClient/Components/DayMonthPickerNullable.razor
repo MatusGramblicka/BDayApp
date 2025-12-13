@@ -3,7 +3,7 @@
 
 <div class="day-month-picker">
     <select value="@SelectedMonth" @onchange="OnMonthChanged">
-        <option value="">-- Month --</option>
+        <option value=""> Month </option>
         @foreach (var m in Enumerable.Range(1, 12))
         {
             <option value="@m">@CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m)</option>
@@ -11,7 +11,7 @@
     </select>
 
     <select value="@SelectedDay" @onchange="OnDayChanged" disabled="@(!SelectedMonth.HasValue)">
-        <option value="">-- Day --</option>
+        <option value=""> Day </option>
         @foreach (var d in Enumerable.Range(1, DaysInSelectedMonth))
         {
             <option value="@d">@d</option>

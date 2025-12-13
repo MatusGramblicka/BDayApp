@@ -34,24 +34,7 @@ public static class ServiceExtensions
         });
 
     public static void ConfigureSqlContext(this IServiceCollection services, IConfiguration configuration) =>
-        services
-        //AddDbContext<RepositoryContext>(opts =>
-        //        opts.UseMySql(configuration.GetConnectionString("sqlConnection"),
-        //            ServerVersion.AutoDetect(configuration.GetConnectionString("sqlConnection")),
-        //            b => b.MigrationsAssembly("BDayServer")
-        //                              .EnableRetryOnFailure(
-        //                                maxRetryCount: 5,
-        //                                maxRetryDelay: TimeSpan.FromSeconds(30),
-        //                                errorNumbersToAdd: null)))
-        //    .AddDbContext<RepositoryContextScheduleJob>(opts =>
-        //        opts.UseMySql(configuration.GetConnectionString("sqlConnection"),
-        //            ServerVersion.AutoDetect(configuration.GetConnectionString("sqlConnection")),
-        //            options => options.MigrationsAssembly("BDayServer")
-        //                              .EnableRetryOnFailure(
-        //                                maxRetryCount: 5,
-        //                                maxRetryDelay: TimeSpan.FromSeconds(30),
-        //                                errorNumbersToAdd: null)
-        //            ))
+        services        
             .AddDbContext<DbRepositoryContext>(opts =>
                 opts.UseAzureSql(configuration.GetConnectionString("AzureSql"),
                     options => options.MigrationsAssembly("BDayServer")

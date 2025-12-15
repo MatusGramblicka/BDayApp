@@ -3,11 +3,11 @@ using Contracts.DataTransferObjects.Person;
 using Contracts.Exceptions;
 using Entities.Models;
 using Entities.RequestFeatures;
-using Interfaces;
 using Interfaces.DatabaseAccess;
 using Interfaces.Managers;
 using Interfaces.UserProvider;
 using Microsoft.AspNetCore.Identity;
+using Repository;
 
 namespace Core.Managers;
 
@@ -15,7 +15,8 @@ public class PersonManager(
     IRepositoryManager repository,
     IMapper mapper,
     UserManager<User> userManager,
-    IGetUserProvider userData)
+    IGetUserProvider userData,
+    PostgreDbRepositoryContext postgreDbContext)
     : IPersonManager
 {
     private readonly string _userName = userData.UserName;
@@ -40,13 +41,19 @@ public class PersonManager(
         var user = await userManager.FindByNameAsync(_userName);
 
         if (user is null)
-            throw new UserNotExistException("User does not exist");
+            throw new UserNotExistException("Person does not exist");
 
         var personEntity = mapper.Map<Person>(personForCreationDto);
-        personEntity.UserId = user.Id; // deprecated, not used anymore
-
+        personEntity.UserId = user.Id;
         repository.Person.CreatePerson(personEntity);
         await repository.SaveAsync();
+
+        // for postgreSql
+        var personEntityPostgreSql = mapper.Map<Person>(personForCreationDto);
+        personEntityPostgreSql.UserId = user.Id;
+        personEntityPostgreSql.Id = personEntity.Id;
+        postgreDbContext.Add(personEntityPostgreSql);
+        await postgreDbContext.SaveChangesAsync();
 
         return mapper.Map<PersonDto>(personEntity);
     }
@@ -58,10 +65,22 @@ public class PersonManager(
         var personFromDb = await repository.Person.GetPersonAsync(personId, true);
 
         if (personFromDb is null)
-            throw new PersonNotExistException("User does not exist");
+            throw new PersonNotExistException("Person does not exist");
 
         mapper.Map(personForUpdateDto, personFromDb);
         await repository.SaveAsync();
+
+        // for postgreSql
+        var personFromPostgreDb = postgreDbContext.Persons
+                                                  .Where(p => p.Id == personId)
+                                                  .FirstOrDefault();
+
+        if (personFromPostgreDb is null)
+            throw new PersonNotExistException("Person does not exist in PostgreSql");
+
+        mapper.Map(personForUpdateDto, personFromPostgreDb);
+        await postgreDbContext.SaveChangesAsync();
+
     }
 
     public async Task DeletePersonAsync(Guid personId)
@@ -69,9 +88,20 @@ public class PersonManager(
         var personFromDb = await repository.Person.GetPersonAsync(personId, true);
 
         if (personFromDb is null)
-            throw new PersonNotExistException("User does not exist");
+            throw new PersonNotExistException("Person does not exist");
 
         repository.Person.DeletePerson(personFromDb);
         await repository.SaveAsync();
+
+        // for postgreSql
+        var personFromPostgreDb = postgreDbContext.Persons
+                                                  .Where(p => p.Id == personId)
+                                                  .FirstOrDefault();
+        
+        if (personFromPostgreDb is null)
+            throw new PersonNotExistException("Person does not exist in PostgreSql");
+
+        postgreDbContext.Remove(personFromPostgreDb);
+        await postgreDbContext.SaveChangesAsync();
     }
 }

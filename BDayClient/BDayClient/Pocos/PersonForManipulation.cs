@@ -5,7 +5,7 @@ namespace BDayClient.Pocos;
 public class PersonForManipulation
 {
     [Required(ErrorMessage = "Name is a required field.")]
-    [MaxLength(20, ErrorMessage = "Maximum length for the Name is 10 characters.")]
+    [MaxLength(20, ErrorMessage = "Maximum length for the Name is 20 characters.")]
     public string Name { get; set; } = string.Empty;
 
     [MaxLength(30, ErrorMessage = "Maximum length for the Surname is 30 characters.")]

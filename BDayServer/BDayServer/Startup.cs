@@ -1,5 +1,6 @@
 using BDayServer.Extensions;
 using BDayServer.HostedService;
+using BDayServer.Mapping;
 using Core.IntegrationEvents;
 using Core.IntegrationEvents.EventHandlers;
 using Infrastructure.Shared.EventBus;
@@ -21,7 +22,7 @@ public class Startup(IConfiguration configuration)
 
         services.ConfigureRepositoryManager();
 
-        services.AddAutoMapper(typeof(Startup));
+        services.AddAutoMapper(a => a.AddProfile<MappingProfile>());
 
         services.RegisterActionFilters();
 

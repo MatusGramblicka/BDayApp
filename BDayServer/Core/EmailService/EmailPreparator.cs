@@ -8,9 +8,9 @@ namespace Core.EmailService;
 public class EmailPreparator : IEmailPreparator
 {
     private readonly ILogger<EmailPreparator> _logger;
-    private readonly RepositoryContextScheduleJob _repositoryContextScheduleJob;
+    private readonly /*RepositoryContextScheduleJob*/PostgreDbRepositoryContext _repositoryContextScheduleJob;
 
-    public EmailPreparator(ILogger<EmailPreparator> logger, RepositoryContextScheduleJob repositoryContextScheduleJob)
+    public EmailPreparator(ILogger<EmailPreparator> logger, /*RepositoryContextScheduleJob*/PostgreDbRepositoryContext repositoryContextScheduleJob)
     {
         _logger = logger;
         _repositoryContextScheduleJob = repositoryContextScheduleJob;

@@ -42,7 +42,7 @@ public class Program
         builder.Services.Configure<ApiConfiguration>
             (builder.Configuration.GetSection("ApiConfiguration"));
 
-        builder.Services.AddAutoMapper(typeof(MappingProfile));
+        builder.Services.AddAutoMapper(a => a.AddProfile<MappingProfile>());
 
         builder.Services.AddBlazoredLocalStorage();
 

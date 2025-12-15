@@ -15,7 +15,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Repository;
 using System.Text;
 
@@ -34,7 +34,7 @@ public static class ServiceExtensions
         });
 
     public static void ConfigureSqlContext(this IServiceCollection services, IConfiguration configuration) =>
-        services        
+        services
             .AddDbContext<DbRepositoryContext>(opts =>
                 opts.UseAzureSql(configuration.GetConnectionString("AzureSql"),
                     options => options.MigrationsAssembly("BDayServer")
@@ -50,7 +50,15 @@ public static class ServiceExtensions
                                         maxRetryCount: 5,
                                         maxRetryDelay: TimeSpan.FromSeconds(30),
                                         errorNumbersToAdd: null)
-                    ));
+                    ))
+            .AddDbContext<PostgreDbRepositoryContext>(opts =>
+                    opts.UseNpgsql(configuration.GetConnectionString("PostgresqlConnection"),
+                        options => options.MigrationsAssembly("BDayServer")
+                            .EnableRetryOnFailure(
+                                maxRetryCount: 5,
+                                maxRetryDelay: TimeSpan.FromSeconds(30),
+                                errorCodesToAdd: null)
+             ));
 
     public static void ConfigureRepositoryManager(this IServiceCollection services) =>
         services.AddScoped<IRepositoryManager, RepositoryManager>();
@@ -133,19 +141,9 @@ public static class ServiceExtensions
                 BearerFormat = "JWT",
                 Scheme = "Bearer"
             });
-            option.AddSecurityRequirement(new OpenApiSecurityRequirement
-            {
-                {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
-                            Type=ReferenceType.SecurityScheme,
-                            Id="Bearer"
-                        }
-                    },
-                    new string[]{}
-                }
+            option.AddSecurityRequirement((document) => new OpenApiSecurityRequirement()
+            { 
+                [new OpenApiSecuritySchemeReference("Bearer", document)] = [] 
             });
         });
     }

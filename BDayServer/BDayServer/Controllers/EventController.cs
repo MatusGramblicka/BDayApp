@@ -4,7 +4,6 @@ using Contracts.DataTransferObjects.Auth;
 using Contracts.DataTransferObjects.Event;
 using Entities.Models;
 using Entities.RequestFeatures;
-using Interfaces;
 using Interfaces.DatabaseAccess;
 using Interfaces.UserProvider;
 using Microsoft.AspNetCore.Authorization;

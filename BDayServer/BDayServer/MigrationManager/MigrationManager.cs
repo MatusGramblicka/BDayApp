@@ -1,6 +1,7 @@
 ﻿using Entities;
 using Microsoft.EntityFrameworkCore;
 using Repository;
+using Repository.Repositories;
 
 namespace BDayServer.MigrationManager;
 

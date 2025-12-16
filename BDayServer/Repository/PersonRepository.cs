@@ -1,10 +1,11 @@
 ﻿using Contracts.DataTransferObjects.Person;
 using Entities.Models;
 using Entities.RequestFeatures;
-using Interfaces.DatabaseAccess;
 using Microsoft.EntityFrameworkCore;
+using Repository.DatabaseAccessInterfaces;
 using Repository.Extensions;
 using Repository.Projections;
+using Repository.Repositories;
 
 namespace Repository;
 

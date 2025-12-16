@@ -1,6 +1,5 @@
 ﻿using BDayServer.HostedService;
 using Core.CronJobService;
-using Interfaces.Scheduler;
 
 namespace BDayServer.Extensions;
 

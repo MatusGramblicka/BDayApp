@@ -2,13 +2,11 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace Repository;
+namespace Repository.Repositories;
 
-public class RepositoryContextScheduleJob : IdentityDbContext<User>
+public class RepositoryContextScheduleJob(DbContextOptions<RepositoryContextScheduleJob> options)
+    : IdentityDbContext<User>(options)
 {
-    public RepositoryContextScheduleJob(DbContextOptions<RepositoryContextScheduleJob> options)
-        : base(options) { }
-
     public DbSet<Person> Persons { get; set; }
     public DbSet<Event> Events { get; set; }
 }

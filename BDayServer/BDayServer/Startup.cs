@@ -36,9 +36,9 @@ public class Startup(IConfiguration configuration)
         
         services.RegisterEmailServices(Configuration);
 
-        services.AddRabbitMqEventBus(Configuration)
-            .AddRabbitMqSubscriberService(Configuration)
-            .AddEventHandler<TravelOrderCreatedEvent, TravelOrderCreatedEventHandler>();
+        //services.AddRabbitMqEventBus(Configuration)
+        //    .AddRabbitMqSubscriberService(Configuration)
+        //    .AddEventHandler<TravelOrderCreatedEvent, TravelOrderCreatedEventHandler>();
 
         services.AddControllers();
 

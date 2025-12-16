@@ -2,7 +2,7 @@
 using Entities.Models;
 using Entities.RequestFeatures;
 
-namespace Interfaces.DatabaseAccess;
+namespace Repository.DatabaseAccessInterfaces;
 
 public interface IPersonRepository
 {

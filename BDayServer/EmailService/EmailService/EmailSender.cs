@@ -1,12 +1,12 @@
-﻿using Contracts.EmailService;
-using Core.EmailService.Extensions;
-using Interfaces.EmailService;
+﻿using EmailService.EmailService.Extensions;
+using EmailService.EmailServiceContracts;
+using EmailService.Interfaces;
 using MailKit.Net.Smtp;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
 
-namespace Core.EmailService;
+namespace EmailService.EmailService;
 
 public class EmailSender(IOptions<EmailConfiguration> emailConfig, ILogger<EmailSender> logger)
     : IEmailSender
@@ -44,7 +44,6 @@ public class EmailSender(IOptions<EmailConfiguration> emailConfig, ILogger<Email
         finally
         {
             await client.DisconnectAsync(true);
-            client.Dispose();
         }
     }
 }

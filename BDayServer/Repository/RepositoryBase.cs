@@ -1,6 +1,7 @@
-﻿using Interfaces.DatabaseAccess;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using Repository.DatabaseAccessInterfaces;
+using Repository.Repositories;
 
 namespace Repository;
 

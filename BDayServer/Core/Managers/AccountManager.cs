@@ -1,11 +1,11 @@
 ﻿using Contracts.DataTransferObjects.Auth;
 using Contracts.DataTransferObjects.User;
-using Contracts.EmailService;
 using Contracts.Exceptions;
+using Core.Managers.ManagerInterfaces;
+using Core.Services.Interfaces;
+using EmailService.EmailServiceContracts;
+using EmailService.Interfaces;
 using Entities.Models;
-using Interfaces.Authentication;
-using Interfaces.EmailService;
-using Interfaces.Managers;
 using Microsoft.AspNetCore.WebUtilities;
 using Identity = Microsoft.AspNetCore.Identity;
 

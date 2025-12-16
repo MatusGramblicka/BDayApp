@@ -1,13 +1,16 @@
 ﻿using AutoMapper;
 using Contracts.DataTransferObjects.Person;
 using Contracts.Exceptions;
+using Core.Managers.ManagerInterfaces;
+using Core.Services;
+using Core.Services.Interfaces;
 using Entities.Models;
 using Entities.RequestFeatures;
-using Interfaces.DatabaseAccess;
-using Interfaces.Managers;
-using Interfaces.UserProvider;
 using Microsoft.AspNetCore.Identity;
 using Repository;
+using Repository.DatabaseAccessInterfaces;
+using Repository.Repositories;
+using Repository.Services;
 
 namespace Core.Managers;
 

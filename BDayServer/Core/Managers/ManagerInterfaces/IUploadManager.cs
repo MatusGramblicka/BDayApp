@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 
-namespace Interfaces.Managers;
+namespace Core.Managers.ManagerInterfaces;
 
 public interface IUploadManager
 {

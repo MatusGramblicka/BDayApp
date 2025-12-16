@@ -1,4 +1,4 @@
-﻿namespace Contracts.EmailService;
+﻿namespace EmailService.EmailServiceContracts;
 
 public class RecipientMessage
 {

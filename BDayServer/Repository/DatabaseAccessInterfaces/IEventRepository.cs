@@ -1,7 +1,7 @@
 ﻿using Entities.Models;
 using Entities.RequestFeatures;
 
-namespace Interfaces.DatabaseAccess;
+namespace Repository.DatabaseAccessInterfaces;
 
 public interface IEventRepository
 {
@@ -9,9 +9,9 @@ public interface IEventRepository
 
     Task<Event> GetEventAsync(Guid eventId, bool trackChanges);
 
-    void CreateEvent(Event Event);
+    void CreateEvent(Event @event);
 
     Task<IEnumerable<Event>> GetByIdsAsync(IEnumerable<Guid> ids, bool trackChanges);
 
-    void DeleteEvent(Event Event);
+    void DeleteEvent(Event @event);
 }

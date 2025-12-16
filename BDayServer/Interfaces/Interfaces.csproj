@@ -20,7 +20,6 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Contracts\Contracts.csproj" />
-	  <ProjectReference Include="..\EmailService\EmailService.csproj" />
 	  <ProjectReference Include="..\Entities\Entities.csproj" />
 	</ItemGroup>
 

@@ -1,16 +1,9 @@
 ﻿using BDayServer.ActionFilters;
-using Contracts.EmailService;
 using Core;
-using Core.EmailService;
 using Core.Managers;
 using Core.Services;
 using Entities.Configuration;
 using Entities.Models;
-using Interfaces.Authentication;
-using Interfaces.DatabaseAccess;
-using Interfaces.EmailService;
-using Interfaces.Managers;
-using Interfaces.UserProvider;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +11,14 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Repository;
 using System.Text;
+using Core.Managers.ManagerInterfaces;
+using Core.Services.Interfaces;
+using EmailService.EmailService;
+using EmailService.EmailServiceContracts;
+using EmailService.Interfaces;
+using Repository.DatabaseAccessInterfaces;
+using Repository.Repositories;
+using Repository.Services;
 
 namespace BDayServer.Extensions;
 

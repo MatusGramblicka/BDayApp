@@ -1,8 +1,8 @@
 ﻿using BDayServer.ActionFilters;
 using Contracts.DataTransferObjects.Person;
 using Contracts.Exceptions;
+using Core.Managers.ManagerInterfaces;
 using Entities.RequestFeatures;
-using Interfaces.Managers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;

@@ -1,6 +1,6 @@
 ﻿using Contracts.DataTransferObjects.User;
 
-namespace Interfaces.Managers;
+namespace Core.Managers.ManagerInterfaces;
 
 public interface IUserManager
 {

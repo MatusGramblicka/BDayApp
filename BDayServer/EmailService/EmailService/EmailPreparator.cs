@@ -1,24 +1,16 @@
-﻿using Contracts.EmailService;
-using Interfaces.EmailService;
+﻿using EmailService.EmailServiceContracts;
+using EmailService.Interfaces;
 using Microsoft.Extensions.Logging;
-using Repository;
+using Repository.Repositories;
 
-namespace Core.EmailService;
+namespace EmailService.EmailService;
 
-public class EmailPreparator : IEmailPreparator
+public class EmailPreparator(ILogger<EmailPreparator> logger, PostgreDbRepositoryContext repositoryContextScheduleJob)
+    : IEmailPreparator
 {
-    private readonly ILogger<EmailPreparator> _logger;
-    private readonly PostgreDbRepositoryContext _repositoryContextScheduleJob;
-
-    public EmailPreparator(ILogger<EmailPreparator> logger, PostgreDbRepositoryContext repositoryContextScheduleJob)
-    {
-        _logger = logger;
-        _repositoryContextScheduleJob = repositoryContextScheduleJob;
-    }
-
     public List<Message>? PrepareMessage()
     {
-        var personForEmailCreation = _repositoryContextScheduleJob.Persons.Select(p => new PersonForEmailCreation
+        var personForEmailCreation = repositoryContextScheduleJob.Persons.Select(p => new PersonForEmailCreation
         {
             CreatorEmail = p.User.Email,
             Name = p.Name,
@@ -95,7 +87,7 @@ public class EmailPreparator : IEmailPreparator
 
     private bool HasCloseDay(DateOnly date)
     {
-        _logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob is searching " +
+        logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob is searching " +
                                "for people with close birthday.");
         var timeNow = DateTime.Today;
 

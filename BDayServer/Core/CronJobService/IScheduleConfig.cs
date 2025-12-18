@@ -1,4 +1,4 @@
-﻿namespace Interfaces.Scheduler;
+﻿namespace Core.CronJobService;
 
 public interface IScheduleConfig<T>
 {

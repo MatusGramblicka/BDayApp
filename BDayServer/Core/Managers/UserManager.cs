@@ -1,7 +1,7 @@
 ﻿using Contracts.DataTransferObjects.User;
 using Contracts.Exceptions;
+using Core.Managers.ManagerInterfaces;
 using Entities.Models;
-using Interfaces.Managers;
 using Identity = Microsoft.AspNetCore.Identity;
 
 namespace Core.Managers;

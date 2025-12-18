@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using MimeKit;
 
-namespace Contracts.EmailService;
+namespace EmailService.EmailServiceContracts;
 
 public class Message
 {

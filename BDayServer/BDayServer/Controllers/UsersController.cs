@@ -2,7 +2,7 @@
 using Contracts.DataTransferObjects.Auth;
 using Contracts.DataTransferObjects.User;
 using Contracts.Exceptions;
-using Interfaces.Managers;
+using Core.Managers.ManagerInterfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

@@ -1,8 +1,9 @@
 ﻿using Entities.Models;
 using Entities.RequestFeatures;
-using Interfaces.DatabaseAccess;
 using Microsoft.EntityFrameworkCore;
+using Repository.DatabaseAccessInterfaces;
 using Repository.Extensions;
+using Repository.Repositories;
 
 namespace Repository;
 

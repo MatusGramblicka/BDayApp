@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace Interfaces.DatabaseAccess;
+namespace Repository.DatabaseAccessInterfaces;
 
 public interface IRepositoryBase<T>
 {

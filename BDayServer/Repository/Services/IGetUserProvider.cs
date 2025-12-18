@@ -1,4 +1,4 @@
-﻿namespace Interfaces.UserProvider;
+﻿namespace Repository.Services;
 
 public interface IGetUserProvider
 {

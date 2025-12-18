@@ -1,7 +1,7 @@
 ﻿using Contracts.Exceptions;
-using Interfaces.Managers;
 using Microsoft.AspNetCore.Http;
 using System.Net.Http.Headers;
+using Core.Managers.ManagerInterfaces;
 
 namespace Core.Managers;
 

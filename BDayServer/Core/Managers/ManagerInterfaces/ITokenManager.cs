@@ -1,6 +1,6 @@
 ﻿using Contracts.DataTransferObjects.Auth;
 
-namespace Interfaces.Managers;
+namespace Core.Managers.ManagerInterfaces;
 
 public interface ITokenManager
 {

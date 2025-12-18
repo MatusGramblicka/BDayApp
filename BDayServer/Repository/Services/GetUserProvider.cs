@@ -1,12 +1,10 @@
-﻿using Interfaces;
-using Interfaces.UserProvider;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 
-namespace Core;
+namespace Repository.Services;
 
 public class GetUserProvider : IGetUserProvider
 {
-    public string UserName { get; }            
+    public string UserName { get; }
 
     public GetUserProvider(IHttpContextAccessor accessor)
     {

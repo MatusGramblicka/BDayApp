@@ -1,6 +1,4 @@
-﻿using Interfaces.Scheduler;
-
-namespace Core.CronJobService;
+﻿namespace Core.CronJobService;
 
 public class ScheduleConfig<T> : IScheduleConfig<T>
 {

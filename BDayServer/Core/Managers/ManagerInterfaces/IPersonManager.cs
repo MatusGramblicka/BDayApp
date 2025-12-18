@@ -1,7 +1,7 @@
 ﻿using Contracts.DataTransferObjects.Person;
 using Entities.RequestFeatures;
 
-namespace Interfaces.Managers;
+namespace Core.Managers.ManagerInterfaces;
 
 public interface IPersonManager
 {

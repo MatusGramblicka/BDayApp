@@ -1,5 +1,5 @@
-﻿using Interfaces.EmailService;
-using Interfaces.Scheduler;
+﻿using Core.CronJobService;
+using EmailService.Interfaces;
 
 namespace BDayServer.HostedService;
 

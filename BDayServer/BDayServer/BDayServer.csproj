@@ -27,12 +27,6 @@
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Core\Core.csproj" />
-    <ProjectReference Include="..\Interfaces\Interfaces.csproj" />
-    <ProjectReference Include="..\Repository\Repository.csproj" />
-  </ItemGroup>
-
 	<ItemGroup>
 		<Content Include="StaticFiles\**">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -44,5 +38,13 @@
     <Folder Include="Migrations\PostgreSqlMigrations\" />
     <Folder Include="StaticFiles\Images\" />
   </ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Contracts\Contracts.csproj" />
+	  <ProjectReference Include="..\Core\Core.csproj" />
+	  <ProjectReference Include="..\EmailService\EmailService.csproj" />
+	  <ProjectReference Include="..\Entities\Entities.csproj" />
+	  <ProjectReference Include="..\Repository\Repository.csproj" />
+	</ItemGroup>
 
 </Project>

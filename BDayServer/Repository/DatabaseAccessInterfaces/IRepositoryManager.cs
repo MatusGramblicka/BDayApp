@@ -1,4 +1,4 @@
-﻿namespace Interfaces.DatabaseAccess;
+﻿namespace Repository.DatabaseAccessInterfaces;
 
 public interface IRepositoryManager
 {

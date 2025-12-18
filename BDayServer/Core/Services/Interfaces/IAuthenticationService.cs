@@ -1,7 +1,7 @@
 ﻿using System.Security.Claims;
 using Entities.Models;
 
-namespace Interfaces.Authentication;
+namespace Core.Services.Interfaces;
 
 public interface IAuthenticationService
 {

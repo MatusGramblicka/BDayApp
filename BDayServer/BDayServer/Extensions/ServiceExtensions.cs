@@ -95,7 +95,7 @@ public static class ServiceExtensions
         services.AddScoped<IGetUserProvider, GetUserProvider>();
     }
 
-    public static void RegisterMangers(this IServiceCollection services)
+    public static void RegisterManagers(this IServiceCollection services)
     {
         services.AddScoped<IPersonManager, PersonManager>();
         services.AddScoped<IUserManager, UserManager>();
@@ -128,24 +128,24 @@ public static class ServiceExtensions
         });
     }
 
-    public static void RegisterAuthenticatedSwagger(this IServiceCollection services)
-    {
-        services.AddSwaggerGen(option =>
-        {
-            option.SwaggerDoc("v1", new OpenApiInfo { Title = "BDayServer", Version = "v1" });
-            option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-            {
-                In = ParameterLocation.Header,
-                Description = "Please enter a valid token",
-                Name = "Authorization",
-                Type = SecuritySchemeType.Http,
-                BearerFormat = "JWT",
-                Scheme = "Bearer"
-            });
-            option.AddSecurityRequirement((document) => new OpenApiSecurityRequirement()
-            { 
-                [new OpenApiSecuritySchemeReference("Bearer", document)] = [] 
-            });
-        });
-    }
+    //public static void RegisterAuthenticatedSwagger(this IServiceCollection services)
+    //{
+    //    services.AddSwaggerGen(option =>
+    //    {
+    //        option.SwaggerDoc("v1", new OpenApiInfo { Title = "BDayServer", Version = "v1" });
+    //        option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    //        {
+    //            In = ParameterLocation.Header,
+    //            Description = "Please enter a valid token",
+    //            Name = "Authorization",
+    //            Type = SecuritySchemeType.Http,
+    //            BearerFormat = "JWT",
+    //            Scheme = "Bearer"
+    //        });
+    //        option.AddSecurityRequirement((document) => new OpenApiSecurityRequirement()
+    //        { 
+    //            [new OpenApiSecuritySchemeReference("Bearer", document)] = [] 
+    //        });
+    //    });
+    //}
 }

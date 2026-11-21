@@ -57,7 +57,7 @@ public partial class CreatePerson
         _editContext.NotifyValidationStateChanged();
     }
 
-    private void ValidationChanged(object sender, ValidationStateChangedEventArgs e)
+    private void ValidationChanged(object? sender, ValidationStateChangedEventArgs e)
     {
         _formInvalid = true;
         _editContext.OnFieldChanged -= HandleFieldChanged;

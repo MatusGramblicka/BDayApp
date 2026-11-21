@@ -42,6 +42,14 @@ public class Program
         builder.Services.Configure<ApiConfiguration>
             (builder.Configuration.GetSection("ApiConfiguration"));
 
+        // The client is hosted by BDayServer, so without an explicit ApiConfiguration:BaseAddress
+        // (appsettings*.json are not in git) the API lives on the origin the app was loaded from.
+        builder.Services.PostConfigure<ApiConfiguration>(apiConfiguration =>
+        {
+            if (string.IsNullOrWhiteSpace(apiConfiguration.BaseAddress))
+                apiConfiguration.BaseAddress = builder.HostEnvironment.BaseAddress.TrimEnd('/');
+        });
+
         builder.Services.AddAutoMapper(a => a.AddProfile<MappingProfile>());
 
         builder.Services.AddBlazoredLocalStorage();

@@ -48,6 +48,34 @@
 	  <ProjectReference Include="..\EmailService\EmailService.csproj" />
 	  <ProjectReference Include="..\Entities\Entities.csproj" />
 	  <ProjectReference Include="..\Repository\Repository.csproj" />
+	  <!-- The server hosts the Blazor WebAssembly client: publishing the server also publishes the client into wwwroot,
+	       so the client no longer has to be published and copied by hand. -->
+	  <ProjectReference Include="..\..\BDayClient\BDayClient\BDayClient.csproj" />
+	</ItemGroup>
+
+	<!-- Files that only exist on the web server must survive a Web Deploy with "Remove additional files at destination":
+	     person images uploaded at runtime (StaticFiles\Images) and the config files that are not in git. -->
+	<ItemGroup>
+	  <MsDeploySkipRules Include="KeepUploadedImagesFolder">
+	    <SkipAction>Delete</SkipAction>
+	    <ObjectName>dirPath</ObjectName>
+	    <AbsolutePath>StaticFiles\\Images$</AbsolutePath>
+	  </MsDeploySkipRules>
+	  <MsDeploySkipRules Include="KeepUploadedImages">
+	    <SkipAction>Delete</SkipAction>
+	    <ObjectName>filePath</ObjectName>
+	    <AbsolutePath>StaticFiles\\Images\\.*</AbsolutePath>
+	  </MsDeploySkipRules>
+	  <MsDeploySkipRules Include="KeepAppSettings">
+	    <SkipAction>Delete</SkipAction>
+	    <ObjectName>filePath</ObjectName>
+	    <AbsolutePath>appsettings[^\\]*\.json$</AbsolutePath>
+	  </MsDeploySkipRules>
+	  <MsDeploySkipRules Include="KeepNLogConfig">
+	    <SkipAction>Delete</SkipAction>
+	    <ObjectName>filePath</ObjectName>
+	    <AbsolutePath>(?i)\\nlog\.config$</AbsolutePath>
+	  </MsDeploySkipRules>
 	</ItemGroup>
 
 </Project>

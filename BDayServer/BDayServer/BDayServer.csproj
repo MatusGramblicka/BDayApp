@@ -21,7 +21,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="11.0.0-rc.3" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="11.0.0" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.21.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="11.0.1" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.23.0" />
@@ -47,6 +47,45 @@
 	  <ProjectReference Include="..\EmailService\EmailService.csproj" />
 	  <ProjectReference Include="..\Entities\Entities.csproj" />
 	  <ProjectReference Include="..\Repository\Repository.csproj" />
+	  <!-- The server hosts the Blazor WebAssembly client: publishing the server also publishes the client into wwwroot,
+	       so the client no longer has to be published and copied by hand. -->
+	  <ProjectReference Include="..\..\BDayClient\BDayClient\BDayClient.csproj" />
 	</ItemGroup>
+
+	<!-- Files that only live on the web server. Web Deploy never uploads, overwrites or deletes them,
+	     also not with "Remove additional files at destination":
+	     - person images uploaded at runtime (StaticFiles\Images)
+	     - appsettings*.json and NLog.config, which are not in git: change them on the server (Kudu), not by publishing.
+	     (A skip rule skips add, update and delete; Web Deploy from Visual Studio does not support SkipAction.) -->
+	<ItemGroup>
+	  <MsDeploySkipRules Include="SkipUploadedImagesFolder">
+	    <ObjectName>dirPath</ObjectName>
+	    <AbsolutePath>\\StaticFiles\\Images$</AbsolutePath>
+	  </MsDeploySkipRules>
+	  <MsDeploySkipRules Include="SkipUploadedImages">
+	    <ObjectName>filePath</ObjectName>
+	    <AbsolutePath>\\StaticFiles\\Images\\</AbsolutePath>
+	  </MsDeploySkipRules>
+	  <MsDeploySkipRules Include="SkipAppSettings">
+	    <ObjectName>filePath</ObjectName>
+	    <AbsolutePath>(?i)\\appsettings[^\\]*\.json$</AbsolutePath>
+	  </MsDeploySkipRules>
+	  <MsDeploySkipRules Include="SkipNLogConfig">
+	    <ObjectName>filePath</ObjectName>
+	    <AbsolutePath>(?i)\\nlog\.config$</AbsolutePath>
+	  </MsDeploySkipRules>
+	</ItemGroup>
+
+	<!-- Guard: the server's published web.config must never contain IIS rewrite rules. In November 2026 the Blazor client's
+	     standalone web.config (rewrite "Serve subdir" to wwwroot\) ended up in the server publish and every CSS/JS file and
+	     API call failed in production. Runs right after the SDK writes web.config, before anything is deployed. -->
+	<Target Name="BlockRewriteRulesInPublishedWebConfig" AfterTargets="_TransformWebConfig"
+	        Condition="Exists('$(PublishIntermediateOutputPath)web.config')">
+	  <PropertyGroup>
+	    <_PublishedWebConfigText>$([System.IO.File]::ReadAllText('$(PublishIntermediateOutputPath)web.config'))</_PublishedWebConfigText>
+	  </PropertyGroup>
+	  <Error Condition="$(_PublishedWebConfigText.Contains('&lt;rewrite'))"
+	         Text="The web.config being published contains IIS &lt;rewrite&gt; rules - most likely the Blazor client's own web.config was copied into BDayServer\BDayServer (or is left over in $(PublishIntermediateOutputPath)). Delete that web.config and publish again: the server generates its own web.config, and the client is published through the project reference." />
+	</Target>
 
 </Project>

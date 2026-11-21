@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace BDayClient.UnitTests.Components;
 
-public class FilterComponentsTests : TestContext
+public class FilterComponentsTests : BunitContext
 {
     [Theory]
     [InlineData("name desc")]
@@ -12,7 +12,7 @@ public class FilterComponentsTests : TestContext
     public void Sort_SelectionChange_RaisesOrderBy(string orderBy)
     {
         string? raised = null;
-        var cut = RenderComponent<Sort>(ps => ps.Add(p => p.OnSortChanged, value => raised = value));
+        var cut = Render<Sort>(ps => ps.Add(p => p.OnSortChanged, value => raised = value));
 
         cut.Find("select").Change(orderBy);
 
@@ -22,7 +22,7 @@ public class FilterComponentsTests : TestContext
     [Fact]
     public void Sort_DefaultSelection_IsBirthdayAscending()
     {
-        var cut = RenderComponent<Sort>();
+        var cut = Render<Sort>();
 
         cut.Find("option[selected]").GetAttribute("value").Should().Be("dayOfBirth");
     }
@@ -31,7 +31,7 @@ public class FilterComponentsTests : TestContext
     public void Sort_PlaceholderValue_IsIgnored()
     {
         var raised = false;
-        var cut = RenderComponent<Sort>(ps => ps.Add(p => p.OnSortChanged, _ => raised = true));
+        var cut = Render<Sort>(ps => ps.Add(p => p.OnSortChanged, _ => raised = true));
 
         cut.Find("select").Change("-1");
 
@@ -44,7 +44,7 @@ public class FilterComponentsTests : TestContext
     public void PageSizeDropDown_SelectionChange_RaisesPageSize(string selected, int expected)
     {
         int? raised = null;
-        var cut = RenderComponent<PageSizeDropDown>(ps => ps.Add(p => p.SelectedPageSize, size => raised = size));
+        var cut = Render<PageSizeDropDown>(ps => ps.Add(p => p.SelectedPageSize, size => raised = size));
 
         cut.Find("select").Change(selected);
 
@@ -71,7 +71,7 @@ public class FilterComponentsTests : TestContext
     public async Task Search_RaisesTermAfterDebounce()
     {
         var raised = new ConcurrentQueue<string>();
-        var cut = RenderComponent<Search>(ps => ps.Add(p => p.OnSearchChanged, term => raised.Enqueue(term)));
+        var cut = Render<Search>(ps => ps.Add(p => p.OnSearchChanged, term => raised.Enqueue(term)));
 
         TypeAndRelease(cut, "ann");
 
@@ -84,7 +84,7 @@ public class FilterComponentsTests : TestContext
     public async Task Search_TypingQuickly_RaisesOnlyLatestTerm()
     {
         var raised = new ConcurrentQueue<string>();
-        var cut = RenderComponent<Search>(ps => ps.Add(p => p.OnSearchChanged, term => raised.Enqueue(term)));
+        var cut = Render<Search>(ps => ps.Add(p => p.OnSearchChanged, term => raised.Enqueue(term)));
 
         TypeAndRelease(cut, "a");
         TypeAndRelease(cut, "an");

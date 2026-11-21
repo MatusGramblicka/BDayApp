@@ -3,12 +3,12 @@ using Entities.RequestFeatures;
 
 namespace BDayClient.UnitTests.Components;
 
-public class PaginationTests : TestContext
+public class PaginationTests : BunitContext
 {
     private readonly List<int> _selectedPages = [];
 
-    private IRenderedComponent<Pagination> Render(int currentPage, int totalPages, int spread = 2) =>
-        RenderComponent<Pagination>(ps => ps
+    private IRenderedComponent<Pagination> RenderPagination(int currentPage, int totalPages, int spread = 2) =>
+        Render<Pagination>(ps => ps
             .Add(p => p.MetaData, new MetaData { CurrentPage = currentPage, TotalPages = totalPages, PageSize = 10 })
             .Add(p => p.Spread, spread)
             .Add(p => p.SelectedPage, page => _selectedPages.Add(page)));
@@ -19,7 +19,7 @@ public class PaginationTests : TestContext
     [Fact]
     public void Renders_PreviousNextAndPagesWithinSpread()
     {
-        var cut = Render(currentPage: 5, totalPages: 10, spread: 2);
+        var cut = RenderPagination(currentPage: 5, totalPages: 10, spread: 2);
 
         LinkTexts(cut).Should().Equal("Previous", "3", "4", "5", "6", "7", "Next");
     }
@@ -27,7 +27,7 @@ public class PaginationTests : TestContext
     [Fact]
     public void CurrentPage_IsMarkedActive()
     {
-        var cut = Render(currentPage: 2, totalPages: 3);
+        var cut = RenderPagination(currentPage: 2, totalPages: 3);
 
         cut.FindAll("li.active").Should().ContainSingle().Which.TextContent.Trim().Should().Be("2");
     }
@@ -35,11 +35,11 @@ public class PaginationTests : TestContext
     [Fact]
     public void FirstPage_DisablesPrevious_LastPageDisablesNext()
     {
-        var first = Render(currentPage: 1, totalPages: 3);
+        var first = RenderPagination(currentPage: 1, totalPages: 3);
         first.FindAll("li")[0].ClassList.Should().Contain("disabled");
         first.FindAll("li")[^1].ClassList.Should().NotContain("disabled");
 
-        var last = Render(currentPage: 3, totalPages: 3);
+        var last = RenderPagination(currentPage: 3, totalPages: 3);
         last.FindAll("li")[0].ClassList.Should().NotContain("disabled");
         last.FindAll("li")[^1].ClassList.Should().Contain("disabled");
     }
@@ -47,7 +47,7 @@ public class PaginationTests : TestContext
     [Fact]
     public void ClickingAnotherPage_RaisesSelectedPage()
     {
-        var cut = Render(currentPage: 2, totalPages: 5);
+        var cut = RenderPagination(currentPage: 2, totalPages: 5);
 
         cut.FindAll("li").Single(li => li.TextContent.Trim() == "4").Click();
 
@@ -58,7 +58,7 @@ public class PaginationTests : TestContext
     [Fact]
     public void ClickingNext_RaisesFollowingPage()
     {
-        var cut = Render(currentPage: 2, totalPages: 5);
+        var cut = RenderPagination(currentPage: 2, totalPages: 5);
 
         cut.FindAll("li")[^1].Click();
 
@@ -68,7 +68,7 @@ public class PaginationTests : TestContext
     [Fact]
     public void ClickingCurrentOrDisabledLink_DoesNothing()
     {
-        var cut = Render(currentPage: 1, totalPages: 3);
+        var cut = RenderPagination(currentPage: 1, totalPages: 3);
 
         cut.FindAll("li").Single(li => li.TextContent.Trim() == "1").Click();
         cut.FindAll("li")[0].Click(); // disabled "Previous"

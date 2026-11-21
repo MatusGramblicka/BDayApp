@@ -2,7 +2,7 @@ using BDayClient.Components;
 
 namespace BDayClient.UnitTests.Components;
 
-public class DayMonthPickerTests : TestContext
+public class DayMonthPickerTests : BunitContext
 {
     // InputBase<T> needs a ValueExpression pointing at a model member.
     private sealed class Model
@@ -16,7 +16,7 @@ public class DayMonthPickerTests : TestContext
     private IRenderedComponent<DayMonthPickerNullable> RenderNullable(DateOnly? value)
     {
         _model.Birthday = value;
-        return RenderComponent<DayMonthPickerNullable>(ps => ps
+        return Render<DayMonthPickerNullable>(ps => ps
             .Add(p => p.Value, value)
             .Add(p => p.ValueChanged, v => _model.Birthday = v)
             .Add(p => p.ValueExpression, () => _model.Birthday));
@@ -25,7 +25,7 @@ public class DayMonthPickerTests : TestContext
     private IRenderedComponent<DayMonthPickerNonNullable> RenderNonNullable(DateOnly value)
     {
         _model.NameDay = value;
-        return RenderComponent<DayMonthPickerNonNullable>(ps => ps
+        return Render<DayMonthPickerNonNullable>(ps => ps
             .Add(p => p.Value, value)
             .Add(p => p.ValueChanged, v => _model.NameDay = v)
             .Add(p => p.ValueExpression, () => _model.NameDay));

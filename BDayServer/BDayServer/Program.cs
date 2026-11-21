@@ -65,7 +65,8 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
-    app.UseWebAssemblyDebugging();
+    // No UseWebAssemblyDebugging() / inspectUri: since .NET 11, Visual Studio and VS Code launch
+    // Blazor WebAssembly debugging themselves (ASPDEPR011).
 
     app.MapOpenApi("/openapi/v1.json");
     app.MapScalarApiReference(); // UI at /scalar

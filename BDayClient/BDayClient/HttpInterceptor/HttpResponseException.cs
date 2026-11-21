@@ -1,8 +1,6 @@
-﻿using System.Runtime.Serialization;
+﻿namespace BDayClient.HttpInterceptor;
 
-namespace BDayClient.HttpInterceptor;
-
-[Serializable]
+// No [Serializable] / serialization constructor: formatter-based serialization is obsolete (SYSLIB0051).
 internal class HttpResponseException : Exception
 {
     public HttpResponseException()
@@ -15,11 +13,6 @@ internal class HttpResponseException : Exception
 
     public HttpResponseException(string message, Exception innerException)
         : base(message, innerException)
-    {
-    }
-
-    protected HttpResponseException(SerializationInfo info, StreamingContext context)
-        : base(info, context)
     {
     }
 }

@@ -41,9 +41,11 @@ public partial class UpdatePerson : IDisposable
         Interceptor.RegisterEvent();
     }
 
-    private void HandleFieldChanged(object sender, FieldChangedEventArgs e)
+    // EditContext.OnFieldChanged is a plain .NET event, so this handler is async void
+    // (EditContext.Validate() is obsolete since .NET 11).
+    private async void HandleFieldChanged(object? sender, FieldChangedEventArgs e)
     {
-        formInvalid = !_editContext.Validate();
+        formInvalid = !await _editContext.ValidateAsync();
         StateHasChanged();
     }
 

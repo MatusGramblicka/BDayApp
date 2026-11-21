@@ -53,26 +53,25 @@
 	  <ProjectReference Include="..\..\BDayClient\BDayClient\BDayClient.csproj" />
 	</ItemGroup>
 
-	<!-- Files that only exist on the web server must survive a Web Deploy with "Remove additional files at destination":
-	     person images uploaded at runtime (StaticFiles\Images) and the config files that are not in git. -->
+	<!-- Files that only live on the web server. Web Deploy never uploads, overwrites or deletes them,
+	     also not with "Remove additional files at destination":
+	     - person images uploaded at runtime (StaticFiles\Images)
+	     - appsettings*.json and NLog.config, which are not in git: change them on the server (Kudu), not by publishing.
+	     (A skip rule skips add, update and delete; Web Deploy from Visual Studio does not support SkipAction.) -->
 	<ItemGroup>
-	  <MsDeploySkipRules Include="KeepUploadedImagesFolder">
-	    <SkipAction>Delete</SkipAction>
+	  <MsDeploySkipRules Include="SkipUploadedImagesFolder">
 	    <ObjectName>dirPath</ObjectName>
-	    <AbsolutePath>StaticFiles\\Images$</AbsolutePath>
+	    <AbsolutePath>\\StaticFiles\\Images$</AbsolutePath>
 	  </MsDeploySkipRules>
-	  <MsDeploySkipRules Include="KeepUploadedImages">
-	    <SkipAction>Delete</SkipAction>
+	  <MsDeploySkipRules Include="SkipUploadedImages">
 	    <ObjectName>filePath</ObjectName>
-	    <AbsolutePath>StaticFiles\\Images\\.*</AbsolutePath>
+	    <AbsolutePath>\\StaticFiles\\Images\\</AbsolutePath>
 	  </MsDeploySkipRules>
-	  <MsDeploySkipRules Include="KeepAppSettings">
-	    <SkipAction>Delete</SkipAction>
+	  <MsDeploySkipRules Include="SkipAppSettings">
 	    <ObjectName>filePath</ObjectName>
-	    <AbsolutePath>appsettings[^\\]*\.json$</AbsolutePath>
+	    <AbsolutePath>(?i)\\appsettings[^\\]*\.json$</AbsolutePath>
 	  </MsDeploySkipRules>
-	  <MsDeploySkipRules Include="KeepNLogConfig">
-	    <SkipAction>Delete</SkipAction>
+	  <MsDeploySkipRules Include="SkipNLogConfig">
 	    <ObjectName>filePath</ObjectName>
 	    <AbsolutePath>(?i)\\nlog\.config$</AbsolutePath>
 	  </MsDeploySkipRules>

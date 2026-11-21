@@ -34,6 +34,17 @@ jobs:
       - name: Build client
         run: dotnet build ${{ env.CLIENT_SOLUTION }} --configuration Release
 
+      # The same publish Visual Studio runs before Web Deploy. It fails if the generated web.config
+      # contains IIS rewrite rules (see BlockRewriteRulesInPublishedWebConfig in BDayServer.csproj).
+      - name: Publish server (includes the Blazor client)
+        run: dotnet publish BDayServer/BDayServer/BDayServer.csproj --configuration Release --output publish
+
+      - name: Check the Blazor client is in the publish output
+        run: |
+          for f in publish/wwwroot/index.html publish/wwwroot/_framework/blazor.webassembly.js; do
+            test -f "$f" || { echo "::error::$f is missing from the server publish output"; exit 1; }
+          done
+
   unit-tests:
     name: Unit tests
     runs-on: ubuntu-latest

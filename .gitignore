@@ -33,7 +33,6 @@ bld/
 [Oo]utput/
 
 *appsettings*
-*/BDayServer/wwwroot/*
 *BDayServer/BDayServer/Properties/ServiceDependencies/*
 
 # Visual Studio 2015/2017 cache/options directory

@@ -8,24 +8,24 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="16.1.1" />
+    <PackageReference Include="AutoMapper" Version="16.3.0" />
     <PackageReference Include="Cronos" Version="0.13.0" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.9" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.9" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.9" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.9">
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.15" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.15" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.15" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.15" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.15" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.15" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.15">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="MimeKit" Version="4.17.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.4" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.16.4" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.2" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.19.1" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.19.2" />
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.2" />
     <PackageReference Include="NLog" Version="6.1.3" />
   </ItemGroup>
@@ -76,5 +76,17 @@
 	    <AbsolutePath>(?i)\\nlog\.config$</AbsolutePath>
 	  </MsDeploySkipRules>
 	</ItemGroup>
+
+	<!-- Guard: the server's published web.config must never contain IIS rewrite rules. In November 2026 the Blazor client's
+	     standalone web.config (rewrite "Serve subdir" to wwwroot\) ended up in the server publish and every CSS/JS file and
+	     API call failed in production. Runs right after the SDK writes web.config, before anything is deployed. -->
+	<Target Name="BlockRewriteRulesInPublishedWebConfig" AfterTargets="_TransformWebConfig"
+	        Condition="Exists('$(PublishIntermediateOutputPath)web.config')">
+	  <PropertyGroup>
+	    <_PublishedWebConfigText>$([System.IO.File]::ReadAllText('$(PublishIntermediateOutputPath)web.config'))</_PublishedWebConfigText>
+	  </PropertyGroup>
+	  <Error Condition="$(_PublishedWebConfigText.Contains('&lt;rewrite'))"
+	         Text="The web.config being published contains IIS &lt;rewrite&gt; rules - most likely the Blazor client's own web.config was copied into BDayServer\BDayServer (or is left over in $(PublishIntermediateOutputPath)). Delete that web.config and publish again: the server generates its own web.config, and the client is published through the project reference." />
+	</Target>
 
 </Project>

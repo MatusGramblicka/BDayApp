@@ -104,6 +104,32 @@ public static class ServiceExtensions
         services.AddScoped<ISwaggerLoginManager, SwaggerLoginManager>();
         services.AddScoped<IAccountManager, AccountManager>();
     }
+
+    /// <summary>
+    /// Where uploaded person images are stored (served under /StaticFiles). On Azure App Service this is
+    /// %HOME%\data\StaticFiles: persistent storage outside the deployed app folder (%HOME%\site\wwwroot),
+    /// so no deployment can overwrite or delete uploads. Locally it is the StaticFiles folder next to the app.
+    /// The setting "Uploads:RootPath" overrides both.
+    /// </summary>
+    public static string ConfigureUploads(this IServiceCollection services, IConfiguration configuration)
+    {
+        var rootPath = configuration["Uploads:RootPath"];
+
+        if (string.IsNullOrWhiteSpace(rootPath))
+        {
+            var home = Environment.GetEnvironmentVariable("HOME");
+            var onAppService = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME"));
+
+            rootPath = onAppService && !string.IsNullOrEmpty(home)
+                ? Path.Combine(home, "data", "StaticFiles")
+                : Path.Combine(Directory.GetCurrentDirectory(), "StaticFiles");
+        }
+
+        Directory.CreateDirectory(Path.Combine(rootPath, "Images"));
+        services.Configure<UploadOptions>(o => o.RootPath = rootPath);
+
+        return rootPath;
+    }
     public static void RegisterAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
         var jwtSettings = configuration.GetSection("JWTSettings");

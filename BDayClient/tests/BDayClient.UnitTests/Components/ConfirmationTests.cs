@@ -2,19 +2,19 @@ using BDayClient.Shared;
 
 namespace BDayClient.UnitTests.Components;
 
-public class ConfirmationTests : TestContext
+public class ConfirmationTests : BunitContext
 {
     private int _okClicks;
 
-    private IRenderedComponent<Confirmation> Render() =>
-        RenderComponent<Confirmation>(ps => ps
+    private IRenderedComponent<Confirmation> RenderConfirmation() =>
+        Render<Confirmation>(ps => ps
             .Add(p => p.BodyMessage, "Delete Anna?")
             .Add(p => p.OnOKClicked, () => _okClicks++));
 
     [Fact]
     public void Renders_BodyMessage_AndIsHiddenInitially()
     {
-        var cut = Render();
+        var cut = RenderConfirmation();
 
         cut.Find(".modal-body p").TextContent.Should().Be("Delete Anna?");
         cut.FindAll(".modal-backdrop").Should().BeEmpty();
@@ -24,7 +24,7 @@ public class ConfirmationTests : TestContext
     [Fact]
     public void Show_DisplaysModalAndBackdrop()
     {
-        var cut = Render();
+        var cut = RenderConfirmation();
 
         cut.InvokeAsync(() => cut.Instance.Show());
 
@@ -35,7 +35,7 @@ public class ConfirmationTests : TestContext
     [Fact]
     public void Cancel_HidesModal()
     {
-        var cut = Render();
+        var cut = RenderConfirmation();
         cut.InvokeAsync(() => cut.Instance.Show());
 
         cut.Find("button.btn-danger").Click();
@@ -48,7 +48,7 @@ public class ConfirmationTests : TestContext
     [Fact]
     public void CloseIcon_HidesModal()
     {
-        var cut = Render();
+        var cut = RenderConfirmation();
         cut.InvokeAsync(() => cut.Instance.Show());
 
         cut.Find("button.close").Click();
@@ -59,7 +59,7 @@ public class ConfirmationTests : TestContext
     [Fact]
     public void Ok_RaisesCallback()
     {
-        var cut = Render();
+        var cut = RenderConfirmation();
 
         cut.Find("button.btn-success").Click();
 

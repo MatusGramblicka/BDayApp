@@ -12,8 +12,7 @@ public class PostgreSqlContainerFixture : IContainerDatabaseFixture<PostgreDbRep
 {
     public const string MigrationsAssembly = "BDayServer";
 
-    private readonly PostgreSqlContainer _postgreSqlContainer = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
+    private readonly PostgreSqlContainer _postgreSqlContainer = new PostgreSqlBuilder("postgres:16-alpine")
         .WithDatabase("bdayserver_tests")
         .WithUsername("bdayserver")
         .WithPassword("bdayserver")

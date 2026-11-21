@@ -16,8 +16,7 @@ public class SqlServerContainerFixture : IContainerDatabaseFixture<DbRepositoryC
         (Environment.GetEnvironmentVariable("DOCKER_HUB_PROXY_PREFIX") ?? "mcr.microsoft.com/")
         + "mssql/server:2022-latest";
 
-    private readonly MsSqlContainer _msSqlContainer = new MsSqlBuilder()
-        .WithImage(SqlServerImage)
+    private readonly MsSqlContainer _msSqlContainer = new MsSqlBuilder(SqlServerImage)
         .WithPassword("BDayServer_Tests1!")
         .Build();
 

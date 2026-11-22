@@ -71,6 +71,35 @@ public class AuthenticationServiceTests
     }
 
     [Fact]
+    public async Task Login_PlainTextError_ReturnsFailedResultInsteadOfThrowing()
+    {
+        // The API answers unexpected server errors with plain text, not an AuthResponseDto.
+        _http.When(HttpMethod.Post, Api + "account/login")
+            .Respond(HttpStatusCode.BadRequest, "text/plain", "Unspecified problem");
+
+        var result = await _sut.Login(new UserForAuthentication { Email = "a", Password = "b" });
+
+        result.IsAuthSuccessful.Should().BeFalse();
+        result.ErrorMessage.Should().Be("Login failed: Unspecified problem");
+        _localStorage.Verify(s => s.SetItemAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Login_HtmlErrorPage_ReturnsFailedResultWithStatusCode()
+    {
+        // IIS answers with an HTML page, e.g. 503 while the site restarts after a deploy.
+        _http.When(HttpMethod.Post, Api + "account/login")
+            .Respond(HttpStatusCode.ServiceUnavailable, "text/html", "<html><body>Service Unavailable</body></html>");
+
+        var result = await _sut.Login(new UserForAuthentication { Email = "a", Password = "b" });
+
+        result.IsAuthSuccessful.Should().BeFalse();
+        result.ErrorMessage.Should().Contain("503");
+        _client.DefaultRequestHeaders.Authorization.Should().BeNull();
+    }
+
+    [Fact]
     public async Task Login_TwoStepRequired_ReturnsResponseWithoutStoringTokens()
     {
         _http.When(HttpMethod.Post, Api + "account/login")

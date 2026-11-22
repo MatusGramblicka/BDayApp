@@ -44,14 +44,9 @@ public class AuthenticationService : IAuthenticationService
 
         var response = await _client.PostAsJsonAsync("account/login",
             userForAuthenticationDto);
-        var content = await response.Content.ReadAsStringAsync();
+        var result = await ReadAuthResponseAsync(response);
 
-        var result = JsonSerializer.Deserialize<AuthResponseDto>(content, _options);
-
-        if (result is null)
-            throw new ArgumentNullException(nameof(result));
-
-        if (!response.IsSuccessStatusCode || result.Is2StepVerificationRequired)
+        if (!response.IsSuccessStatusCode || result.Is2StepVerificationRequired || string.IsNullOrEmpty(result.Token))
             return result;
 
         await _localStorage.SetItemAsync("authToken", result.Token);
@@ -185,11 +180,9 @@ public class AuthenticationService : IAuthenticationService
     {
         var response = await _client.PostAsJsonAsync("account/twostepverification",
             twoFactorDto);
-        var content = await response.Content.ReadAsStringAsync();
+        var result = await ReadAuthResponseAsync(response);
 
-        var result = JsonSerializer.Deserialize<AuthResponseDto>(content, _options);
-
-        if (!response.IsSuccessStatusCode)
+        if (!response.IsSuccessStatusCode || string.IsNullOrEmpty(result.Token))
             return result;
 
         await _localStorage.SetItemAsync("authToken", result.Token);
@@ -202,5 +195,35 @@ public class AuthenticationService : IAuthenticationService
             "bearer", result.Token);
 
         return new AuthResponseDto {IsAuthSuccessful = true};
+    }
+
+    // Rejected logins come back as an AuthResponseDto (401), but other failures do not: the API answers
+    // unexpected errors with plain text ("Unspecified problem") and IIS with an HTML page (e.g. 503 while
+    // the site restarts after a deploy). Turn those into a failed result instead of a JSON exception.
+    private async Task<AuthResponseDto> ReadAuthResponseAsync(HttpResponseMessage response)
+    {
+        var content = await response.Content.ReadAsStringAsync();
+
+        try
+        {
+            var result = JsonSerializer.Deserialize<AuthResponseDto>(content, _options);
+            if (result is not null)
+                return result;
+        }
+        catch (JsonException)
+        {
+            // Not an AuthResponseDto - handled below.
+        }
+
+        var serverMessage = content.Trim();
+        var isShortText = serverMessage.Length is > 0 and <= 200 && !serverMessage.StartsWith('<');
+
+        return new AuthResponseDto
+        {
+            IsAuthSuccessful = false,
+            ErrorMessage = isShortText
+                ? $"Login failed: {serverMessage}"
+                : $"Login failed: the server answered {(int)response.StatusCode} {response.ReasonPhrase}. Please try again in a moment."
+        };
     }
 }

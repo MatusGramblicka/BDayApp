@@ -1,0 +1,27 @@
+@using System.Globalization
+@typeparam TValue
+@inherits InputBase<TValue>
+
+<div @attributes="AdditionalAttributes" role="group" class="day-month-picker @CssClass">
+    <select aria-label="Month" value="@SelectedMonth" @onchange="OnMonthChanged">
+        @if (AllowEmpty)
+        {
+            <option value=""> Month </option>
+        }
+        @foreach (var month in Enumerable.Range(1, 12))
+        {
+            <option value="@month">@CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month)</option>
+        }
+    </select>
+
+    <select aria-label="Day" value="@SelectedDay" @onchange="OnDayChanged" disabled="@(SelectedMonth is null)">
+        @if (AllowEmpty)
+        {
+            <option value=""> Day </option>
+        }
+        @foreach (var day in Enumerable.Range(1, DaysInSelectedMonth))
+        {
+            <option value="@day">@day</option>
+        }
+    </select>
+</div>

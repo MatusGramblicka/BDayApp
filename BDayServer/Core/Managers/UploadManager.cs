@@ -1,4 +1,4 @@
-﻿using Contracts.Exceptions;
+using Contracts.Exceptions;
 using Core.Managers.ManagerInterfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -7,16 +7,20 @@ namespace Core.Managers;
 
 public class UploadManager(IOptions<UploadOptions> options) : IUploadManager
 {
-    private const long MaxFileSizeBytes = 10 * 1024 * 1024;
+    public const long MaxFileSizeBytes = 10 * 1024 * 1024;
 
     // Uploaded files are served from the site's own origin, so only plain image types are accepted
     // (an uploaded .html or .svg could run script in the app's origin and read the stored login token).
     private static readonly HashSet<string> AllowedExtensions =
         new(StringComparer.OrdinalIgnoreCase) { ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp" };
 
-    public string? Upload(HttpRequest request)
+    public async Task<string> UploadAsync(HttpRequest request, CancellationToken cancellationToken = default)
     {
-        var file = request.Form.Files.FirstOrDefault();
+        if (!request.HasFormContentType)
+            throw new UploadException("Upload was not successful");
+
+        var form = await request.ReadFormAsync(cancellationToken);
+        var file = form.Files.FirstOrDefault();
 
         if (file is null || file.Length == 0)
             throw new UploadException("Upload was not successful");
@@ -33,10 +37,19 @@ public class UploadManager(IOptions<UploadOptions> options) : IUploadManager
         var fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
         var folder = Path.Combine(options.Value.RootPath, "Images");
         Directory.CreateDirectory(folder);
+        var path = Path.Combine(folder, fileName);
 
-        using (var stream = new FileStream(Path.Combine(folder, fileName), FileMode.CreateNew))
+        try
         {
-            file.CopyTo(stream);
+            await using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                bufferSize: 81920, useAsync: true);
+            await file.CopyToAsync(stream, cancellationToken);
+        }
+        catch
+        {
+            // No half-written images (e.g. when the client disconnects).
+            File.Delete(path);
+            throw;
         }
 
         // Path of the image URL, served under /StaticFiles.

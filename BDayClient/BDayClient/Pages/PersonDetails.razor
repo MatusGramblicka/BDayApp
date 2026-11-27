@@ -1,39 +1,56 @@
 ﻿@page "/person/{personId:guid}"
+@attribute [Authorize]
 
-<div class="card">
-    <div class="card-body">        
-        <div class="row">
-            <AuthorizeView Roles="Administrator">
-                <Authorized>
-                    <div class="col-md-4">
-                        <img class="person-image" src="@Person.ImageUrl" alt="" />
+<PageTitle>@(_person is null ? "Person" : $"{_person.Name} {_person.Surname}".Trim()) - BDay App</PageTitle>
+
+@if (_person is not null)
+{
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <AuthorizeView Roles="Administrator">
+                    <Authorized>
+                        @if (ApiUrls.GetImageSource(_person.ImageUrl) is { } imageSource)
+                        {
+                            <div class="col-md-4">
+                                <img class="person-image" src="@imageSource" alt="Photo of @_person.Name" />
+                            </div>
+                        }
+                    </Authorized>
+                </AuthorizeView>
+                <div class="col-md-8">
+                    <div class="row">
+                        <div class="col">
+                            <h3 class="person-title">@_person.Name @_person.Surname</h3>
+                        </div>
                     </div>
-                </Authorized>
-            </AuthorizeView>
-            <div class="col-md-8">              
-                <div class="row">
-                    <div class="col">
-                        <h3 class="person-title">@Person.Name @Person.Surname</h3>
+                    <div class="row">
+                        <div class="col">
+                            <span class="person-description">
+                                Birthday: @(_person.DayOfBirth?.ToString("dd.MM.") ?? "")
+                            </span>
+                        </div>
                     </div>
-                </div>
-                <div class="row">
-                    <div class="col">
-                        <span class="person-description">
-                            Birthday: @(Person.DayOfBirth.HasValue? Person.DayOfBirth.Value.ToString("dd.MM.") : "")
-                        </span>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col">
-                        <span class="person-description">
-                            Nameday: @Person.DayOfNameDay.ToString("dd.MM.")
-                        </span>
+                    <div class="row">
+                        <div class="col">
+                            <span class="person-description">
+                                Nameday: @_person.DayOfNameDay.ToString("dd.MM.")
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+}
+else if (_loadFailed)
+{
+    <p>The person could not be loaded.</p>
+}
+else
+{
+    <p>Loading person...</p>
+}
 <br />
 <div class="row">
 	<div class="col">

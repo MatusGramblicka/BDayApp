@@ -1,17 +1,26 @@
 ﻿@page "/emailconfirmation"
 
-<h3>EmailConfirmation</h3>
+<PageTitle>Email confirmation - BDay App</PageTitle>
 
-@if (_showError)
+<h3>Email confirmation</h3>
+
+@if (_errors is not null)
 {
     <div class="alert alert-danger" role="alert">
-        Email confirmation failed.
+        <p>Email confirmation failed.</p>
+        @foreach (var error in _errors)
+        {
+            <p>@error</p>
+        }
     </div>
 }
-
-@if (_showSuccess)
+else if (_showSuccess)
 {
     <div class="alert alert-success" role="alert">
-        Your email has been confirmed
+        Your email has been confirmed. You can <a href="/login">log in</a> now.
     </div>
+}
+else
+{
+    <p>Confirming your email...</p>
 }

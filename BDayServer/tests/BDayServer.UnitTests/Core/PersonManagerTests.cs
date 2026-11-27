@@ -2,17 +2,16 @@ using BDayServer.UnitTests.TestUtilities;
 using Contracts.DataTransferObjects.Person;
 using Contracts.Exceptions;
 using Core.Managers;
+using Core.Services.Interfaces;
 using Entities.Models;
 using Entities.RequestFeatures;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Repository.DatabaseAccessInterfaces;
-using Repository.Repositories;
 using Repository.Services;
 
 namespace BDayServer.UnitTests.Core;
 
-public class PersonManagerTests : IDisposable
+public class PersonManagerTests
 {
     private const string UserName = "owner@test.com";
 
@@ -20,26 +19,18 @@ public class PersonManagerTests : IDisposable
     private readonly Mock<IPersonRepository> _personRepository = new();
     private readonly Mock<UserManager<User>> _userManager = MockUserManager.Create();
     private readonly Mock<IGetUserProvider> _userProvider = new();
-    private readonly PostgreDbRepositoryContext _postgreContext;
-    private readonly User _user = new() { Id = "user-1", UserName = UserName, Email = UserName, RefreshToken = "" };
+    private readonly Mock<IPersonMirror> _mirror = new();
+    private readonly User _user = new() { Id = "user-1", UserName = UserName, Email = UserName };
 
     public PersonManagerTests()
     {
         _repository.Setup(r => r.Person).Returns(_personRepository.Object);
         _userProvider.Setup(p => p.UserName).Returns(UserName);
         _userManager.Setup(m => m.FindByNameAsync(UserName)).ReturnsAsync(_user);
-
-        _postgreContext = new PostgreDbRepositoryContext(new DbContextOptionsBuilder<PostgreDbRepositoryContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options);
-        _postgreContext.Users.Add(_user);
-        _postgreContext.SaveChanges();
     }
 
-    public void Dispose() => _postgreContext.Dispose();
-
     private PersonManager CreateSut() =>
-        new(_repository.Object, TestMapper.Create(), _userManager.Object, _userProvider.Object, _postgreContext);
+        new(_repository.Object, TestMapper.Create(), _userManager.Object, _userProvider.Object, _mirror.Object);
 
     private static PersonForCreationDto NewPerson() => new()
     {
@@ -49,134 +40,116 @@ public class PersonManagerTests : IDisposable
         DayOfNameDay = new DateOnly(2000, 7, 26)
     };
 
-    [Fact]
-    public void GetPersons_Null_Throws()
+    private Person StoredPerson() => new()
     {
-        var act = () => CreateSut().GetPersons(null!);
-
-        act.Should().Throw<ArgumentNullException>();
-    }
+        Id = Guid.NewGuid(), Name = "Anna", DayOfNameDay = new DateOnly(2000, 7, 26), UserId = _user.Id
+    };
 
     [Fact]
-    public void GetPersons_DelegatesToRepositoryWithoutTracking()
+    public async Task GetPersonsAsync_Null_Throws()
     {
-        var parameters = new PersonParameters();
-        var expected = new PagedList<PersonDto>([new PersonDto { Name = "Anna" }], 1, 1, 10);
-        _personRepository.Setup(r => r.GetAllPersonsAsync(parameters, false)).Returns(expected);
-
-        var result = CreateSut().GetPersons(parameters);
-
-        result.Should().BeSameAs(expected);
-    }
-
-    [Fact]
-    public async Task CreatePersonAsync_NoCurrentUser_Throws()
-    {
-        _userProvider.Setup(p => p.UserName).Returns((string)null!);
-
-        var act = () => CreateSut().CreatePersonAsync(NewPerson());
+        var act = () => CreateSut().GetPersonsAsync(null!);
 
         await act.Should().ThrowAsync<ArgumentNullException>();
     }
 
     [Fact]
-    public async Task CreatePersonAsync_UserNotFound_Throws()
+    public async Task GetPersonsAsync_ReturnsTheRepositoryPage()
+    {
+        var parameters = new PersonParameters();
+        var expected = new PagedList<PersonDto>([new PersonDto { Name = "Anna" }], 1, 1, 10);
+        _personRepository.Setup(r => r.GetAllPersonsAsync(parameters, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expected);
+
+        var result = await CreateSut().GetPersonsAsync(parameters);
+
+        result.Should().BeSameAs(expected);
+    }
+
+    [Fact]
+    public async Task CreatePersonAsync_NotSignedIn_Throws()
+    {
+        _userProvider.Setup(p => p.UserName).Returns((string?)null);
+
+        var act = () => CreateSut().CreatePersonAsync(NewPerson());
+
+        await act.Should().ThrowAsync<UserNotExistException>();
+        _personRepository.Verify(r => r.CreatePerson(It.IsAny<Person>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreatePersonAsync_UnknownUser_Throws()
     {
         _userManager.Setup(m => m.FindByNameAsync(UserName)).ReturnsAsync((User?)null);
 
         var act = () => CreateSut().CreatePersonAsync(NewPerson());
 
         await act.Should().ThrowAsync<UserNotExistException>();
-        _repository.Verify(r => r.SaveAsync(), Times.Never);
     }
 
     [Fact]
-    public async Task CreatePersonAsync_SavesToPrimaryAndPostgreWithSameId()
+    public async Task CreatePersonAsync_SavesForTheSignedInUserThenCopiesToPostgreSql()
     {
-        var generatedId = Guid.NewGuid();
         Person? created = null;
-        _personRepository.Setup(r => r.CreatePerson(It.IsAny<Person>()))
-            .Callback<Person>(p => { p.Id = generatedId; created = p; });
+        _personRepository.Setup(r => r.CreatePerson(It.IsAny<Person>())).Callback<Person>(p => created = p);
+        var order = new List<string>();
+        _repository.Setup(r => r.SaveAsync()).Callback(() => order.Add("save")).Returns(Task.CompletedTask);
+        _mirror.Setup(m => m.UpsertPersonAsync(It.IsAny<Person>(), It.IsAny<CancellationToken>()))
+            .Callback(() => order.Add("mirror")).Returns(Task.CompletedTask);
 
         var result = await CreateSut().CreatePersonAsync(NewPerson());
 
-        created.Should().NotBeNull();
         created!.UserId.Should().Be(_user.Id);
-        _repository.Verify(r => r.SaveAsync(), Times.Once);
-
-        result.Id.Should().Be(generatedId);
+        created.Name.Should().Be("Anna");
         result.Name.Should().Be("Anna");
-
-        var mirrored = await _postgreContext.Persons.SingleAsync();
-        mirrored.Id.Should().Be(generatedId);
-        mirrored.UserId.Should().Be(_user.Id);
-        mirrored.Name.Should().Be("Anna");
-        mirrored.DayOfBirth.Should().Be(new DateOnly(1990, 5, 1));
+        _mirror.Verify(m => m.UpsertPersonAsync(created, It.IsAny<CancellationToken>()), Times.Once);
+        order.Should().Equal("save", "mirror");
     }
 
     [Fact]
-    public async Task UpdatePersonAsync_NotInPrimary_Throws()
+    public async Task UpdatePersonAsync_NotFound_ThrowsAndCopiesNothing()
     {
         var act = () => CreateSut().UpdatePersonAsync(Guid.NewGuid(), new PersonForUpdateDto { Name = "X" });
 
-        await act.Should().ThrowAsync<PersonNotExistException>().WithMessage("Person does not exist");
+        await act.Should().ThrowAsync<PersonNotExistException>();
+        _mirror.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task UpdatePersonAsync_NotInPostgre_Throws()
+    public async Task UpdatePersonAsync_UpdatesThenCopiesToPostgreSql()
     {
-        var id = Guid.NewGuid();
-        _personRepository.Setup(r => r.GetPersonAsync(id, true)).ReturnsAsync(new Person { Id = id, Name = "Old" });
+        var person = StoredPerson();
+        _personRepository.Setup(r => r.GetPersonAsync(person.Id, true)).ReturnsAsync(person);
 
-        var act = () => CreateSut().UpdatePersonAsync(id, new PersonForUpdateDto { Name = "New" });
-
-        await act.Should().ThrowAsync<PersonNotExistException>().WithMessage("*PostgreSql*");
-    }
-
-    [Fact]
-    public async Task UpdatePersonAsync_UpdatesBothStores()
-    {
-        var id = Guid.NewGuid();
-        var primary = new Person { Id = id, Name = "Old", UserId = _user.Id };
-        _personRepository.Setup(r => r.GetPersonAsync(id, true)).ReturnsAsync(primary);
-        _postgreContext.Persons.Add(new Person { Id = id, Name = "Old", UserId = _user.Id });
-        await _postgreContext.SaveChangesAsync();
-
-        await CreateSut().UpdatePersonAsync(id, new PersonForUpdateDto
+        await CreateSut().UpdatePersonAsync(person.Id, new PersonForUpdateDto
         {
-            Name = "New",
-            Surname = "Surname",
-            DayOfNameDay = new DateOnly(2000, 1, 1)
+            Name = "Hana", DayOfNameDay = new DateOnly(2000, 5, 31)
         });
 
-        primary.Name.Should().Be("New");
-        primary.Surname.Should().Be("Surname");
+        person.Name.Should().Be("Hana");
         _repository.Verify(r => r.SaveAsync(), Times.Once);
-        (await _postgreContext.Persons.SingleAsync(p => p.Id == id)).Name.Should().Be("New");
+        _mirror.Verify(m => m.UpsertPersonAsync(person, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task DeletePersonAsync_NotInPrimary_Throws()
+    public async Task DeletePersonAsync_NotFound_ThrowsAndCopiesNothing()
     {
         var act = () => CreateSut().DeletePersonAsync(Guid.NewGuid());
 
         await act.Should().ThrowAsync<PersonNotExistException>();
-        _personRepository.Verify(r => r.DeletePerson(It.IsAny<Person>()), Times.Never);
+        _mirror.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task DeletePersonAsync_DeletesFromBothStores()
+    public async Task DeletePersonAsync_DeletesThenRemovesTheCopy()
     {
-        var id = Guid.NewGuid();
-        var primary = new Person { Id = id, Name = "Anna", UserId = _user.Id };
-        _personRepository.Setup(r => r.GetPersonAsync(id, true)).ReturnsAsync(primary);
-        _postgreContext.Persons.Add(new Person { Id = id, Name = "Anna", UserId = _user.Id });
-        await _postgreContext.SaveChangesAsync();
+        var person = StoredPerson();
+        _personRepository.Setup(r => r.GetPersonAsync(person.Id, true)).ReturnsAsync(person);
 
-        await CreateSut().DeletePersonAsync(id);
+        await CreateSut().DeletePersonAsync(person.Id);
 
-        _personRepository.Verify(r => r.DeletePerson(primary), Times.Once);
+        _personRepository.Verify(r => r.DeletePerson(person), Times.Once);
         _repository.Verify(r => r.SaveAsync(), Times.Once);
-        (await _postgreContext.Persons.AnyAsync(p => p.Id == id)).Should().BeFalse();
+        _mirror.Verify(m => m.DeletePersonAsync(person.Id, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

@@ -43,10 +43,11 @@ public class PersonRepositoryTests(MigratedDatabasesFixture fixture)
         UserId = owner.Id
     };
 
-    private PagedList<Contracts.DataTransferObjects.Person.PersonDto> Query(User owner, PersonParameters parameters)
+    private async Task<PagedList<Contracts.DataTransferObjects.Person.PersonDto>> QueryAsync(User owner,
+        PersonParameters parameters)
     {
-        using var context = fixture.SqlServer.CreateContext(owner.UserName);
-        return new RepositoryManager(context).Person.GetAllPersonsAsync(parameters, trackChanges: false);
+        await using var context = fixture.SqlServer.CreateContext(owner.UserName);
+        return await new RepositoryManager(context).Person.GetAllPersonsAsync(parameters);
     }
 
     [Fact]
@@ -69,10 +70,10 @@ public class PersonRepositoryTests(MigratedDatabasesFixture fixture)
         var (owner, _) = await SeedAsync();
         var (otherOwner, _) = await SeedAsync();
 
-        var result = Query(owner, new PersonParameters { OrderBy = "" });
+        var result = await QueryAsync(owner, new PersonParameters { OrderBy = "" });
 
         result.MetaData.TotalCount.Should().Be(4);
-        Query(otherOwner, new PersonParameters()).MetaData.TotalCount.Should().Be(4);
+        (await QueryAsync(otherOwner, new PersonParameters())).MetaData.TotalCount.Should().Be(4);
     }
 
     [Fact]
@@ -93,7 +94,7 @@ public class PersonRepositoryTests(MigratedDatabasesFixture fixture)
     {
         var (owner, _) = await SeedAsync();
 
-        var result = Query(owner, new PersonParameters());
+        var result = await QueryAsync(owner, new PersonParameters());
 
         result.Select(p => p.Name).Should().Equal("Boris", "Dana", "Anna", "Cyril");
     }
@@ -103,7 +104,7 @@ public class PersonRepositoryTests(MigratedDatabasesFixture fixture)
     {
         var (owner, _) = await SeedAsync();
 
-        var result = Query(owner, new PersonParameters { OrderBy = "dayOfBirth desc" });
+        var result = await QueryAsync(owner, new PersonParameters { OrderBy = "dayOfBirth desc" });
 
         result.Select(p => p.Name).Should().Equal("Cyril", "Anna", "Dana", "Boris");
     }
@@ -113,7 +114,7 @@ public class PersonRepositoryTests(MigratedDatabasesFixture fixture)
     {
         var (owner, _) = await SeedAsync();
 
-        var result = Query(owner, new PersonParameters { OrderBy = "dayOfNameDay" });
+        var result = await QueryAsync(owner, new PersonParameters { OrderBy = "dayOfNameDay" });
 
         result.Select(p => p.Name).Should().Equal("Cyril", "Boris", "Anna", "Dana");
     }
@@ -123,7 +124,7 @@ public class PersonRepositoryTests(MigratedDatabasesFixture fixture)
     {
         var (owner, _) = await SeedAsync();
 
-        var result = Query(owner, new PersonParameters { OrderBy = "surname desc" });
+        var result = await QueryAsync(owner, new PersonParameters { OrderBy = "surname desc" });
 
         result.Select(p => p.Name).Should().Equal("Anna", "Cyril", "Dana", "Boris");
     }
@@ -133,7 +134,7 @@ public class PersonRepositoryTests(MigratedDatabasesFixture fixture)
     {
         var (owner, _) = await SeedAsync();
 
-        var result = Query(owner, new PersonParameters { SearchTerm = " AN " });
+        var result = await QueryAsync(owner, new PersonParameters { SearchTerm = " AN " });
 
         result.Select(p => p.Name).Should().BeEquivalentTo("Anna", "Dana");
         result.MetaData.TotalCount.Should().Be(2);
@@ -144,7 +145,7 @@ public class PersonRepositoryTests(MigratedDatabasesFixture fixture)
     {
         var (owner, _) = await SeedAsync();
 
-        var result = Query(owner, new PersonParameters { PageNumber = 2, PageSize = 3 });
+        var result = await QueryAsync(owner, new PersonParameters { PageNumber = 2, PageSize = 3 });
 
         result.Select(p => p.Name).Should().Equal("Cyril");
         result.MetaData.Should().BeEquivalentTo(new
@@ -176,14 +177,45 @@ public class PersonRepositoryTests(MigratedDatabasesFixture fixture)
     }
 
     [Fact]
-    public async Task GetByIds_ReturnsOnlyRequestedPersons()
+    public async Task GetAllPersons_SearchTerm_AlsoMatchesTheSurname()
     {
-        var (owner, persons) = await SeedAsync();
+        var (owner, _) = await SeedAsync();
 
-        await using var context = fixture.SqlServer.CreateContext(owner.UserName);
-        var result = await new RepositoryManager(context).Person
-            .GetByIdsAsync([persons["Anna"].Id, persons["Dana"].Id], trackChanges: false);
+        var result = await QueryAsync(owner, new PersonParameters { SearchTerm = "adam" });
 
-        result.Select(p => p.Name).Should().BeEquivalentTo("Anna", "Dana");
+        result.Select(p => p.Name).Should().Equal("Boris");
+    }
+
+    [Fact]
+    public async Task GetAllPersons_SameBirthday_IsOrderedByName_SoPagesDoNotOverlap()
+    {
+        var owner = await fixture.CreateSqlServerUserAsync();
+        await using (var context = fixture.SqlServer.CreateContext(owner.UserName))
+        {
+            var manager = new RepositoryManager(context);
+            foreach (var name in new[] { "Eva", "Adam", "Ema", "Olga" })
+                manager.Person.CreatePerson(NewPerson(owner, name, "Twin", new DateOnly(1990, 6, 1),
+                    new DateOnly(2000, 1, 1)));
+            await manager.SaveAsync();
+        }
+
+        var names = new List<string>();
+        for (var page = 1; page <= 4; page++)
+            names.AddRange((await QueryAsync(owner, new PersonParameters { PageNumber = page, PageSize = 1 }))
+                .Select(p => p.Name));
+
+        names.Should().Equal("Adam", "Ema", "Eva", "Olga");
+    }
+
+    [Fact]
+    public async Task GetAllPersons_PageBeyondTheEnd_IsEmptyButCountsAllPersons()
+    {
+        var (owner, _) = await SeedAsync();
+
+        var result = await QueryAsync(owner, new PersonParameters { PageNumber = 5, PageSize = 10 });
+
+        result.Should().BeEmpty();
+        result.MetaData.TotalCount.Should().Be(4);
+        result.MetaData.HasNext.Should().BeFalse();
     }
 }

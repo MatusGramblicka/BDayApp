@@ -7,7 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MimeKit" Version="5.0.0" />
+    <!-- MailKit 5 brings MimeKit.Core. The MimeKit meta-package would add MimeKit.Cryptography and BouncyCastle (S/MIME,
+         OpenPGP, DKIM), which are not used. -->
     <PackageReference Include="MailKit" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>

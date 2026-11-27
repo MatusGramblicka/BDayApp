@@ -1,4 +1,4 @@
-﻿using Contracts.DataTransferObjects.Person;
+using Contracts.DataTransferObjects.Person;
 using Entities.Models;
 using Entities.RequestFeatures;
 using Microsoft.EntityFrameworkCore;
@@ -9,42 +9,33 @@ using Repository.Repositories;
 
 namespace Repository;
 
+// The context's query filter limits every query to the signed-in user's persons.
 internal class PersonRepository(DbRepositoryContext repositoryContext)
     : RepositoryBase<Person>(repositoryContext), IPersonRepository
 {
-    public PagedList<PersonDto> GetAllPersonsAsync(PersonParameters personParameters, bool trackChanges)
+    public Task<PagedList<PersonDto>> GetAllPersonsAsync(PersonParameters personParameters,
+        CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(personParameters, nameof(personParameters));
+        ArgumentNullException.ThrowIfNull(personParameters);
 
-        var persons = RepositoryContext.Persons
+        return RepositoryContext.Persons
             .Select(PersonProjection.GetPersonSelected())
             .Search(personParameters.SearchTerm)
-            .Sort(personParameters.OrderBy);
-
-        return PagedList<PersonDto>
-            .ToPagedList(persons, personParameters.PageNumber, personParameters.PageSize);
+            .Sort(personParameters.OrderBy)
+            .ToPagedListAsync(personParameters.PageNumber, personParameters.PageSize, cancellationToken);
     }
 
-    public async Task<PersonDto?> GetPersonAsync(Guid personId)
-    {
-        return await RepositoryContext.Persons
-            .Where(i => i.Id.Equals(personId))
+    public Task<PersonDto?> GetPersonAsync(Guid personId) =>
+        RepositoryContext.Persons
+            .Where(p => p.Id == personId)
             .Select(PersonProjection.GetPersonSelected())
             .SingleOrDefaultAsync();
-    }
 
-    public async Task<Person?> GetPersonAsync(Guid personId, bool trackChanges) =>
-        await FindByCondition(c => c.Id.Equals(personId), trackChanges)
+    public Task<Person?> GetPersonAsync(Guid personId, bool trackChanges) =>
+        FindByCondition(p => p.Id == personId, trackChanges)
             .SingleOrDefaultAsync();
-
-    public async Task<IEnumerable<Person>> GetByIdsAsync(IEnumerable<Guid> ids, bool trackChanges) =>
-        await FindByCondition(x => ids.Contains(x.Id), trackChanges)
-            .ToListAsync();
 
     public void CreatePerson(Person person) => Create(person);
 
-    public void DeletePerson(Person person)
-    {
-        Delete(person);
-    }
+    public void DeletePerson(Person person) => Delete(person);
 }

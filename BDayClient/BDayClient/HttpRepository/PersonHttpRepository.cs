@@ -1,77 +1,140 @@
-﻿using BDayClient.Features;
-using Contracts.DataTransferObjects.Person;
-using Entities.Configuration;
-using Entities.Models;
-using Entities.RequestFeatures;
-using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Options;
+﻿using System.Globalization;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using BDayClient.Features;
+using BDayClient.Http;
+using Contracts.DataTransferObjects.Person;
+using Entities.RequestFeatures;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace BDayClient.HttpRepository;
 
-public class PersonHttpRepository : IPersonHttpRepository
+public class PersonHttpRepository(HttpClient client) : IPersonHttpRepository
 {
-    private readonly HttpClient _client;
-    private readonly ApiConfiguration _apiConfiguration;
+    // The API's maximum page size.
+    private const int MaxPageSize = 50;
 
-    private readonly JsonSerializerOptions _options = new() {PropertyNameCaseInsensitive = true};
+    // Safety net for GetAllPersons, should the pagination header ever be wrong.
+    private const int MaxPages = 200;
 
-    public PersonHttpRepository(HttpClient client, IOptions<ApiConfiguration> configuration)
+    public async Task<PersonDto?> GetPerson(Guid id, CancellationToken cancellationToken = default)
     {
-        _client = client;
-        _apiConfiguration = configuration.Value;
+        using var response = await client.GetAsync($"persons/{id}", cancellationToken);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            return null;
+
+        await response.EnsureSuccessAsync(cancellationToken);
+
+        return await response.ReadJsonOrDefaultAsync<PersonDto>(cancellationToken)
+               ?? throw response.UnexpectedResponse();
     }
 
-    public async Task<Person> GetPerson(Guid id)
+    public async Task<PagingResponse<PersonDto>> GetPersons(PersonParameters personParameters,
+        CancellationToken cancellationToken = default)
     {
-        var person = await _client.GetFromJsonAsync<Person>($"persons/{id}");
+        var queryStringParam = new Dictionary<string, string?>
+        {
+            ["pageNumber"] = personParameters.PageNumber.ToString(CultureInfo.InvariantCulture),
+            ["pageSize"] = personParameters.PageSize.ToString(CultureInfo.InvariantCulture),
+            ["searchTerm"] = personParameters.SearchTerm ?? string.Empty,
+            ["orderBy"] = personParameters.OrderBy ?? string.Empty
+        };
 
-        return person;
+        using var response = await client.GetAsync(QueryHelpers.AddQueryString("persons", queryStringParam),
+            cancellationToken);
+        await response.EnsureSuccessAsync(cancellationToken);
+
+        var items = await response.ReadJsonOrDefaultAsync<List<PersonDto>>(cancellationToken)
+                    ?? throw response.UnexpectedResponse();
+
+        return new PagingResponse<PersonDto>
+        {
+            Items = items,
+            MetaData = ReadMetaData(response) ?? new MetaData
+            {
+                CurrentPage = personParameters.PageNumber,
+                PageSize = personParameters.PageSize,
+                TotalCount = items.Count,
+                TotalPages = personParameters.PageNumber
+            }
+        };
     }
 
-    public async Task<PagingResponse<Person>> GetPersons(PersonParameters personParameters)
+    public async Task<List<PersonDto>> GetAllPersons(CancellationToken cancellationToken = default)
     {
-        var queryStringParam = new Dictionary<string, string>
+        var personParameters = new PersonParameters { PageSize = MaxPageSize };
+        var persons = new List<PersonDto>();
+
+        while (true)
         {
-            ["pageNumber"] = personParameters.PageNumber.ToString(),
-            ["pageSize"] = personParameters.PageSize.ToString(),
-            ["searchTerm"] = personParameters.SearchTerm ?? "",
-            ["orderBy"] = personParameters.OrderBy is null ? "" : personParameters.OrderBy
-        };
+            var page = await GetPersons(personParameters, cancellationToken);
+            persons.AddRange(page.Items);
 
-        var response =
-            await _client.GetAsync(QueryHelpers.AddQueryString("persons", queryStringParam));
+            if (!page.MetaData.HasNext || page.Items.Count == 0 || personParameters.PageNumber >= MaxPages)
+                return persons;
 
-        var content = await response.Content.ReadAsStringAsync();
-
-        var pagingResponse = new PagingResponse<Person>
-        {
-            Items = JsonSerializer.Deserialize<List<Person>>(content, _options),
-            MetaData = JsonSerializer.Deserialize<MetaData>(
-                response.Headers.GetValues("X-Pagination").First(), _options)
-        };
-
-        return pagingResponse;
+            personParameters.PageNumber++;
+        }
     }
 
     public async Task CreatePerson(PersonForCreationDto person)
-        => await _client.PostAsJsonAsync("persons", person);
+    {
+        using var response = await client.PostAsJsonAsync("persons", person);
+        await response.EnsureSuccessAsync();
+    }
 
     public async Task<string> UploadPersonImage(MultipartFormDataContent content)
     {
-        var postResult = await _client.PostAsync("upload", content);
-        var postContent = await postResult.Content.ReadAsStringAsync();
-        var imgUrl =
-            Path.Combine(_apiConfiguration.BaseAddress, postContent);
+        using var response = await client.PostAsync("upload", content);
+        await response.EnsureSuccessAsync();
 
-        return imgUrl;
+        var imagePath = ReadPlainText(await response.Content.ReadAsStringAsync());
+        return string.IsNullOrEmpty(imagePath) ? throw response.UnexpectedResponse() : imagePath;
     }
 
     public async Task UpdatePerson(Guid id, PersonForUpdateDto person)
-        => await _client.PutAsJsonAsync(Path.Combine("persons",
-            id.ToString()), person);
+    {
+        using var response = await client.PutAsJsonAsync($"persons/{id}", person);
+        await response.EnsureSuccessAsync();
+    }
 
     public async Task DeletePerson(Guid id)
-        => await _client.DeleteAsync(Path.Combine("persons", id.ToString()));
+    {
+        using var response = await client.DeleteAsync($"persons/{id}");
+        await response.EnsureSuccessAsync();
+    }
+
+    private static MetaData? ReadMetaData(HttpResponseMessage response)
+    {
+        if (!response.Headers.TryGetValues("X-Pagination", out var values))
+            return null;
+
+        try
+        {
+            // The API writes the header with PascalCase names; the options are case-insensitive.
+            return JsonSerializer.Deserialize<MetaData>(values.First(), HttpResponseMessageExtensions.JsonOptions);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    // The upload answers with the path as plain text; tolerate it arriving as a JSON string as well.
+    private static string ReadPlainText(string content)
+    {
+        var text = content.Trim();
+        if (!text.StartsWith('"'))
+            return text;
+
+        try
+        {
+            return JsonSerializer.Deserialize<string>(text)?.Trim() ?? string.Empty;
+        }
+        catch (JsonException)
+        {
+            return text;
+        }
+    }
 }

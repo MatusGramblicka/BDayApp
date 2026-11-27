@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using BDayClient.Components;
-using Microsoft.AspNetCore.Components.Web;
 
 namespace BDayClient.UnitTests.Components;
 
@@ -28,12 +27,12 @@ public class FilterComponentsTests : BunitContext
     }
 
     [Fact]
-    public void Sort_PlaceholderValue_IsIgnored()
+    public void Sort_EmptyValue_IsIgnored()
     {
         var raised = false;
         var cut = Render<Sort>(ps => ps.Add(p => p.OnSortChanged, _ => raised = true));
 
-        cut.Find("select").Change("-1");
+        cut.Find("select").Change("");
 
         raised.Should().BeFalse();
     }
@@ -51,8 +50,17 @@ public class FilterComponentsTests : BunitContext
         raised.Should().Be(expected);
     }
 
-    // The Search component debounces on a System.Threading.Timer, which raises the callback without
-    // triggering a render - so bUnit's WaitForAssertion would never re-check. Poll instead.
+    [Fact]
+    public void PageSizeDropDown_InvalidValue_IsIgnoredInsteadOfThrowing()
+    {
+        int? raised = null;
+        var cut = Render<PageSizeDropDown>(ps => ps.Add(p => p.SelectedPageSize, size => raised = size));
+
+        cut.Find("select").Change("abc");
+
+        raised.Should().BeNull();
+    }
+
     private static async Task WaitUntilAsync(Func<bool> condition, TimeSpan timeout)
     {
         var deadline = DateTime.UtcNow + timeout;
@@ -60,20 +68,14 @@ public class FilterComponentsTests : BunitContext
             await Task.Delay(25);
     }
 
-    private static void TypeAndRelease(IRenderedComponent<Search> cut, string text)
-    {
-        var input = cut.Find("input");
-        input.Input(text);
-        input.KeyUp(new KeyboardEventArgs());
-    }
-
+    // The search reacts to the input event, so pasting and autofill search too (not only key presses).
     [Fact]
     public async Task Search_RaisesTermAfterDebounce()
     {
         var raised = new ConcurrentQueue<string>();
         var cut = Render<Search>(ps => ps.Add(p => p.OnSearchChanged, term => raised.Enqueue(term)));
 
-        TypeAndRelease(cut, "ann");
+        cut.Find("input").Input("ann");
 
         raised.Should().BeEmpty("the search is debounced");
         await WaitUntilAsync(() => !raised.IsEmpty, TimeSpan.FromSeconds(3));
@@ -86,11 +88,33 @@ public class FilterComponentsTests : BunitContext
         var raised = new ConcurrentQueue<string>();
         var cut = Render<Search>(ps => ps.Add(p => p.OnSearchChanged, term => raised.Enqueue(term)));
 
-        TypeAndRelease(cut, "a");
-        TypeAndRelease(cut, "an");
+        cut.Find("input").Input("a");
+        cut.Find("input").Input("an");
 
         await WaitUntilAsync(() => !raised.IsEmpty, TimeSpan.FromSeconds(3));
-        await Task.Delay(700); // make sure the first (cancelled) timer doesn't fire late
+        await Task.Delay(Search.DebounceDelay + TimeSpan.FromMilliseconds(200)); // the cancelled delay must not fire late
         raised.Should().Equal("an");
+    }
+
+    // Review finding: the pending timer fired after the component was gone.
+    [Fact]
+    public async Task Search_Disposed_DoesNotRaiseThePendingSearch()
+    {
+        var raised = new ConcurrentQueue<string>();
+        var cut = Render<Search>(ps => ps.Add(p => p.OnSearchChanged, term => raised.Enqueue(term)));
+
+        cut.Find("input").Input("ann");
+        await DisposeComponentsAsync();
+
+        await Task.Delay(Search.DebounceDelay + TimeSpan.FromMilliseconds(300));
+        raised.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Search_InputHasAccessibleName()
+    {
+        var cut = Render<Search>();
+
+        cut.Find("input").GetAttribute("aria-label").Should().Be("Search by person name");
     }
 }

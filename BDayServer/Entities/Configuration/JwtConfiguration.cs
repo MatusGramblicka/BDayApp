@@ -1,7 +1,9 @@
-﻿namespace Entities.Configuration;
+namespace Entities.Configuration;
 
 public class JwtConfiguration
 {
+    public const string SectionName = "JWTSettings";
+
     public string SecurityKey { get; set; } = string.Empty;
 
     public string ValidIssuer { get; set; } = string.Empty;

@@ -1,24 +1,26 @@
-﻿namespace Entities.RequestFeatures;
+namespace Entities.RequestFeatures;
 
 public abstract class RequestParameters
 {
-    const int maxPageSize = 50;
-    public int PageNumber { get; set; } = 1;
+    public const int MaxPageSize = 50;
 
+    private int _pageNumber = 1;
     private int _pageSize = 10;
-    public int PageSize
+
+    /// <summary>1-based; smaller values are treated as 1.</summary>
+    public int PageNumber
     {
-        get
-        {
-            return _pageSize;
-        }
-        set
-        {
-            _pageSize = (value > maxPageSize) ? maxPageSize : value;
-        }
+        get => _pageNumber;
+        set => _pageNumber = Math.Max(1, value);
     }
 
-    public string OrderBy { get; set; } = null!;
+    /// <summary>Between 1 and <see cref="MaxPageSize"/>; other values are clamped into that range.</summary>
+    public int PageSize
+    {
+        get => _pageSize;
+        set => _pageSize = Math.Clamp(value, 1, MaxPageSize);
+    }
 
-    public string Fields { get; set; } = string.Empty;
+    /// <summary>Comma-separated "property [asc|desc]" list, e.g. "name desc".</summary>
+    public string? OrderBy { get; set; }
 }

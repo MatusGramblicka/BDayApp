@@ -6,9 +6,10 @@ namespace BDayClient.Components;
 
 public partial class UsersTable
 {
-    [Parameter] public List<UserLite> Users { get; set; }
+    /// <summary>The users to list; null while they are loading.</summary>
+    [Parameter] public IReadOnlyList<UserLite>? Users { get; set; }
 
-    [Parameter] public string LoggedUser { get; set; }
+    [Parameter] public string? LoggedUser { get; set; }
 
     [Parameter] public EventCallback<UserLite> OnUpdate { get; set; }
 
@@ -18,18 +19,20 @@ public partial class UsersTable
 
     [Parameter] public EventCallback<UserLite2StepsAuthDto> OnChange2StepsAuthorization { get; set; }
 
-    private Confirmation _confirmation;
-    private UserLite _userToDelete;
+    private Confirmation? _confirmation;
+    private UserLite? _userToDelete;
 
-    private async Task OnChange(bool? value, UserLite user)
+    private bool IsLoggedUser(UserLite user) =>
+        string.Equals(user.Email, LoggedUser, StringComparison.OrdinalIgnoreCase);
+
+    private async Task OnChange(bool value, UserLite user)
     {
         var userChange2StepsAuth = new UserLite2StepsAuthDto
         {
-            Email = user.Email, 
-            TwoFactorEnabled = value ?? false
+            Email = user.Email,
+            TwoFactorEnabled = value
         };
-        //userChange2StepsAuth.Email = user.Email;
-        //userChange2StepsAuth.TwoFactorEnabled = (bool) value;
+
         await OnChange2StepsAuthorization.InvokeAsync(userChange2StepsAuth);
     }
 
@@ -46,12 +49,14 @@ public partial class UsersTable
     private void CallConfirmationModal(UserLite userToDelete)
     {
         _userToDelete = userToDelete;
-        _confirmation.Show();
+        _confirmation?.Show();
     }
 
     private async Task DeleteUser()
     {
-        _confirmation.Hide();
-        await OnDeleteUser.InvokeAsync(_userToDelete);
+        _confirmation?.Hide();
+
+        if (_userToDelete is not null)
+            await OnDeleteUser.InvokeAsync(_userToDelete);
     }
 }

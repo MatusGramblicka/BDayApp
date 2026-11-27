@@ -1,11 +1,12 @@
-﻿using Contracts.DataTransferObjects.User;
+using Contracts.DataTransferObjects.User;
 
 namespace Core.Managers.ManagerInterfaces;
 
 public interface IUserManager
 {
-    IQueryable<UserLite> GetUsers();
+    Task<List<UserLite>> GetUsersAsync();
 
+    /// <summary>Gives the user the administrator role.</summary>
     Task UpdateUser(UserLite userForUpdate);
 
     Task RemoveAdminRole(UserLite userForUpdate);

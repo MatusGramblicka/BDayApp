@@ -1,38 +1,28 @@
-﻿using BDayClient.AuthProvider;
+﻿using System.Net.Http.Json;
+using BDayClient.AuthProvider;
+using BDayClient.Http;
 using BDayClient.Pocos;
-using Blazored.LocalStorage;
 using Contracts.DataTransferObjects.Auth;
 using Contracts.DataTransferObjects.User;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.WebUtilities;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text.Json;
 
 namespace BDayClient.HttpRepository;
 
-public class AuthenticationService : IAuthenticationService
+/// <summary>
+/// A singleton (see Program.cs): <see cref="AuthTokenHandler"/> and <see cref="ApiErrorHandler"/> use it too, and
+/// IHttpClientFactory creates those in a DI scope of their own. That is also why it creates an HttpClient per call
+/// instead of taking one in the constructor.
+/// </summary>
+public class AuthenticationService(
+    IHttpClientFactory httpClientFactory,
+    TokenStorage tokenStorage,
+    AuthStateProvider authStateProvider,
+    NavigationManager navigationManager) : IAuthenticationService
 {
-    private readonly HttpClient _client;
+    private const string UnexpectedResponseMessage = "The server sent an unexpected response. Please try again.";
 
-    private readonly JsonSerializerOptions _options = new() {PropertyNameCaseInsensitive = true};
-
-    private readonly AuthenticationStateProvider _authStateProvider;
-    private readonly ILocalStorageService _localStorage;
-    private readonly NavigationManager _navManager;
-
-    public AuthenticationService(HttpClient client,
-        AuthenticationStateProvider authStateProvider,
-        ILocalStorageService localStorage,
-        NavigationManager navManager)
-    {
-        _client = client;
-        _authStateProvider = authStateProvider;
-        _localStorage = localStorage;
-        _navManager = navManager;
-    }
+    private HttpClient Client => httpClientFactory.CreateClient(ApiUrls.HttpClientName);
 
     public async Task<AuthResponseDto> Login(UserForAuthentication userForAuthentication)
     {
@@ -42,56 +32,46 @@ public class AuthenticationService : IAuthenticationService
             Password = userForAuthentication.Password
         };
 
-        var response = await _client.PostAsJsonAsync("account/login",
-            userForAuthenticationDto);
-        var result = await ReadAuthResponseAsync(response);
+        using var response = await Client.PostAsJsonAsync("account/login", userForAuthenticationDto);
+        return await CompleteLoginAsync(response);
+    }
 
-        if (!response.IsSuccessStatusCode || result.Is2StepVerificationRequired || string.IsNullOrEmpty(result.Token))
-            return result;
-
-        await _localStorage.SetItemAsync("authToken", result.Token);
-        await _localStorage.SetItemAsync("refreshToken", result.RefreshToken);
-
-        ((AuthStateProvider) _authStateProvider).NotifyUserAuthentication(
-            result.Token);
-
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-            "bearer", result.Token);
-
-        return new AuthResponseDto {IsAuthSuccessful = true};
+    public async Task<AuthResponseDto> LoginVerification(TwoFactorVerificationDto twoFactorDto)
+    {
+        using var response = await Client.PostAsJsonAsync("account/twostepverification", twoFactorDto);
+        return await CompleteLoginAsync(response);
     }
 
     public async Task Logout()
     {
-        await _localStorage.RemoveItemAsync("authToken");
-        await _localStorage.RemoveItemAsync("refreshToken");
-
-        ((AuthStateProvider) _authStateProvider).NotifyUserLogout();
-
-        _client.DefaultRequestHeaders.Authorization = null;
+        await tokenStorage.ClearAsync();
+        authStateProvider.NotifyUserLogout();
     }
 
     public async Task<string> RefreshToken()
     {
-        var token = await _localStorage.GetItemAsync<string>("authToken");
-        var refreshToken = await _localStorage.GetItemAsync<string>("refreshToken");
+        var token = await tokenStorage.GetAccessTokenAsync();
+        var refreshToken = await tokenStorage.GetRefreshTokenAsync();
 
-        var response = await _client.PostAsJsonAsync("token/refresh",
-            new RefreshTokenDto
-            {
-                Token = token,
-                RefreshToken = refreshToken
-            });
+        AuthResponseDto? result = null;
+        if (!string.IsNullOrEmpty(token) && !string.IsNullOrEmpty(refreshToken))
+        {
+            using var response = await Client.PostAsJsonAsync("token/refresh",
+                new RefreshTokenDto { Token = token, RefreshToken = refreshToken });
 
-        var content = await response.Content.ReadAsStringAsync();
-        var result = JsonSerializer.Deserialize<AuthResponseDto>(content, _options);
+            if (response.IsSuccessStatusCode)
+                result = await response.ReadJsonOrDefaultAsync<AuthResponseDto>();
+        }
 
-        await _localStorage.SetItemAsync("authToken", result.Token);
-        await _localStorage.SetItemAsync("refreshToken", result.RefreshToken);
+        // Refused (the refresh token rotates on every refresh and expires), or an answer we cannot use:
+        // the session is over, so log out instead of carrying on with tokens that only produce 401s.
+        if (result is not { IsAuthSuccessful: true } || string.IsNullOrEmpty(result.Token))
+        {
+            await Logout();
+            return string.Empty;
+        }
 
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue
-            ("bearer", result.Token);
-
+        await SignInAsync(result.Token, result.RefreshToken);
         return result.Token;
     }
 
@@ -100,45 +80,29 @@ public class AuthenticationService : IAuthenticationService
         var userForRegistrationDto = new UserForRegistrationDto
         {
             Email = userForRegistration.Email,
-            ClientUri = Path.Combine(
-                _navManager.BaseUri, "emailconfirmation"),
-            ConfirmPassword = userForRegistration.ConfirmPassword,
             Password = userForRegistration.Password,
+            ConfirmPassword = userForRegistration.ConfirmPassword,
+            ClientUri = navigationManager.ToAbsoluteUri("emailconfirmation").ToString()
         };
 
-        //userForRegistrationDto.ClientUri = Path.Combine(
-        //    _navManager.BaseUri, "emailconfirmation");
+        using var response = await Client.PostAsJsonAsync("account/register", userForRegistrationDto);
+        if (response.IsSuccessStatusCode)
+            return new ResponseDto { IsSuccessfulRegistration = true };
 
-        var response = await _client.PostAsJsonAsync("account/register",
-            userForRegistrationDto);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            var content = await response.Content.ReadAsStringAsync();
-
-            var result = JsonSerializer.Deserialize<ResponseDto>(content, _options);
-
-            return result;
-        }
-
-        return new ResponseDto {IsSuccessfulRegistration = true};
+        var error = await ReadErrorAsync(response);
+        return new ResponseDto { IsSuccessfulRegistration = false, Errors = error.Errors };
     }
 
-    public async Task<HttpStatusCode> ForgotPassword(ForgotPassword forgotPassword)
+    public async Task<ApiResult> ForgotPassword(ForgotPassword forgotPassword)
     {
         var forgotPasswordDto = new ForgotPasswordDto
         {
             Email = forgotPassword.Email,
-            ClientUri = Path.Combine(_navManager.BaseUri, "resetpassword")
+            ClientUri = navigationManager.ToAbsoluteUri("resetpassword").ToString()
         };
 
-        //forgotPasswordDto.ClientUri =
-        //    Path.Combine(_navManager.BaseUri, "resetpassword");
-
-        var result = await _client.PostAsJsonAsync("account/forgotpassword",
-            forgotPasswordDto);
-
-        return result.StatusCode;
+        using var response = await Client.PostAsJsonAsync("account/forgotpassword", forgotPasswordDto);
+        return await ToApiResultAsync(response);
     }
 
     public async Task<ResetPasswordResponseDto> ResetPassword(ResetPassword resetPassword)
@@ -151,79 +115,71 @@ public class AuthenticationService : IAuthenticationService
             Token = resetPassword.Token
         };
 
-        var resetResult = await _client.PostAsJsonAsync("account/resetpassword",
-            resetPasswordDto);
+        using var response = await Client.PostAsJsonAsync("account/resetpassword", resetPasswordDto);
+        if (response.IsSuccessStatusCode)
+            return new ResetPasswordResponseDto { IsResetPasswordSuccessful = true };
 
-        var resetContent = await resetResult.Content.ReadAsStringAsync();
-
-        var result = JsonSerializer.Deserialize<ResetPasswordResponseDto>(resetContent,
-            _options);
-
-        return result;
+        var error = await ReadErrorAsync(response);
+        return new ResetPasswordResponseDto { IsResetPasswordSuccessful = false, Errors = error.Errors };
     }
 
-    public async Task<HttpStatusCode> EmailConfirmation(string email, string token)
+    public async Task<ApiResult> EmailConfirmation(string email, string token)
     {
-        var queryStringParam = new Dictionary<string, string>
+        var queryStringParam = new Dictionary<string, string?>
         {
             ["email"] = email,
             ["token"] = token
         };
 
-        var response = await _client.GetAsync(QueryHelpers.AddQueryString(
-            "account/emailconfirmation", queryStringParam));
-
-        return response.StatusCode;
+        using var response = await Client.GetAsync(
+            QueryHelpers.AddQueryString("account/emailconfirmation", queryStringParam));
+        return await ToApiResultAsync(response);
     }
 
-    public async Task<AuthResponseDto> LoginVerification(TwoFactorVerificationDto twoFactorDto)
+    private async Task<AuthResponseDto> CompleteLoginAsync(HttpResponseMessage response)
     {
-        var response = await _client.PostAsJsonAsync("account/twostepverification",
-            twoFactorDto);
-        var result = await ReadAuthResponseAsync(response);
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await ReadErrorAsync(response);
+            return Failed(error.Message);
+        }
 
-        if (!response.IsSuccessStatusCode || string.IsNullOrEmpty(result.Token))
+        var result = await response.ReadJsonOrDefaultAsync<AuthResponseDto>();
+        if (result is null)
+            return Failed(UnexpectedResponseMessage);
+
+        if (result.Is2StepVerificationRequired)
             return result;
 
-        await _localStorage.SetItemAsync("authToken", result.Token);
-        await _localStorage.SetItemAsync("refreshToken", result.RefreshToken);
+        if (string.IsNullOrEmpty(result.Token))
+            return Failed(string.IsNullOrEmpty(result.ErrorMessage) ? UnexpectedResponseMessage : result.ErrorMessage);
 
-        ((AuthStateProvider) _authStateProvider).NotifyUserAuthentication(
-            result.Token);
-
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-            "bearer", result.Token);
-
-        return new AuthResponseDto {IsAuthSuccessful = true};
+        await SignInAsync(result.Token, result.RefreshToken);
+        return new AuthResponseDto { IsAuthSuccessful = true };
     }
 
-    // Rejected logins come back as an AuthResponseDto (401), but other failures do not: the API answers
-    // unexpected errors with plain text ("Unspecified problem") and IIS with an HTML page (e.g. 503 while
-    // the site restarts after a deploy). Turn those into a failed result instead of a JSON exception.
-    private async Task<AuthResponseDto> ReadAuthResponseAsync(HttpResponseMessage response)
+    private async Task SignInAsync(string token, string refreshToken)
     {
-        var content = await response.Content.ReadAsStringAsync();
+        await tokenStorage.StoreAsync(token, refreshToken);
+        authStateProvider.NotifyUserAuthentication(token);
+    }
 
-        try
-        {
-            var result = JsonSerializer.Deserialize<AuthResponseDto>(content, _options);
-            if (result is not null)
-                return result;
-        }
-        catch (JsonException)
-        {
-            // Not an AuthResponseDto - handled below.
-        }
+    private static AuthResponseDto Failed(string errorMessage) =>
+        new() { IsAuthSuccessful = false, ErrorMessage = errorMessage };
 
-        var serverMessage = content.Trim();
-        var isShortText = serverMessage.Length is > 0 and <= 200 && !serverMessage.StartsWith('<');
+    private static async Task<ApiResult> ToApiResultAsync(HttpResponseMessage response) =>
+        response.IsSuccessStatusCode
+            ? ApiResult.Success()
+            : ApiResult.Failure((await ReadErrorAsync(response)).Errors);
 
-        return new AuthResponseDto
-        {
-            IsAuthSuccessful = false,
-            ErrorMessage = isShortText
-                ? $"Login failed: {serverMessage}"
-                : $"Login failed: the server answered {(int)response.StatusCode} {response.ReasonPhrase}. Please try again in a moment."
-        };
+    private static async Task<ApiError> ReadErrorAsync(HttpResponseMessage response)
+    {
+        var error = await ApiErrorReader.ReadAsync(response);
+
+        // Already shown by ApiErrorHandler (429, 5xx): end the flow without showing the same failure a second time.
+        if (error.Handled)
+            throw new ApiException(error);
+
+        return error;
     }
 }

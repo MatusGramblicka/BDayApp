@@ -1,34 +1,46 @@
-﻿using BDayClient.HttpRepository;
+﻿using BDayClient.Http;
+using BDayClient.HttpRepository;
 using BDayClient.Pocos;
+using Contracts.DataTransferObjects.Auth;
 using Microsoft.AspNetCore.Components;
 
 namespace BDayClient.Pages;
 
 public partial class Registration
 {
-    //private UserForRegistrationDto _userForRegistration = new();
     private UserForRegistration _userForRegistration = new();
-    
-    [Inject] public IAuthenticationService AuthenticationService { get; set; }
+    private bool _registered;
 
-    [Inject] public NavigationManager NavigationManager { get; set; }
+    [Inject] public IAuthenticationService AuthenticationService { get; set; } = default!;
 
     public bool ShowRegistrationErrors { get; set; }
-    public IEnumerable<string> Errors { get; set; }
+    public IEnumerable<string> Errors { get; set; } = [];
 
     public async Task Register()
     {
         ShowRegistrationErrors = false;
 
-        var result = await AuthenticationService.RegisterUser(_userForRegistration);
-        if (!result.IsSuccessfulRegistration)
+        ResponseDto result;
+        try
         {
-            Errors = result.Errors;
-            ShowRegistrationErrors = true;
+            result = await AuthenticationService.RegisterUser(_userForRegistration);
         }
+        catch (ApiException ex)
+        {
+            if (!ex.Handled)
+                ShowErrors(ex.Errors);
+            return;
+        }
+
+        if (result.IsSuccessfulRegistration)
+            _registered = true; // the account can only be used after the email address was confirmed
         else
-        {
-            NavigationManager.NavigateTo("/login");
-        }
+            ShowErrors(result.Errors);
+    }
+
+    private void ShowErrors(IEnumerable<string> errors)
+    {
+        Errors = errors;
+        ShowRegistrationErrors = true;
     }
 }

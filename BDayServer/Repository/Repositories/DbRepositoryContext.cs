@@ -9,7 +9,7 @@ namespace Repository.Repositories;
 public class DbRepositoryContext(DbContextOptions<DbRepositoryContext> options, IGetUserProvider userData)
     : IdentityDbContext<User>(options)
 {
-    private readonly string _userName = userData.UserName;
+    private readonly string? _userName = userData.UserName;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

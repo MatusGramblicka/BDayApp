@@ -1,99 +1,73 @@
-﻿using AutoMapper;
-using BDayClient.HttpInterceptor;
+﻿using BDayClient.Http;
 using BDayClient.HttpRepository;
 using BDayClient.Pocos;
 using Blazored.Toast.Services;
-using Contracts.DataTransferObjects.Person;
-using Entities.Models;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Forms;
 
 namespace BDayClient.Pages;
 
-public partial class UpdatePerson : IDisposable
+public partial class UpdatePerson
 {
-    // todo do not use dto, only after map in update
-    //private PersonForUpdateDto PersonForUpdateDto { get; set; } = new();
-    private PersonForUpdate _personForUpdate = new();
+    // Null while loading: the form is only rendered once there is a person to edit.
+    private PersonForUpdate? _personForUpdate;
+    private bool _loadFailed;
+    private Guid? _loadedId;
 
-    private Person _person;
-    private EditContext _editContext;
-    private bool formInvalid = true;
-    private bool _alreadyDisposed;
+    [Inject] public IPersonHttpRepository PersonRepo { get; set; } = default!;
 
-    [Inject] public IPersonHttpRepository PersonRepo { get; set; }
+    [Inject] public IToastService ToastService { get; set; } = default!;
 
-    [Inject] public HttpInterceptorService Interceptor { get; set; }
-
-    [Inject] public IToastService ToastService { get; set; }
-
-    [Inject] public IMapper Mapper { get; set; }
+    [Inject] public NavigationManager NavigationManager { get; set; } = default!;
 
     [Parameter] public Guid Id { get; set; }
-    
-    protected override async Task OnInitializedAsync()
-    {
-        _person = await PersonRepo.GetPerson(Id);
-        Mapper.Map(_person, _personForUpdate);        
 
-        _editContext = new EditContext(_personForUpdate);
-        _editContext.OnFieldChanged += HandleFieldChanged;
-        Interceptor.RegisterEvent();
-    }
-
-    // EditContext.OnFieldChanged is a plain .NET event, so this handler is async void
-    // (EditContext.Validate() is obsolete since .NET 11).
-    private async void HandleFieldChanged(object? sender, FieldChangedEventArgs e)
+    protected override async Task OnParametersSetAsync()
     {
-        formInvalid = !await _editContext.ValidateAsync();
-        StateHasChanged();
+        if (_loadedId == Id)
+            return;
+
+        _loadedId = Id;
+        _personForUpdate = null;
+        _loadFailed = false;
+
+        try
+        {
+            var person = await PersonRepo.GetPerson(Id);
+            if (person is null)
+            {
+                NavigationManager.NavigateTo("/404");
+                return;
+            }
+
+            _personForUpdate = PersonForUpdate.FromDto(person);
+        }
+        catch (ApiException ex)
+        {
+            _loadFailed = true;
+            ToastService.ShowApiError(ex);
+        }
     }
 
     private async Task Update()
     {
-        var personForUpdateDto = new PersonForUpdateDto
-        {
-            DayOfBirth = _personForUpdate.DayOfBirth,
-            DayOfNameDay = _personForUpdate.DayOfNameDay,
-            ImageUrl = _personForUpdate.ImageUrl,
-            Name = _personForUpdate.Name,
-            Surname = _personForUpdate.Surname
-        };
-     
-        await PersonRepo.UpdatePerson(_person.Id, personForUpdateDto);
-
-        ToastService.ShowSuccess("Action successful. " +
-                                 $"Person \"{personForUpdateDto.Name}\" successfully updated.");
-    }
-
-    private void AssignImageUrl(string imgUrl)
-    {
-        formInvalid = _personForUpdate.ImageUrl == imgUrl;
-        _personForUpdate.ImageUrl = imgUrl;
-        StateHasChanged();
-    }
-
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
-    }
-
-    private void Dispose(bool disposing)
-    {
-        if (_alreadyDisposed)
+        if (_personForUpdate is null)
             return;
 
-        if (disposing)
-        {
-            Interceptor.DisposeEvent();
-            _editContext.OnFieldChanged -= HandleFieldChanged;
-            _alreadyDisposed = true;
-        }
-    }
+        var personForUpdateDto = _personForUpdate.ToDto();
 
-    ~UpdatePerson()
-    {
-        Dispose(disposing: false);
+        try
+        {
+            await PersonRepo.UpdatePerson(Id, personForUpdateDto);
+        }
+        catch (ApiException ex)
+        {
+            ToastService.ShowApiError(ex);
+            return;
+        }
+
+        ToastService.ShowSuccess($"Person \"{personForUpdateDto.Name}\" was updated.");
+
+        // The saved values are the new starting point: the form counts as untouched until the next change.
+        _personForUpdate = _personForUpdate.Copy();
     }
 }

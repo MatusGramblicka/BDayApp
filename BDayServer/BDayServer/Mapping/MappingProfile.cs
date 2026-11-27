@@ -13,13 +13,11 @@ public class MappingProfile : Profile
         CreateMap<Person, PersonDto>();    
         CreateMap<PersonForCreationDto, Person>();
         CreateMap<PersonForUpdateDto, Person>().ReverseMap();
-        CreateMap<Person, PersonEmailDto>();
 
         CreateMap<User, UserLite>();
 
         CreateMap<Event, EventDto>();
         CreateMap<EventForCreationDto, Event>();
         CreateMap<EventForUpdateDto, Event>().ReverseMap();
-        CreateMap<Event, EventEmailDto>();
     }
 }

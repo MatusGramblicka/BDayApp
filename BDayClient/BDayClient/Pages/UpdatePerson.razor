@@ -1,66 +1,26 @@
 ﻿@page "/updatePerson/{id:guid}"
+@attribute [Authorize]
 @using BDayClient.Components
+
+<PageTitle>Update person - BDay App</PageTitle>
 
 <h2>Update Person Form</h2>
 
 @if (_personForUpdate is not null)
 {
-
-<EditForm EditContext="_editContext" OnValidSubmit="Update" class="card card-body bg-light mt-5">
-    <DataAnnotationsValidator />
-
-    <div class="form-group row">
-        <label for="name" class="col-md-2 col-form-label">Name:</label>
-        <div class="col-md-10">
-            <InputText id="name" class="form-control" @bind-Value="_personForUpdate.Name" />
-            <ValidationMessage For="@(() => _personForUpdate.Name)" />
-        </div>
-    </div>
-    <div class="form-group row">
-        <label for="supplier" class="col-md-2 col-form-label">Surname:</label>
-        <div class="col-md-10">
-            <InputText id="surname" class="form-control" @bind-Value="_personForUpdate.Surname" />
-            <ValidationMessage For="@(() => _personForUpdate.Surname)" />
-        </div>
-    </div>
-    <div class="form-group row">
-        <label for="supplier" class="col-md-2 col-form-label">Birthday:</label>
-        <div class="col-md-10">                
-            @* <InputDate id="birthDay" class="form-control" @bind-Value="_personForUpdate.DayOfBirth" /> *@
-            <DayMonthPickerNullable @bind-Value="_personForUpdate.DayOfBirth" />
-            <ValidationMessage For="@(() => _personForUpdate.DayOfBirth)" />
-        </div>
-    </div>
-    <div class="form-group row">
-        <label for="supplier" class="col-md-2 col-form-label">Nameday:</label>
-        <div class="col-md-10">
-                <DayMonthPickerNonNullable @bind-Value="_personForUpdate.DayOfNameDay" />
-                <ValidationMessage For="@(() => _personForUpdate.DayOfNameDay)" />
-        </div>
-    </div>
-    <AuthorizeView Roles="Administrator">
-	    <Authorized Context="Auth">
-		    <div class="form-group row">
-			    <label for="image" class="col-md-2 col-form-label">Image:</label>
-			    <div class="col-md-10">
-				    <ImageUpload OnChange="AssignImageUrl" ImgUrl="@_personForUpdate.ImageUrl" />
-			    </div>
-		    </div>
-		</Authorized>
-	</AuthorizeView>
-    <div class="row">
-        <div class="col-md-12 text-right">
-            <button type="submit" class="btn btn-success"
-                    disabled="@formInvalid">
-                Update
-            </button>
-        </div>
-    </div>
-</EditForm>
-    <br />
-    <div class="row">
-        <div class="col">
-            <a href="/persons" class="btn btn-success">Back</a>
-        </div>
-    </div>
+    <PersonForm Model="_personForUpdate" SubmitText="Update" OnValidSubmit="Update" />
 }
+else if (_loadFailed)
+{
+    <p>The person could not be loaded.</p>
+}
+else
+{
+    <p>Loading person...</p>
+}
+<br />
+<div class="row">
+    <div class="col">
+        <a href="/persons" class="btn btn-success">Back</a>
+    </div>
+</div>

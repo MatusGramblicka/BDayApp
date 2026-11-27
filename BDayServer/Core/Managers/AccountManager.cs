@@ -1,24 +1,49 @@
-﻿using Contracts.DataTransferObjects.Auth;
+using System.Globalization;
+using Contracts.Authorization;
+using Contracts.DataTransferObjects.Auth;
 using Contracts.DataTransferObjects.User;
 using Contracts.Exceptions;
 using Core.Managers.ManagerInterfaces;
+using Core.Services;
 using Core.Services.Interfaces;
 using EmailService.EmailServiceContracts;
 using EmailService.Interfaces;
 using Entities.Models;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Logging;
 using Identity = Microsoft.AspNetCore.Identity;
 
 namespace Core.Managers;
 
 public class AccountManager(
     Identity.UserManager<User> userManager,
+    Identity.RoleManager<Identity.IdentityRole> roleManager,
     IAuthenticationService authenticationService,
-    IEmailSender emailSender) : IAccountManager
+    IEmailSender emailSender,
+    ILogger<AccountManager> logger) : IAccountManager
 {
+    public const string InvalidAuthenticationMessage = "Invalid Authentication";
+    public const string LockedOutMessage = "The account is locked out";
+    public const string EmailNotConfirmedMessage = "Email is not confirmed";
+    public const string InvalidVerificationMessage = "Invalid Token Verification";
+    public const string VerificationExpiredMessage = "The verification code has expired. Please log in again.";
+    public const string InvalidRequestMessage = "Invalid Request";
+    public const string InvalidTokenMessage = "Invalid token.";
+    public const string RegistrationFailedMessage = "The registration could not be completed. Please try again later.";
+
+    // Stored (in AspNetUserTokens) when a user passed the password check and was e-mailed a 2-step code.
+    // Codes are only accepted while it is valid, so nobody can guess codes without knowing the password.
+    public const string TwoFactorLoginProvider = "BDayApp";
+    public const string TwoFactorLoginPendingToken = "TwoFactorLoginPending";
+    private static readonly TimeSpan TwoFactorLoginWindow = TimeSpan.FromMinutes(10);
+
+    private static readonly TimeSpan RefreshTokenLifetime = TimeSpan.FromDays(7);
+
+    private static readonly string EmailProvider = Identity.TokenOptions.DefaultEmailProvider;
+
     public async Task RegisterUser(UserForRegistrationDto userForRegistrationDto)
     {
-        ArgumentNullException.ThrowIfNull(userForRegistrationDto, nameof(userForRegistrationDto));
+        ArgumentNullException.ThrowIfNull(userForRegistrationDto);
 
         var user = new User
         {
@@ -28,42 +53,48 @@ public class AccountManager(
 
         var result = await userManager.CreateAsync(user, userForRegistrationDto.Password);
         if (!result.Succeeded)
+            throw new AccountManagerErrorsException(result.Errors.Select(e => e.Description));
+
+        try
         {
-            var errors = result.Errors.Select(e => e.Description);
-            throw new AccountManagerErrorsException(errors);
+            await roleManager.EnsureRoleExistsAsync(AppRoles.Viewer);
+            (await userManager.AddToRoleAsync(user, AppRoles.Viewer)).ThrowIfFailed("Adding the Viewer role");
+            (await userManager.SetTwoFactorEnabledAsync(user, true)).ThrowIfFailed("Enabling 2-step verification");
+
+            var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+            var callback = QueryHelpers.AddQueryString(userForRegistrationDto.ClientUri,
+                new Dictionary<string, string?>
+                {
+                    ["token"] = token,
+                    ["email"] = userForRegistrationDto.Email
+                });
+
+            await emailSender.SendEmailAsync(new Message([userForRegistrationDto.Email], "Email confirmation token",
+                callback, null));
         }
-
-        await userManager.SetTwoFactorEnabledAsync(user, true);
-        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
-
-        var param = new Dictionary<string, string>
+        catch (Exception ex)
         {
-            {"token", token},
-            {"email", userForRegistrationDto.Email}
-        };
+            // Without its role or the confirmation e-mail the account is unusable, and its address would stay taken.
+            // Remove it again, so that the user can simply register once more.
+            logger.LogError(ex, "Registration failed after the account was created; the account is removed again.");
+            await TryDeleteUserAsync(user);
 
-        var callback = QueryHelpers.AddQueryString(userForRegistrationDto.ClientUri, param);
-
-        var message = new Message([user.Email ?? string.Empty], "Email confirmation token",
-            callback, null);
-
-        await emailSender.SendEmailAsync(message);
-
-        await userManager.AddToRoleAsync(user, "Viewer");
+            throw new AccountManagerErrorsException([RegistrationFailedMessage]);
+        }
     }
 
     public async Task<AuthResponseDto> Login(UserForAuthenticationDto userForAuthenticationDto)
     {
+        ArgumentNullException.ThrowIfNull(userForAuthenticationDto);
+
         var user = await userManager.FindByNameAsync(userForAuthenticationDto.Email);
 
+        // An unknown user gets the same answer as a wrong password: the form must not reveal who has an account.
         if (user is null)
-            throw new AccountManagerUnauthorizedLoginException("Invalid Request");
-
-        if (!await userManager.IsEmailConfirmedAsync(user))
-            throw new AccountManagerUnauthorizedLoginException("Email is not confirmed");
+            throw new AccountManagerUnauthorizedLoginException(InvalidAuthenticationMessage);
 
         if (await userManager.IsLockedOutAsync(user))
-            throw new AccountManagerUnauthorizedLoginException("The account is locked out");
+            throw new AccountManagerUnauthorizedLoginException(LockedOutMessage);
 
         if (!await userManager.CheckPasswordAsync(user, userForAuthenticationDto.Password))
         {
@@ -71,81 +102,68 @@ public class AccountManager(
 
             if (await userManager.IsLockedOutAsync(user))
             {
-                const string content = $"Your account is locked out. " +
-                                       $"If you want to reset the password, you can use the " +
-                                       $"Forgot Password link on the Login page";
-
-                var message = new Message([userForAuthenticationDto.Email],
-                    "Locked out account information", content, null);
-
-                await emailSender.SendEmailAsync(message);
-
-                throw new AccountManagerUnauthorizedLoginException("The account is locked out");
+                await SendLockedOutEmailAsync(user);
+                throw new AccountManagerUnauthorizedLoginException(LockedOutMessage);
             }
 
-            throw new AccountManagerUnauthorizedLoginException("Invalid Authentication");
+            throw new AccountManagerUnauthorizedLoginException(InvalidAuthenticationMessage);
         }
 
+        // Only checked after the password, so that it doesn't reveal unconfirmed accounts to anybody else.
+        if (!await userManager.IsEmailConfirmedAsync(user))
+            throw new AccountManagerUnauthorizedLoginException(EmailNotConfirmedMessage);
+
         if (await userManager.GetTwoFactorEnabledAsync(user))
-            return await GenerateOtpFor2StepVerification(user);
+            return await StartTwoStepVerificationAsync(user);
 
-        var token = await authenticationService.GetToken(user);
-        //await _userManager.AddToRoleAsync(user, "Administrator");
-        user.RefreshToken = authenticationService.GenerateRefreshToken();
-        user.RefreshTokenExpiryTime = DateTime.Now.AddDays(7);
-
-        await userManager.UpdateAsync(user);
-        await userManager.ResetAccessFailedCountAsync(user);
-
-        return new AuthResponseDto
-        {
-            IsAuthSuccessful = true,
-            Token = token,
-            RefreshToken = user.RefreshToken
-        };
+        return await IssueTokensAsync(user);
     }
 
     public async Task ForgotPassword(ForgotPasswordDto forgotPasswordDto)
     {
+        ArgumentNullException.ThrowIfNull(forgotPasswordDto);
+
         var user = await userManager.FindByEmailAsync(forgotPasswordDto.Email);
 
+        // Unknown addresses are ignored silently: the caller answers the same way in both cases.
         if (user is null)
-            throw new AccountManagerUnauthorizedLoginException("Invalid Request");
+            return;
 
         var token = await userManager.GeneratePasswordResetTokenAsync(user);
-
-        var param = new Dictionary<string, string>
+        var email = user.Email ?? forgotPasswordDto.Email;
+        var callback = QueryHelpers.AddQueryString(forgotPasswordDto.ClientUri, new Dictionary<string, string?>
         {
-            {"token", token},
-            {"email", forgotPasswordDto.Email}
-        };
+            ["token"] = token,
+            ["email"] = email
+        });
 
-        var callback = QueryHelpers.AddQueryString(forgotPasswordDto.ClientUri, param);
-
-        var message = new Message([user.Email ?? string.Empty], "Reset password token", callback, null);
-
-        await emailSender.SendEmailAsync(message);
+        await emailSender.SendEmailAsync(new Message([email], "Reset password token", callback, null));
     }
 
-    public async Task<ResetPasswordResponseDto> ResetPassword(ResetPasswordDto resetPasswordDto)
+    public async Task ResetPassword(ResetPasswordDto resetPasswordDto)
     {
+        ArgumentNullException.ThrowIfNull(resetPasswordDto);
+
         var user = await userManager.FindByEmailAsync(resetPasswordDto.Email);
 
+        // Same answer as for a wrong token, so the form doesn't reveal who has an account.
         if (user is null)
-            throw new AccountManagerUnauthorizedLoginException("Invalid Request");
+            throw new AccountManagerErrorsException([InvalidTokenMessage]);
 
-        var resetPassResult = await userManager.ResetPasswordAsync(user,
-            resetPasswordDto.Token, resetPasswordDto.Password);
+        var resetPassResult = await userManager.ResetPasswordAsync(user, resetPasswordDto.Token,
+            resetPasswordDto.Password);
 
         if (!resetPassResult.Succeeded)
-        {
-            var errors = resetPassResult.Errors.Select(e => e.Description);
-            throw new AccountManagerErrorsException(errors);
-        }
+            throw new AccountManagerErrorsException(resetPassResult.Errors.Select(e => e.Description));
 
-        await userManager.SetLockoutEndDateAsync(user, null);
+        // The reset proves control of the mailbox: unlock the account, and sign out other sessions by revoking the
+        // refresh token (their access tokens expire within minutes).
+        LogIfFailed(await userManager.SetLockoutEndDateAsync(user, null), "Unlocking the account", user);
+        LogIfFailed(await userManager.ResetAccessFailedCountAsync(user), "Resetting the failed login count", user);
 
-        return new ResetPasswordResponseDto {IsResetPasswordSuccessful = true};
+        user.RefreshToken = string.Empty;
+        user.RefreshTokenExpiryTime = default;
+        LogIfFailed(await userManager.UpdateAsync(user), "Revoking the refresh token", user);
     }
 
     public async Task EmailConfirmation(string email, string token)
@@ -153,30 +171,88 @@ public class AccountManager(
         var user = await userManager.FindByEmailAsync(email);
 
         if (user is null)
-            throw new AccountManagerUnauthorizedLoginException("Invalid Request");
+            throw new AccountManagerUnauthorizedLoginException(InvalidRequestMessage);
 
         var confirmResult = await userManager.ConfirmEmailAsync(user, token);
         if (!confirmResult.Succeeded)
-            throw new AccountManagerUnauthorizedLoginException("Invalid Request");
+            throw new AccountManagerUnauthorizedLoginException(InvalidRequestMessage);
     }
 
     public async Task<AuthResponseDto> TwoStepVerification(TwoFactorVerificationDto twoFactorVerificationDto)
     {
+        ArgumentNullException.ThrowIfNull(twoFactorVerificationDto);
+
         var user = await userManager.FindByEmailAsync(twoFactorVerificationDto.Email);
 
         if (user is null)
-            throw new AccountManagerUnauthorizedLoginException("Invalid Request");
+            throw new AccountManagerUnauthorizedLoginException(InvalidVerificationMessage);
 
-        var validVerification = await userManager.VerifyTwoFactorTokenAsync(user,
-            twoFactorVerificationDto.Provider, twoFactorVerificationDto.TwoFactorToken);
+        if (await userManager.IsLockedOutAsync(user))
+            throw new AccountManagerUnauthorizedLoginException(LockedOutMessage);
 
-        if (!validVerification)
-            throw new AccountManagerUnauthorizedLoginException("Invalid Token Verification");
+        if (!await IsTwoStepLoginPendingAsync(user) || !await userManager.GetTwoFactorEnabledAsync(user))
+            throw new AccountManagerUnauthorizedLoginException(VerificationExpiredMessage);
 
+        // Codes are only ever sent by e-mail, so the provider is fixed (the client's Provider value is ignored).
+        if (!await userManager.VerifyTwoFactorTokenAsync(user, EmailProvider, twoFactorVerificationDto.TwoFactorToken))
+        {
+            // Wrong codes count like wrong passwords, so codes can't be tried out until one fits.
+            await userManager.AccessFailedAsync(user);
+
+            if (await userManager.IsLockedOutAsync(user))
+            {
+                await userManager.RemoveAuthenticationTokenAsync(user, TwoFactorLoginProvider, TwoFactorLoginPendingToken);
+                throw new AccountManagerUnauthorizedLoginException(LockedOutMessage);
+            }
+
+            throw new AccountManagerUnauthorizedLoginException(InvalidVerificationMessage);
+        }
+
+        await userManager.RemoveAuthenticationTokenAsync(user, TwoFactorLoginProvider, TwoFactorLoginPendingToken);
+
+        return await IssueTokensAsync(user);
+    }
+
+    private async Task<AuthResponseDto> StartTwoStepVerificationAsync(User user)
+    {
+        var providers = await userManager.GetValidTwoFactorProvidersAsync(user);
+
+        if (!providers.Contains(EmailProvider))
+            throw new AccountManagerUnauthorizedLoginException("Invalid 2-Step Verification Provider");
+
+        var expiresAt = DateTimeOffset.UtcNow.Add(TwoFactorLoginWindow).ToString("O", CultureInfo.InvariantCulture);
+        (await userManager.SetAuthenticationTokenAsync(user, TwoFactorLoginProvider, TwoFactorLoginPendingToken, expiresAt))
+            .ThrowIfFailed("Starting the 2-step verification");
+
+        var code = await userManager.GenerateTwoFactorTokenAsync(user, EmailProvider);
+
+        await emailSender.SendEmailAsync(new Message([user.Email ?? string.Empty], "Authentication token", code, null));
+
+        return new AuthResponseDto
+        {
+            Is2StepVerificationRequired = true,
+            Provider = EmailProvider
+        };
+    }
+
+    private async Task<bool> IsTwoStepLoginPendingAsync(User user)
+    {
+        var expiresAt = await userManager.GetAuthenticationTokenAsync(user, TwoFactorLoginProvider,
+            TwoFactorLoginPendingToken);
+
+        return DateTimeOffset.TryParse(expiresAt, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind,
+                   out var expiry) &&
+               expiry > DateTimeOffset.UtcNow;
+    }
+
+    private async Task<AuthResponseDto> IssueTokensAsync(User user)
+    {
         var token = await authenticationService.GetToken(user);
+
         user.RefreshToken = authenticationService.GenerateRefreshToken();
-        user.RefreshTokenExpiryTime = DateTime.Now.AddDays(7);
-        await userManager.UpdateAsync(user);
+        user.RefreshTokenExpiryTime = DateTime.UtcNow.Add(RefreshTokenLifetime);
+        (await userManager.UpdateAsync(user)).ThrowIfFailed("Storing the refresh token");
+
         await userManager.ResetAccessFailedCountAsync(user);
 
         return new AuthResponseDto
@@ -187,23 +263,42 @@ public class AccountManager(
         };
     }
 
-    private async Task<AuthResponseDto> GenerateOtpFor2StepVerification(User user)
+    private async Task SendLockedOutEmailAsync(User user)
     {
-        var providers = await userManager.GetValidTwoFactorProvidersAsync(user);
-
-        if (!providers.Contains("Email"))
-            throw new AccountManagerUnauthorizedLoginException("Invalid 2-Step Verification Provider");
-
-        var token = await userManager.GenerateTwoFactorTokenAsync(user, "Email");
-
-        var message = new Message([user.Email ?? string.Empty], "Authentication token", token, null);
-
-        await emailSender.SendEmailAsync(message);
-
-        return new AuthResponseDto
+        const string content = "Your account is locked out. " +
+                               "If you want to reset the password, you can use the " +
+                               "Forgot Password link on the Login page";
+        try
         {
-            Is2StepVerificationRequired = true,
-            Provider = "Email"
-        };
+            await emailSender.SendEmailAsync(new Message([user.Email ?? string.Empty],
+                "Locked out account information", content, null));
+        }
+        catch (Exception ex)
+        {
+            // The user still gets the "locked out" answer on the login page.
+            logger.LogError(ex, "The locked-out notice for user {UserId} could not be sent.", user.Id);
+        }
+    }
+
+    private async Task TryDeleteUserAsync(User user)
+    {
+        try
+        {
+            var result = await userManager.DeleteAsync(user);
+            if (!result.Succeeded)
+                logger.LogError("The incompletely registered user {UserId} could not be removed: {Errors}",
+                    user.Id, result.Describe());
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "The incompletely registered user {UserId} could not be removed.", user.Id);
+        }
+    }
+
+    private void LogIfFailed(Identity.IdentityResult result, string operation, User user)
+    {
+        if (!result.Succeeded)
+            logger.LogWarning("{Operation} for user {UserId} failed after a password reset: {Errors}",
+                operation, user.Id, result.Describe());
     }
 }

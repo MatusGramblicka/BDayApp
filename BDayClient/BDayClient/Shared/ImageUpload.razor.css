@@ -1,8 +1,13 @@
-﻿﻿.image-name {
+﻿.image-name {
     margin-left: 10px;
 }
 
 .image-preview {
     width: 300px;
     margin-top: 15px;
+}
+
+.file-picker:focus-within {
+    outline: 2px solid #1861ac;
+    outline-offset: 2px;
 }

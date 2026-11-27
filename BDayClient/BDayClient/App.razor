@@ -1,19 +1,24 @@
-@using BDayClient.Pages;
+﻿@using BDayClient.Pages;
 
 <CascadingAuthenticationState>
-    <Router AppAssembly="@typeof(Program).Assembly">
+    <Router AppAssembly="@typeof(Program).Assembly" NotFoundPage="typeof(CustomNotFound)">
         <Found Context="routeData">
-            <AuthorizeRouteView RouteData="@routeData" 
-                                DefaultLayout="@typeof(MainLayout)"> 
+            <AuthorizeRouteView RouteData="@routeData"
+                                DefaultLayout="@typeof(MainLayout)">
+                <NotAuthorized>
+                    @if (context.User.Identity?.IsAuthenticated == true)
+                    {
+                        <Unauthorized />
+                    }
+                    else
+                    {
+                        <RedirectToLogin />
+                    }
+                </NotAuthorized>
                 <Authorizing>
                     <text>Please wait, we are authorizing the user.</text>
                 </Authorizing>
             </AuthorizeRouteView>
         </Found>
-        <NotFound>
-            <LayoutView Layout="@typeof(MainLayout)">
-                <CustomNotFound />
-            </LayoutView>
-        </NotFound>
     </Router>
 </CascadingAuthenticationState>

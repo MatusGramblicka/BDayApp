@@ -1,13 +1,21 @@
 ﻿@page "/index"
 @using BDayClient.Components
-@using Microsoft.AspNetCore.Authorization
 
 @attribute [Authorize(Roles = "Administrator")]
+
+<PageTitle>Upcoming - BDay App</PageTitle>
 
 <br />
 <br />
 <div class="row">
 	<div class="col">
-		<PersonTableAdmin Persons="PersonList" />
+		@if (_loadFailed)
+		{
+			<p>The persons could not be loaded.</p>
+		}
+		else
+		{
+			<PersonTableAdmin Persons="_persons" />
+		}
 	</div>
 </div>

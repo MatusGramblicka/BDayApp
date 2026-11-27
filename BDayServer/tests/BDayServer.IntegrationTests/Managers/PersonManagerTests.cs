@@ -4,6 +4,8 @@ using Contracts.DataTransferObjects.Person;
 using Contracts.Exceptions;
 using Core.Managers;
 using Core.Managers.ManagerInterfaces;
+using Core.Services;
+using Core.Services.Interfaces;
 using Entities.Models;
 using Entities.RequestFeatures;
 using Microsoft.AspNetCore.Identity;
@@ -42,6 +44,7 @@ public class PersonManagerTests(MigratedDatabasesFixture fixture)
         services.AddAutoMapper(a => a.AddProfile<MappingProfile>());
         services.AddScoped<IRepositoryManager, RepositoryManager>();
         services.AddScoped<IPersonManager, PersonManager>();
+        services.AddScoped<IPersonMirror, PostgresPersonMirror>();
 
         return services.BuildServiceProvider();
     }
@@ -171,7 +174,8 @@ public class PersonManagerTests(MigratedDatabasesFixture fixture)
 
         await using var services = BuildServices(owner.UserName!);
         using var readScope = services.CreateScope();
-        var persons = readScope.ServiceProvider.GetRequiredService<IPersonManager>().GetPersons(new PersonParameters());
+        var persons = await readScope.ServiceProvider.GetRequiredService<IPersonManager>()
+            .GetPersonsAsync(new PersonParameters());
 
         persons.Select(p => p.Name).Should().BeEquivalentTo("Anna", "Boris");
     }
@@ -195,5 +199,56 @@ public class PersonManagerTests(MigratedDatabasesFixture fixture)
 
         await act.Should().ThrowAsync<PersonNotExistException>();
         (await FindInPostgreSqlAsync(id)).Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task CreatePerson_ForAUserWhoIsNotInPostgreSqlYet_CopiesTheUserFirst()
+    {
+        // Users are only created in SQL Server when they register; their first person used to fail on the mirror's FK.
+        var user = await fixture.CreateSqlServerUserAsync();
+        await using var services = BuildServices(user.UserName!);
+        using var scope = services.CreateScope();
+
+        var created = await scope.ServiceProvider.GetRequiredService<IPersonManager>().CreatePersonAsync(NewPerson());
+
+        await using var context = fixture.PostgreSql.CreateContext();
+        var copiedUser = await context.Users.AsNoTracking().SingleAsync(u => u.Id == user.Id);
+        copiedUser.Email.Should().Be(user.Email);
+        copiedUser.PasswordHash.Should().BeNull();
+        (await FindInPostgreSqlAsync(created.Id)).Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task UpdatePerson_MissingInPostgreSql_IsCopiedAgain()
+    {
+        var user = await CreateUserInBothDatabasesAsync();
+        await using var services = BuildServices(user.UserName!);
+        using var scope = services.CreateScope();
+        var manager = scope.ServiceProvider.GetRequiredService<IPersonManager>();
+        var created = await manager.CreatePersonAsync(NewPerson());
+        await using (var context = fixture.PostgreSql.CreateContext())
+            await context.Persons.Where(p => p.Id == created.Id).ExecuteDeleteAsync();
+
+        await manager.UpdatePersonAsync(created.Id, new PersonForUpdateDto { Name = "Hana", DayOfNameDay = FarAway });
+
+        (await FindInPostgreSqlAsync(created.Id))!.Name.Should().Be("Hana");
+    }
+
+    [Fact]
+    public async Task Mirror_DeleteUser_RemovesTheUserAndTheirPersonsFromPostgreSql()
+    {
+        var user = await CreateUserInBothDatabasesAsync();
+        await using var services = BuildServices(user.UserName!);
+        Guid personId;
+        using (var scope = services.CreateScope())
+            personId = (await scope.ServiceProvider.GetRequiredService<IPersonManager>()
+                .CreatePersonAsync(NewPerson())).Id;
+
+        using (var scope = services.CreateScope())
+            await scope.ServiceProvider.GetRequiredService<IPersonMirror>().DeleteUserAsync(user.Id);
+
+        (await FindInPostgreSqlAsync(personId)).Should().BeNull();
+        await using var context = fixture.PostgreSql.CreateContext();
+        (await context.Users.AnyAsync(u => u.Id == user.Id)).Should().BeFalse();
     }
 }

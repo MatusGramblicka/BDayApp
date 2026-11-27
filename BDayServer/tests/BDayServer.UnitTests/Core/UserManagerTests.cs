@@ -1,124 +1,186 @@
 using BDayServer.UnitTests.TestUtilities;
+using Contracts.Authorization;
 using Contracts.DataTransferObjects.User;
 using Contracts.Exceptions;
+using Core.Services.Interfaces;
 using Entities.Models;
 using Microsoft.AspNetCore.Identity;
-using CoreUserManager = Core.Managers.UserManager;
+using Repository.Services;
+using UserManager = Core.Managers.UserManager;
 
 namespace BDayServer.UnitTests.Core;
 
 public class UserManagerTests
 {
-    private const string Email = "john@test.com";
+    private const string AdminEmail = "admin@test.com";
+    private const string OtherEmail = "other@test.com";
 
     private readonly Mock<UserManager<User>> _identity = MockUserManager.Create();
-    private readonly User _user = new() { Email = Email, UserName = Email };
-    private readonly CoreUserManager _sut;
+    private readonly Mock<RoleManager<IdentityRole>> _roleManager = MockRoleManager.Create();
+    private readonly Mock<IGetUserProvider> _currentUser = new();
+    private readonly Mock<IPersonMirror> _mirror = new();
+    private readonly User _admin = new() { Id = "admin", Email = AdminEmail, UserName = AdminEmail, IsAdmin = true };
+    private readonly User _other = new() { Id = "other", Email = OtherEmail, UserName = OtherEmail };
+    private readonly UserManager _sut;
 
     public UserManagerTests()
     {
-        _sut = new CoreUserManager(_identity.Object);
+        _sut = new UserManager(_identity.Object, _roleManager.Object, _currentUser.Object, _mirror.Object);
+
+        _currentUser.Setup(c => c.UserName).Returns(AdminEmail);
+        _identity.Setup(m => m.FindByNameAsync(AdminEmail)).ReturnsAsync(_admin);
+        _identity.Setup(m => m.FindByNameAsync(OtherEmail)).ReturnsAsync(_other);
+        _identity.Setup(m => m.IsInRoleAsync(_admin, AppRoles.Administrator)).ReturnsAsync(true);
+        _identity.Setup(m => m.IsInRoleAsync(_other, AppRoles.Administrator)).ReturnsAsync(false);
+        _identity.Setup(m => m.GetUsersInRoleAsync(AppRoles.Administrator)).ReturnsAsync([_admin]);
+        _identity.Setup(m => m.UpdateAsync(It.IsAny<User>())).ReturnsAsync(IdentityResult.Success);
+        _identity.Setup(m => m.AddToRoleAsync(It.IsAny<User>(), It.IsAny<string>())).ReturnsAsync(IdentityResult.Success);
+        _identity.Setup(m => m.RemoveFromRoleAsync(It.IsAny<User>(), It.IsAny<string>()))
+            .ReturnsAsync(IdentityResult.Success);
+        _identity.Setup(m => m.DeleteAsync(It.IsAny<User>())).ReturnsAsync(IdentityResult.Success);
+        _identity.Setup(m => m.GetLoginsAsync(It.IsAny<User>())).ReturnsAsync([]);
+        _identity.Setup(m => m.GetRolesAsync(It.IsAny<User>())).ReturnsAsync([]);
+        _roleManager.Setup(m => m.RoleExistsAsync(It.IsAny<string>())).ReturnsAsync(true);
     }
 
-    private void SetupUserExists() => _identity.Setup(m => m.FindByNameAsync(Email)).ReturnsAsync(_user);
-
-    [Fact]
-    public void GetUsers_ProjectsToUserLite()
+    private void MakeOtherAnAdministratorToo()
     {
-        _identity.Setup(m => m.Users).Returns(new[]
-        {
-            new User { Email = "a@test.com", IsAdmin = true, TwoFactorEnabled = false },
-            new User { Email = "b@test.com", IsAdmin = false, TwoFactorEnabled = true }
-        }.AsQueryable());
-
-        var users = _sut.GetUsers().ToList();
-
-        users.Should().BeEquivalentTo(new[]
-        {
-            new UserLite { Email = "a@test.com", IsAdmin = true, TwoFactorEnabled = false },
-            new UserLite { Email = "b@test.com", IsAdmin = false, TwoFactorEnabled = true }
-        });
-    }
-
-    [Fact]
-    public async Task UpdateUser_UnknownUser_Throws()
-    {
-        var act = () => _sut.UpdateUser(new UserLite { Email = Email });
-
-        await act.Should().ThrowAsync<UnauthorizedUserException>();
+        _other.IsAdmin = true;
+        _identity.Setup(m => m.IsInRoleAsync(_other, AppRoles.Administrator)).ReturnsAsync(true);
+        _identity.Setup(m => m.GetUsersInRoleAsync(AppRoles.Administrator)).ReturnsAsync([_admin, _other]);
     }
 
     [Fact]
-    public async Task UpdateUser_PromotesToAdministrator()
+    public async Task GetUsersAsync_ReturnsAllUsersOrderedByEmail()
     {
-        SetupUserExists();
+        _identity.Setup(m => m.Users).Returns(new[] { _other, _admin }.AsQueryable());
 
-        await _sut.UpdateUser(new UserLite { Email = Email });
+        var users = await _sut.GetUsersAsync();
 
-        _user.IsAdmin.Should().BeTrue();
-        _identity.Verify(m => m.AddToRoleAsync(_user, "Administrator"), Times.Once);
-        _identity.Verify(m => m.UpdateAsync(_user), Times.Once);
+        users.Select(u => u.Email).Should().Equal(AdminEmail, OtherEmail);
+        users[0].IsAdmin.Should().BeTrue();
     }
 
     [Fact]
-    public async Task RemoveAdminRole_DemotesUser()
+    public async Task UpdateUser_UnknownUser_ThrowsNotFound()
     {
-        _user.IsAdmin = true;
-        SetupUserExists();
+        var act = () => _sut.UpdateUser(new UserLite { Email = "nobody@test.com" });
 
-        await _sut.RemoveAdminRole(new UserLite { Email = Email });
-
-        _user.IsAdmin.Should().BeFalse();
-        _identity.Verify(m => m.RemoveFromRoleAsync(_user, "Administrator"), Times.Once);
-        _identity.Verify(m => m.UpdateAsync(_user), Times.Once);
+        await act.Should().ThrowAsync<UserNotExistException>();
     }
 
     [Fact]
-    public async Task RemoveAdminRole_UnknownUser_Throws()
+    public async Task UpdateUser_MakesTheUserAnAdministrator()
     {
-        var act = () => _sut.RemoveAdminRole(new UserLite { Email = Email });
+        await _sut.UpdateUser(new UserLite { Email = OtherEmail });
 
-        await act.Should().ThrowAsync<UnauthorizedUserException>();
+        _identity.Verify(m => m.AddToRoleAsync(_other, AppRoles.Administrator), Times.Once);
+        _identity.Verify(m => m.UpdateAsync(It.Is<User>(u => u == _other && u.IsAdmin)), Times.Once);
     }
 
     [Fact]
-    public async Task DeleteUser_RemovesLoginsAndRolesBeforeDeleting()
+    public async Task UpdateUser_AdministratorRoleMissing_CreatesIt()
     {
-        SetupUserExists();
-        _identity.Setup(m => m.GetLoginsAsync(_user)).ReturnsAsync(
-        [
-            new UserLoginInfo("Google", "g-key", "Google"),
-            new UserLoginInfo("Microsoft", "m-key", "Microsoft")
-        ]);
-        _identity.Setup(m => m.GetRolesAsync(_user)).ReturnsAsync(["Viewer", "Administrator"]);
+        _roleManager.Setup(m => m.RoleExistsAsync(AppRoles.Administrator)).ReturnsAsync(false);
+        _roleManager.Setup(m => m.CreateAsync(It.IsAny<IdentityRole>())).ReturnsAsync(IdentityResult.Success);
 
-        await _sut.DeleteUser(new UserLite { Email = Email });
+        await _sut.UpdateUser(new UserLite { Email = OtherEmail });
 
-        _identity.Verify(m => m.RemoveLoginAsync(_user, "Google", "g-key"), Times.Once);
-        _identity.Verify(m => m.RemoveLoginAsync(_user, "Microsoft", "m-key"), Times.Once);
-        _identity.Verify(m => m.RemoveFromRoleAsync(_user, "Viewer"), Times.Once);
-        _identity.Verify(m => m.RemoveFromRoleAsync(_user, "Administrator"), Times.Once);
-        _identity.Verify(m => m.DeleteAsync(_user), Times.Once);
+        _roleManager.Verify(m => m.CreateAsync(It.Is<IdentityRole>(r => r.Name == AppRoles.Administrator)));
     }
 
     [Fact]
-    public async Task DeleteUser_UnknownUser_Throws()
+    public async Task UpdateUser_AlreadyAnAdministrator_DoesNotAddTheRoleTwice()
     {
-        var act = () => _sut.DeleteUser(new UserLite { Email = Email });
+        MakeOtherAnAdministratorToo();
 
-        await act.Should().ThrowAsync<UnauthorizedUserException>();
+        await _sut.UpdateUser(new UserLite { Email = OtherEmail });
+
+        _identity.Verify(m => m.AddToRoleAsync(It.IsAny<User>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RemoveAdminRole_OwnAccount_IsRefused()
+    {
+        MakeOtherAnAdministratorToo();
+
+        var act = () => _sut.RemoveAdminRole(new UserLite { Email = AdminEmail });
+
+        await act.Should().ThrowAsync<UserManagementException>();
+        _identity.Verify(m => m.RemoveFromRoleAsync(It.IsAny<User>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RemoveAdminRole_LastAdministrator_IsRefused()
+    {
+        _currentUser.Setup(c => c.UserName).Returns("someone-else@test.com");
+
+        var act = () => _sut.RemoveAdminRole(new UserLite { Email = AdminEmail });
+
+        (await act.Should().ThrowAsync<UserManagementException>()).WithMessage("*last administrator*");
+    }
+
+    [Fact]
+    public async Task RemoveAdminRole_AnotherAdministrator_RemovesRoleAndFlag()
+    {
+        MakeOtherAnAdministratorToo();
+
+        await _sut.RemoveAdminRole(new UserLite { Email = OtherEmail });
+
+        _identity.Verify(m => m.RemoveFromRoleAsync(_other, AppRoles.Administrator), Times.Once);
+        _identity.Verify(m => m.UpdateAsync(It.Is<User>(u => u == _other && !u.IsAdmin)), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteUser_OwnAccount_IsRefused()
+    {
+        var act = () => _sut.DeleteUser(new UserLite { Email = AdminEmail });
+
+        await act.Should().ThrowAsync<UserManagementException>();
         _identity.Verify(m => m.DeleteAsync(It.IsAny<User>()), Times.Never);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task SetTwoFactorAuthorization_SetsFlag(bool enabled)
+    [Fact]
+    public async Task DeleteUser_RemovesLoginsRolesTheUserAndTheMirroredCopy()
     {
-        SetupUserExists();
+        _identity.Setup(m => m.GetLoginsAsync(_other)).ReturnsAsync([new UserLoginInfo("Google", "key", "Google")]);
+        _identity.Setup(m => m.GetRolesAsync(_other)).ReturnsAsync([AppRoles.Viewer]);
+        _identity.Setup(m => m.RemoveLoginAsync(_other, "Google", "key")).ReturnsAsync(IdentityResult.Success);
 
-        await _sut.SetTwoFactorAuthorization(new UserLite2StepsAuthDto { Email = Email, TwoFactorEnabled = enabled });
+        await _sut.DeleteUser(new UserLite { Email = OtherEmail });
 
-        _identity.Verify(m => m.SetTwoFactorEnabledAsync(_user, enabled), Times.Once);
+        _identity.Verify(m => m.RemoveLoginAsync(_other, "Google", "key"), Times.Once);
+        _identity.Verify(m => m.RemoveFromRoleAsync(_other, AppRoles.Viewer), Times.Once);
+        _identity.Verify(m => m.DeleteAsync(_other), Times.Once);
+        _mirror.Verify(m => m.DeleteUserAsync(_other.Id, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteUser_DeleteFails_ThrowsAndKeepsTheMirroredCopy()
+    {
+        _identity.Setup(m => m.DeleteAsync(_other)).ReturnsAsync(IdentityResult.Failed());
+
+        var act = () => _sut.DeleteUser(new UserLite { Email = OtherEmail });
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        _mirror.Verify(m => m.DeleteUserAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SetTwoFactorAuthorization_SetsTheFlag()
+    {
+        _identity.Setup(m => m.SetTwoFactorEnabledAsync(_other, false)).ReturnsAsync(IdentityResult.Success);
+
+        await _sut.SetTwoFactorAuthorization(new UserLite2StepsAuthDto { Email = OtherEmail, TwoFactorEnabled = false });
+
+        _identity.Verify(m => m.SetTwoFactorEnabledAsync(_other, false), Times.Once);
+    }
+
+    [Fact]
+    public async Task SetTwoFactorAuthorization_UnknownUser_ThrowsNotFound()
+    {
+        var act = () => _sut.SetTwoFactorAuthorization(new UserLite2StepsAuthDto { Email = "nobody@test.com" });
+
+        await act.Should().ThrowAsync<UserNotExistException>();
     }
 }

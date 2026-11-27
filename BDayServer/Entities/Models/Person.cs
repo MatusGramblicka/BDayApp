@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Entities.Models;
@@ -9,11 +9,11 @@ public class Person
 
     [Required(ErrorMessage = "Name is a required field.")]
     [MaxLength(20, ErrorMessage = "Maximum length for the Name is 20 characters.")]
-    public string Name { get; set; }
-        
+    public string Name { get; set; } = string.Empty;
+
     [MaxLength(30, ErrorMessage = "Maximum length for the Surname is 30 characters.")]
     public string? Surname { get; set; }
-    
+
     public DateOnly? DayOfBirth { get; set; }
 
     [Required(ErrorMessage = "Name day is a required field.")]
@@ -22,7 +22,7 @@ public class Person
     public string? ImageUrl { get; set; }
 
     [ForeignKey(nameof(User))]
-    public string UserId { get; set; }
+    public string UserId { get; set; } = string.Empty;
 
-    public User User { get; set; }
+    public User User { get; set; } = null!;
 }

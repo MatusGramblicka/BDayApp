@@ -1,16 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 
 namespace Repository.Services;
 
-public class GetUserProvider : IGetUserProvider
+public class GetUserProvider(IHttpContextAccessor accessor) : IGetUserProvider
 {
-    public string UserName { get; }
-
-    public GetUserProvider(IHttpContextAccessor accessor)
-    {
-        if (accessor.HttpContext?.User.Identity is not null)
-        {
-            UserName = accessor.HttpContext?.User.Identity.Name;
-        }
-    }
+    public string? UserName { get; } = accessor.HttpContext?.User.Identity?.Name;
 }

@@ -1,11 +1,12 @@
-﻿using Contracts.DataTransferObjects.Person;
+using Contracts.DataTransferObjects.Person;
 using Entities.RequestFeatures;
 
 namespace Core.Managers.ManagerInterfaces;
 
 public interface IPersonManager
 {
-    PagedList<PersonDto> GetPersons(PersonParameters personParameters);
+    Task<PagedList<PersonDto>> GetPersonsAsync(PersonParameters personParameters,
+        CancellationToken cancellationToken = default);
 
     Task<PersonDto?> GetPersonAsync(Guid personId);
 

@@ -16,28 +16,22 @@ public class TokenManagerTests
 
     private readonly Mock<UserManager<User>> _userManager = MockUserManager.Create();
     private readonly Mock<IAuthenticationService> _authService = new();
-    private readonly TokenManager _sut;
-
-    private readonly User _user = new()
-    {
-        Email = Email,
-        RefreshToken = "current-refresh",
-        RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(1)
-    };
-
+    private readonly Mock<IRefreshTokenStore> _refreshTokens = new();
+    private readonly User _user = new() { Id = "user-1", Email = Email };
     private readonly RefreshTokenDto _dto = new() { Token = "expired-jwt", RefreshToken = "current-refresh" };
+    private readonly TokenManager _sut;
 
     public TokenManagerTests()
     {
-        _sut = new TokenManager(_userManager.Object, _authService.Object);
+        _sut = new TokenManager(_userManager.Object, _authService.Object, _refreshTokens.Object);
 
         _authService.Setup(a => a.GetPrincipalFromExpiredToken("expired-jwt"))
             .Returns(new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Name, Email)], "jwt")));
         _authService.Setup(a => a.GetToken(_user)).ReturnsAsync("new-jwt");
-        _authService.Setup(a => a.GenerateRefreshToken()).Returns("new-refresh");
         _userManager.Setup(m => m.FindByEmailAsync(Email)).ReturnsAsync(_user);
         _userManager.Setup(m => m.IsLockedOutAsync(_user)).ReturnsAsync(false);
-        _userManager.Setup(m => m.UpdateAsync(_user)).ReturnsAsync(IdentityResult.Success);
+        _refreshTokens.Setup(s => s.RotateAsync(_user.Id, "current-refresh", It.IsAny<CancellationToken>()))
+            .ReturnsAsync("new-refresh");
     }
 
     private async Task ShouldBeRejected(RefreshTokenDto dto)
@@ -45,7 +39,7 @@ public class TokenManagerTests
         var act = () => _sut.Refresh(dto);
 
         (await act.Should().ThrowAsync<TokenOperationException>()).WithMessage(TokenManager.InvalidRequestMessage);
-        _userManager.Verify(m => m.UpdateAsync(It.IsAny<User>()), Times.Never);
+        _authService.Verify(a => a.GetToken(It.IsAny<User>()), Times.Never);
     }
 
     [Fact]
@@ -57,42 +51,26 @@ public class TokenManagerTests
     }
 
     [Fact]
-    public async Task Refresh_ValidRequest_IssuesANewTokenAndRotatesTheRefreshToken()
+    public async Task Refresh_ValidRequest_ReturnsANewAccessTokenAndTheReplacementRefreshToken()
     {
         var (token, refreshToken) = await _sut.Refresh(_dto);
 
         token.Should().Be("new-jwt");
         refreshToken.Should().Be("new-refresh");
-        _user.RefreshToken.Should().Be("new-refresh");
-        _userManager.Verify(m => m.UpdateAsync(_user), Times.Once);
     }
 
     [Fact]
-    public Task Refresh_WrongRefreshToken_IsRejected() =>
-        ShouldBeRejected(_dto with { RefreshToken = "other" });
+    public Task Refresh_RefreshTokenTheStoreDoesNotAccept_IsRejected() =>
+        ShouldBeRejected(_dto with { RefreshToken = "revoked-or-unknown" });
 
     [Fact]
-    public Task Refresh_RevokedRefreshToken_IsRejectedEvenWhenTheRequestSendsAnEmptyOne()
-    {
-        _user.RefreshToken = string.Empty;
-
-        return ShouldBeRejected(_dto with { RefreshToken = string.Empty });
-    }
-
-    [Fact]
-    public Task Refresh_ExpiredRefreshToken_IsRejected()
-    {
-        _user.RefreshTokenExpiryTime = DateTime.UtcNow.AddSeconds(-1);
-
-        return ShouldBeRejected(_dto);
-    }
-
-    [Fact]
-    public Task Refresh_LockedOutUser_IsRejected()
+    public async Task Refresh_LockedOutUser_IsRejectedWithoutTouchingItsTokens()
     {
         _userManager.Setup(m => m.IsLockedOutAsync(_user)).ReturnsAsync(true);
 
-        return ShouldBeRejected(_dto);
+        await ShouldBeRejected(_dto);
+        _refreshTokens.Verify(s => s.RotateAsync(It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -121,13 +99,18 @@ public class TokenManagerTests
     }
 
     [Fact]
-    public async Task Refresh_ConcurrentUpdateWins_DoesNotHandOutTokensThatWereNotStored()
+    public async Task Revoke_EndsTheLoginOfThatToken()
     {
-        _userManager.Setup(m => m.UpdateAsync(_user))
-            .ReturnsAsync(IdentityResult.Failed(new IdentityErrorDescriber().ConcurrencyFailure()));
+        await _sut.Revoke(new RevokeTokenDto { RefreshToken = "current-refresh" });
 
-        var act = () => _sut.Refresh(_dto);
+        _refreshTokens.Verify(s => s.RevokeAsync("current-refresh", It.IsAny<CancellationToken>()), Times.Once);
+    }
 
-        await act.Should().ThrowAsync<TokenOperationException>();
+    [Fact]
+    public async Task Revoke_NullDto_Throws()
+    {
+        var act = () => _sut.Revoke(null!);
+
+        await act.Should().ThrowAsync<ArgumentNullException>();
     }
 }

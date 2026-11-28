@@ -53,12 +53,16 @@ public class UserManagerTests
     [Fact]
     public async Task GetUsersAsync_ReturnsAllUsersOrderedByEmail()
     {
+        _other.TwoFactorEnabled = true;
         _identity.Setup(m => m.Users).Returns(new[] { _other, _admin }.AsQueryable());
 
         var users = await _sut.GetUsersAsync();
 
-        users.Select(u => u.Email).Should().Equal(AdminEmail, OtherEmail);
-        users[0].IsAdmin.Should().BeTrue();
+        users.Should().BeEquivalentTo(new[]
+        {
+            new UserLite { Email = AdminEmail, IsAdmin = true, TwoFactorEnabled = false },
+            new UserLite { Email = OtherEmail, IsAdmin = false, TwoFactorEnabled = true }
+        }, o => o.WithStrictOrdering());
     }
 
     [Fact]

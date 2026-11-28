@@ -146,6 +146,31 @@ public class AuthenticationServiceTests
     }
 
     [Fact]
+    public async Task Logout_EndsThisLoginOnTheServer()
+    {
+        _localStorage.StoreTokens("old", "old-refresh");
+        _http.Expect(HttpMethod.Post, Api + "token/revoke")
+            .WithJsonContent<RevokeTokenDto>(d => d.RefreshToken == "old-refresh", TestJson.Web)
+            .Respond(HttpStatusCode.NoContent);
+
+        await _sut.Logout();
+
+        _http.VerifyNoOutstandingExpectation();
+    }
+
+    [Fact]
+    public async Task Logout_ServerUnreachable_StillLogsOutLocally()
+    {
+        _localStorage.StoreTokens("old", "old-refresh");
+        _http.When(HttpMethod.Post, Api + "token/revoke").Throw(new HttpRequestException("offline"));
+
+        await _sut.Logout();
+
+        _localStorage.AccessToken.Should().BeNull();
+        _localStorage.RefreshToken.Should().BeNull();
+    }
+
+    [Fact]
     public async Task RefreshToken_SendsStoredTokens_StoresNewOnesAndNotifies()
     {
         var newToken = TestJwt.Create("john@test.com");

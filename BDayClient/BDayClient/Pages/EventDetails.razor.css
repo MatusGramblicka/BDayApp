@@ -1,0 +1,12 @@
+.event-image {
+    width: 100%;
+}
+
+.event-title {
+    color: #007bff;
+}
+
+.event-description {
+    font-style: italic;
+    white-space: pre-line;
+}

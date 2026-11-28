@@ -9,6 +9,9 @@ public partial class Search : IDisposable
 
     private CancellationTokenSource? _debounce;
 
+    [Parameter]
+    public string Placeholder { get; set; } = "Search by person name";
+
     private string SearchTerm { get; set; } = string.Empty;
 
     [Parameter]

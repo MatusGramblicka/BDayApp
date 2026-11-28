@@ -71,6 +71,7 @@ public class Program
             sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient(ApiUrls.HttpClientName));
 
         services.AddScoped<IPersonHttpRepository, PersonHttpRepository>();
+        services.AddScoped<IEventHttpRepository, EventHttpRepository>();
         services.AddScoped<IUsersHttpRepository, UsersHttpRepository>();
     }
 }

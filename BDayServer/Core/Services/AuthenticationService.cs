@@ -5,7 +5,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
 using Identity = Microsoft.AspNetCore.Identity;
 
@@ -35,8 +34,6 @@ public class AuthenticationService(IOptions<JwtConfiguration> jwtSettings, Ident
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
-
-    public string GenerateRefreshToken() => Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
 
     public ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
     {

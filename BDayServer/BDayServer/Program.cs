@@ -1,6 +1,5 @@
 using BDayServer.Extensions;
 using BDayServer.HostedService;
-using BDayServer.Mapping;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
@@ -19,8 +18,6 @@ builder.Logging.AddAzureWebAppDiagnostics();
 builder.Services.ConfigureCors();
 builder.Services.ConfigureSqlContext(configuration);
 builder.Services.ConfigureRepositoryManager();
-
-builder.Services.AddAutoMapper(a => a.AddProfile<MappingProfile>());
 
 builder.Services.AddIdentityServices();
 builder.Services.RegisterManagers();

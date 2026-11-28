@@ -35,4 +35,16 @@ public class TokenController(ITokenManager tokenManager) : ControllerBase
             });
         }
     }
+
+    /// <summary>
+    /// Logout: ends the login the refresh token belongs to; the user's other devices stay logged in. Always 204, so the
+    /// answer doesn't tell whether a token was valid.
+    /// </summary>
+    [HttpPost("revoke")]
+    public async Task<IActionResult> Revoke([FromBody] RevokeTokenDto revokeTokenDto)
+    {
+        await tokenManager.Revoke(revokeTokenDto);
+
+        return NoContent();
+    }
 }

@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Repository;
 using Repository.DatabaseAccessInterfaces;
@@ -92,6 +93,8 @@ public static class ServiceExtensions
         services.AddScoped<IUploadManager, UploadManager>();
         services.AddScoped<IAccountManager, AccountManager>();
         services.AddScoped<IPersonMirror, PostgresPersonMirror>();
+        services.AddScoped<IRefreshTokenStore, RefreshTokenStore>();
+        services.TryAddSingleton(TimeProvider.System);
     }
 
     /// <summary>

@@ -85,23 +85,68 @@ public class TableComponentsTests : BunitContext
     }
 
     [Fact]
-    public void UsersTable_RendersUsersWithTwoFactorSwitch()
+    public void UsersTable_ShowsAnAdminRoleSwitchAndATwoFactorSwitchPerUser()
     {
         var cut = Render<UsersTable>(ps => ps
             .Add(p => p.Users, new List<UserLite> { new() { Email = "a@test.com", TwoFactorEnabled = true } })
             .Add(p => p.LoggedUser, "b@test.com"));
 
-        cut.FindAll(".rz-switch").Should().ContainSingle();
-        cut.Markup.Should().Contain("Update to Administrator").And.NotContain("Admininstrator");
+        cut.FindAll("thead th").Select(th => th.TextContent.Trim())
+            .Should().Equal("User", "Admin role", "Delete user", "Enable 2 factor auth");
+        cut.FindAll("tbody .rz-switch").Should().HaveCount(2);
+        cut.Find("[aria-label='Administrator role for a@test.com']");
+        cut.Markup.Should().NotContain("Update to Administrator").And.NotContain("Remove Administrator role");
     }
 
     [Fact]
-    public void UsersTable_LoggedUser_CannotChangeOrDeleteThemselves()
+    public void UsersTable_TurningTheAdminSwitchOn_GrantsTheRole()
     {
+        var user = new UserLite { Email = "a@test.com", IsAdmin = false };
+        UserLite? granted = null;
+        var removed = false;
+        var cut = Render<UsersTable>(ps => ps
+            .Add(p => p.Users, new List<UserLite> { user })
+            .Add(p => p.LoggedUser, "admin@test.com")
+            .Add(p => p.OnGrantAdminRole, u => granted = u)
+            .Add(p => p.OnRemoveAdminRole, _ => removed = true));
+
+        cut.Find("[aria-label='Administrator role for a@test.com']").Click();
+
+        granted.Should().BeSameAs(user);
+        removed.Should().BeFalse();
+    }
+
+    [Fact]
+    public void UsersTable_TurningTheAdminSwitchOff_RemovesTheRole()
+    {
+        var user = new UserLite { Email = "a@test.com", IsAdmin = true };
+        UserLite? removed = null;
+        var granted = false;
+        var cut = Render<UsersTable>(ps => ps
+            .Add(p => p.Users, new List<UserLite> { user })
+            .Add(p => p.LoggedUser, "admin@test.com")
+            .Add(p => p.OnGrantAdminRole, _ => granted = true)
+            .Add(p => p.OnRemoveAdminRole, u => removed = u));
+
+        cut.Find("[aria-label='Administrator role for a@test.com']").Click();
+
+        removed.Should().BeSameAs(user);
+        granted.Should().BeFalse();
+    }
+
+    [Fact]
+    public void UsersTable_LoggedUser_CannotChangeTheirRoleOrDeleteThemselves()
+    {
+        var changed = false;
         var cut = Render<UsersTable>(ps => ps
             .Add(p => p.Users, new List<UserLite> { new() { Email = "me@test.com", IsAdmin = true } })
-            .Add(p => p.LoggedUser, "ME@test.com"));
+            .Add(p => p.LoggedUser, "ME@test.com")
+            .Add(p => p.OnGrantAdminRole, _ => changed = true)
+            .Add(p => p.OnRemoveAdminRole, _ => changed = true));
 
+        cut.Find("[aria-label='Administrator role for me@test.com']").Click();
+
+        changed.Should().BeFalse();
         cut.FindAll("tbody button").Should().OnlyContain(b => b.HasAttribute("disabled"));
     }
 

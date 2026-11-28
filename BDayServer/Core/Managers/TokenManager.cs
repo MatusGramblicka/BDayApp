@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography;
-using System.Text;
-using Contracts.DataTransferObjects.Auth;
+﻿using Contracts.DataTransferObjects.Auth;
 using Contracts.Exceptions;
 using Core.Managers.ManagerInterfaces;
 using Core.Services.Interfaces;
@@ -10,14 +8,17 @@ using Identity = Microsoft.AspNetCore.Identity;
 
 namespace Core.Managers;
 
-public class TokenManager(Identity.UserManager<User> userManager, IAuthenticationService authenticationService)
-    : ITokenManager
+public class TokenManager(
+    Identity.UserManager<User> userManager,
+    IAuthenticationService authenticationService,
+    IRefreshTokenStore refreshTokens) : ITokenManager
 {
     public const string InvalidRequestMessage = "Invalid client request";
 
     /// <summary>
-    /// Issues a new access token and rotates the refresh token. Every invalid request (bad or foreign access token,
-    /// wrong, revoked or expired refresh token, locked-out user) fails with the same <see cref="TokenOperationException"/>.
+    /// Issues a new access token and replaces the refresh token of this login. Every invalid request (bad or foreign
+    /// access token, unknown, revoked or expired refresh token, locked-out user) fails with the same
+    /// <see cref="TokenOperationException"/>.
     /// </summary>
     public async Task<(string, string)> Refresh(RefreshTokenDto tokenDto)
     {
@@ -26,22 +27,22 @@ public class TokenManager(Identity.UserManager<User> userManager, IAuthenticatio
         var userName = ReadUserName(tokenDto.Token);
         var user = userName is null ? null : await userManager.FindByEmailAsync(userName);
 
-        if (user is null ||
-            string.IsNullOrEmpty(user.RefreshToken) ||
-            !FixedTimeEquals(user.RefreshToken, tokenDto.RefreshToken) ||
-            user.RefreshTokenExpiryTime <= DateTime.UtcNow ||
-            await userManager.IsLockedOutAsync(user))
+        if (user is null || await userManager.IsLockedOutAsync(user))
             throw new TokenOperationException(InvalidRequestMessage);
+
+        var refreshToken = await refreshTokens.RotateAsync(user.Id, tokenDto.RefreshToken)
+                           ?? throw new TokenOperationException(InvalidRequestMessage);
 
         var token = await authenticationService.GetToken(user);
-        user.RefreshToken = authenticationService.GenerateRefreshToken();
 
-        // Fails e.g. when a concurrent refresh changed the user first; the new tokens must not be handed out then.
-        var result = await userManager.UpdateAsync(user);
-        if (!result.Succeeded)
-            throw new TokenOperationException(InvalidRequestMessage);
+        return (token, refreshToken);
+    }
 
-        return (token, user.RefreshToken);
+    public Task Revoke(RevokeTokenDto revokeTokenDto)
+    {
+        ArgumentNullException.ThrowIfNull(revokeTokenDto);
+
+        return refreshTokens.RevokeAsync(revokeTokenDto.RefreshToken);
     }
 
     private string? ReadUserName(string accessToken)
@@ -59,8 +60,4 @@ public class TokenManager(Identity.UserManager<User> userManager, IAuthenticatio
             return null;
         }
     }
-
-    private static bool FixedTimeEquals(string expected, string? actual) =>
-        CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(expected),
-            Encoding.UTF8.GetBytes(actual ?? string.Empty));
 }

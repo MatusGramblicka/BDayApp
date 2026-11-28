@@ -1,0 +1,15 @@
+@page "/createEvent"
+@attribute [Authorize]
+@using BDayClient.Components
+
+<PageTitle>New event - BDay App</PageTitle>
+
+<h2>Create New Event</h2>
+
+<EventForm Model="_event" SubmitText="Create" OnValidSubmit="Create" />
+<br />
+<div class="row">
+    <div class="col">
+        <a href="/events" class="btn btn-success">Back</a>
+    </div>
+</div>

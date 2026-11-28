@@ -19,6 +19,7 @@ public class AccountManager(
     Identity.UserManager<User> userManager,
     Identity.RoleManager<Identity.IdentityRole> roleManager,
     IAuthenticationService authenticationService,
+    IRefreshTokenStore refreshTokens,
     IEmailSender emailSender,
     ILogger<AccountManager> logger) : IAccountManager
 {
@@ -36,8 +37,6 @@ public class AccountManager(
     public const string TwoFactorLoginProvider = "BDayApp";
     public const string TwoFactorLoginPendingToken = "TwoFactorLoginPending";
     private static readonly TimeSpan TwoFactorLoginWindow = TimeSpan.FromMinutes(10);
-
-    private static readonly TimeSpan RefreshTokenLifetime = TimeSpan.FromDays(7);
 
     private static readonly string EmailProvider = Identity.TokenOptions.DefaultEmailProvider;
 
@@ -156,14 +155,12 @@ public class AccountManager(
         if (!resetPassResult.Succeeded)
             throw new AccountManagerErrorsException(resetPassResult.Errors.Select(e => e.Description));
 
-        // The reset proves control of the mailbox: unlock the account, and sign out other sessions by revoking the
-        // refresh token (their access tokens expire within minutes).
+        // The reset proves control of the mailbox: unlock the account, and end all its logins (their access tokens
+        // expire within minutes) - whoever knew the old password is signed out everywhere.
         LogIfFailed(await userManager.SetLockoutEndDateAsync(user, null), "Unlocking the account", user);
         LogIfFailed(await userManager.ResetAccessFailedCountAsync(user), "Resetting the failed login count", user);
 
-        user.RefreshToken = string.Empty;
-        user.RefreshTokenExpiryTime = default;
-        LogIfFailed(await userManager.UpdateAsync(user), "Revoking the refresh token", user);
+        await refreshTokens.RevokeAllAsync(user.Id);
     }
 
     public async Task EmailConfirmation(string email, string token)
@@ -249,9 +246,8 @@ public class AccountManager(
     {
         var token = await authenticationService.GetToken(user);
 
-        user.RefreshToken = authenticationService.GenerateRefreshToken();
-        user.RefreshTokenExpiryTime = DateTime.UtcNow.Add(RefreshTokenLifetime);
-        (await userManager.UpdateAsync(user)).ThrowIfFailed("Storing the refresh token");
+        // A login of its own: logging in on one device no longer ends the logins on the others.
+        var refreshToken = await refreshTokens.IssueAsync(user.Id);
 
         await userManager.ResetAccessFailedCountAsync(user);
 
@@ -259,7 +255,7 @@ public class AccountManager(
         {
             IsAuthSuccessful = true,
             Token = token,
-            RefreshToken = user.RefreshToken
+            RefreshToken = refreshToken
         };
     }
 

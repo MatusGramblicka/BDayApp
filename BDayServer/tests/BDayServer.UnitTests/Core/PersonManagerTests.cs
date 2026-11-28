@@ -30,7 +30,7 @@ public class PersonManagerTests
     }
 
     private PersonManager CreateSut() =>
-        new(_repository.Object, TestMapper.Create(), _userManager.Object, _userProvider.Object, _mirror.Object);
+        new(_repository.Object, _userManager.Object, _userProvider.Object, _mirror.Object);
 
     private static PersonForCreationDto NewPerson() => new()
     {

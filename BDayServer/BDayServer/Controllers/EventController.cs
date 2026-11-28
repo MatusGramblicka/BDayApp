@@ -1,6 +1,6 @@
 using System.Text.Json;
-using AutoMapper;
 using Contracts.DataTransferObjects.Event;
+using Core.Mapping;
 using Entities.Models;
 using Entities.RequestFeatures;
 using Microsoft.AspNetCore.Authorization;
@@ -16,7 +16,6 @@ namespace BDayServer.Controllers;
 [Authorize]
 public class EventController(
     IRepositoryManager repository,
-    IMapper mapper,
     IGetUserProvider userData,
     UserManager<User> userManager)
     : ControllerBase
@@ -30,7 +29,7 @@ public class EventController(
 
         Response.Headers["X-Pagination"] = JsonSerializer.Serialize(eventsFromDb.MetaData);
 
-        return Ok(mapper.Map<IEnumerable<EventDto>>(eventsFromDb));
+        return Ok(eventsFromDb.Select(e => e.ToDto()).ToList());
     }
 
     [HttpGet("{id:guid}", Name = "EventById")]
@@ -38,7 +37,7 @@ public class EventController(
     {
         var eventEntity = await repository.Event.GetEventAsync(id, trackChanges: false);
 
-        return eventEntity is null ? NotFound() : Ok(mapper.Map<EventDto>(eventEntity));
+        return eventEntity is null ? NotFound() : Ok(eventEntity.ToDto());
     }
 
     [HttpPost(Name = "CreateEvent")]
@@ -48,12 +47,12 @@ public class EventController(
         if (user is null)
             return Unauthorized();
 
-        var eventEntity = mapper.Map<Event>(eventParam);
+        var eventEntity = eventParam.ToEntity();
         eventEntity.UserId = user.Id;
         repository.Event.CreateEvent(eventEntity);
         await repository.SaveAsync();
 
-        var eventToReturn = mapper.Map<EventDto>(eventEntity);
+        var eventToReturn = eventEntity.ToDto();
 
         return CreatedAtRoute("EventById", new { id = eventToReturn.Id }, eventToReturn);
     }
@@ -65,7 +64,7 @@ public class EventController(
         if (eventEntity is null)
             return NotFound();
 
-        mapper.Map(eventDto, eventEntity);
+        eventDto.ApplyTo(eventEntity);
         await repository.SaveAsync();
 
         return NoContent();

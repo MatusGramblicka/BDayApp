@@ -1,7 +1,7 @@
-using AutoMapper;
 using Contracts.DataTransferObjects.Person;
 using Contracts.Exceptions;
 using Core.Managers.ManagerInterfaces;
+using Core.Mapping;
 using Core.Services.Interfaces;
 using Entities.Models;
 using Entities.RequestFeatures;
@@ -14,7 +14,6 @@ namespace Core.Managers;
 // Azure SQL is the source of truth; every change is then copied to PostgreSQL for the birthday e-mails.
 public class PersonManager(
     IRepositoryManager repository,
-    IMapper mapper,
     UserManager<User> userManager,
     IGetUserProvider userData,
     IPersonMirror personMirror)
@@ -38,14 +37,14 @@ public class PersonManager(
         if (user is null)
             throw new UserNotExistException("User does not exist");
 
-        var personEntity = mapper.Map<Person>(personForCreationDto);
+        var personEntity = personForCreationDto.ToEntity();
         personEntity.UserId = user.Id;
         repository.Person.CreatePerson(personEntity);
         await repository.SaveAsync();
 
         await personMirror.UpsertPersonAsync(personEntity);
 
-        return mapper.Map<PersonDto>(personEntity);
+        return personEntity.ToDto();
     }
 
     public async Task UpdatePersonAsync(Guid personId, PersonForUpdateDto personForUpdateDto)
@@ -55,7 +54,7 @@ public class PersonManager(
         var personFromDb = await repository.Person.GetPersonAsync(personId, trackChanges: true)
                            ?? throw new PersonNotExistException("Person does not exist");
 
-        mapper.Map(personForUpdateDto, personFromDb);
+        personForUpdateDto.ApplyTo(personFromDb);
         await repository.SaveAsync();
 
         await personMirror.UpsertPersonAsync(personFromDb);

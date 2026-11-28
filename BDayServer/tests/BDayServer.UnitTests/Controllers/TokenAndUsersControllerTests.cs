@@ -34,6 +34,17 @@ public class TokenControllerTests
         result.Should().BeOfType<BadRequestObjectResult>().Which.Value.Should().BeEquivalentTo(new AuthResponseDto
             { IsAuthSuccessful = false, ErrorMessage = "Invalid client request" });
     }
+
+    [Fact]
+    public async Task Revoke_Returns204AndEndsTheLogin()
+    {
+        var dto = new RevokeTokenDto { RefreshToken = "refresh" };
+
+        var result = await new TokenController(_manager.Object).WithHttpContext().Revoke(dto);
+
+        result.Should().BeOfType<NoContentResult>();
+        _manager.Verify(m => m.Revoke(dto), Times.Once);
+    }
 }
 
 public class UsersControllerTests

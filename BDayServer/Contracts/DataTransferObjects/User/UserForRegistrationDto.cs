@@ -4,10 +4,10 @@ namespace Contracts.DataTransferObjects.User;
 
 public record UserForRegistrationDto
 {
-    // The e-mail address is also the user name; both columns hold at most 50 characters.
+    // The e-mail address is also the user name; both columns hold at most 256 characters.
     [Required(ErrorMessage = "Email is required.")]
     [EmailAddress(ErrorMessage = "Email is not a valid e-mail address.")]
-    [MaxLength(50, ErrorMessage = "Maximum length for the Email is 50 characters.")]
+    [MaxLength(256, ErrorMessage = "Maximum length for the Email is 256 characters.")]
     public string Email { get; init; } = string.Empty;
 
     [Required(ErrorMessage = "Password is required.")]

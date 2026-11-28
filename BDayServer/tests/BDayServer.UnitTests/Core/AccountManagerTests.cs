@@ -23,14 +23,15 @@ public class AccountManagerTests
     private readonly Mock<RoleManager<IdentityRole>> _roleManager = MockRoleManager.Create();
     private readonly Mock<IAuthenticationService> _authService = new();
     private readonly Mock<IEmailSender> _emailSender = new();
+    private readonly Mock<IRefreshTokenStore> _refreshTokens = new();
     private readonly User _user = new() { Id = "user-1", Email = Email, UserName = Email };
     private readonly List<Message> _sent = [];
     private readonly AccountManager _sut;
 
     public AccountManagerTests()
     {
-        _sut = new AccountManager(_userManager.Object, _roleManager.Object, _authService.Object, _emailSender.Object,
-            NullLogger<AccountManager>.Instance);
+        _sut = new AccountManager(_userManager.Object, _roleManager.Object, _authService.Object,
+            _refreshTokens.Object, _emailSender.Object, NullLogger<AccountManager>.Instance);
 
         // Identity operations succeed unless a test says otherwise.
         _userManager.Setup(m => m.UpdateAsync(It.IsAny<User>())).ReturnsAsync(IdentityResult.Success);
@@ -47,7 +48,7 @@ public class AccountManagerTests
             .ReturnsAsync(IdentityResult.Success);
         _roleManager.Setup(m => m.RoleExistsAsync(It.IsAny<string>())).ReturnsAsync(true);
         _authService.Setup(s => s.GetToken(_user)).ReturnsAsync("jwt");
-        _authService.Setup(s => s.GenerateRefreshToken()).Returns("refresh");
+        _refreshTokens.Setup(s => s.IssueAsync(_user.Id, It.IsAny<CancellationToken>())).ReturnsAsync("refresh");
         _emailSender.Setup(s => s.SendEmailAsync(It.IsAny<Message>())).Callback<Message>(_sent.Add)
             .Returns(Task.CompletedTask);
     }
@@ -229,21 +230,19 @@ public class AccountManagerTests
 
         result.Should().BeEquivalentTo(new AuthResponseDto
             { IsAuthSuccessful = true, Token = "jwt", RefreshToken = "refresh" });
-        _user.RefreshToken.Should().Be("refresh");
-        _user.RefreshTokenExpiryTime.Should().BeCloseTo(DateTime.UtcNow.AddDays(7), TimeSpan.FromMinutes(1));
-        _userManager.Verify(m => m.UpdateAsync(_user), Times.Once);
         _userManager.Verify(m => m.ResetAccessFailedCountAsync(_user), Times.Once);
     }
 
     [Fact]
-    public async Task Login_RefreshTokenCannotBeStored_Throws()
+    public async Task Login_Success_StartsANewLoginWithoutEndingTheOthers()
     {
         SetupUser();
-        _userManager.Setup(m => m.UpdateAsync(_user)).ReturnsAsync(IdentityResult.Failed());
 
-        var act = () => _sut.Login(Credentials());
+        await _sut.Login(Credentials());
 
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        _refreshTokens.Verify(s => s.IssueAsync(_user.Id, It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokens.Verify(s => s.RevokeAllAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _userManager.Verify(m => m.UpdateAsync(It.IsAny<User>()), Times.Never);
     }
 
     [Fact]
@@ -326,7 +325,7 @@ public class AccountManagerTests
 
         _userManager.Verify(m => m.SetLockoutEndDateAsync(_user, null), Times.Once);
         _userManager.Verify(m => m.ResetAccessFailedCountAsync(_user), Times.Once);
-        _userManager.Verify(m => m.UpdateAsync(It.Is<User>(u => u.RefreshToken == string.Empty)), Times.Once);
+        _refreshTokens.Verify(s => s.RevokeAllAsync(_user.Id, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

@@ -17,16 +17,23 @@ public static class RepositoryEventExtensions
     }
 
     /// <summary>
-    /// Sorts by the order query; without one, by the date's month and day. Ties are broken by id, so that paging is stable.
+    /// Sorts by the first field of the order query. The date sorts by month and day - the year isn't shown, like for a
+    /// person's birthday - and is the default. Ties are broken by name and id, so that paging is stable.
     /// </summary>
     public static IQueryable<Event> Sort(this IQueryable<Event> events, string? orderByQueryString)
     {
         var orderQuery = OrderQueryBuilder.CreateOrderQuery<Event>(orderByQueryString);
+        var firstClause = orderQuery.Split(',')[0].Trim();
 
-        var ordered = string.IsNullOrWhiteSpace(orderQuery)
-            ? events.OrderBy(e => e.Date.Month).ThenBy(e => e.Date.Day)
-            : events.OrderBy(orderQuery);
+        IOrderedQueryable<Event> ordered;
 
-        return ordered.ThenBy(e => e.Id);
+        if (firstClause.Length == 0 || firstClause.StartsWith(nameof(Event.Date) + " ", StringComparison.Ordinal))
+            ordered = firstClause.EndsWith(" descending", StringComparison.Ordinal)
+                ? events.OrderByDescending(e => e.Date.Month).ThenByDescending(e => e.Date.Day)
+                : events.OrderBy(e => e.Date.Month).ThenBy(e => e.Date.Day);
+        else
+            ordered = events.OrderBy(orderQuery);
+
+        return ordered.ThenBy(e => e.Name).ThenBy(e => e.Id);
     }
 }

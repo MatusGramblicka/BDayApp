@@ -44,8 +44,30 @@ public class AuthenticationService(
 
     public async Task Logout()
     {
+        var refreshToken = await tokenStorage.GetRefreshTokenAsync();
+
         await tokenStorage.ClearAsync();
         authStateProvider.NotifyUserLogout();
+
+        if (!string.IsNullOrEmpty(refreshToken))
+            await RevokeOnServerAsync(refreshToken);
+    }
+
+    // Ends this login on the server as well; the user's other devices stay logged in. Best effort and without the
+    // API error handler: logging out must also work offline and must never show an error.
+    private async Task RevokeOnServerAsync(string refreshToken)
+    {
+        try
+        {
+            var client = httpClientFactory.CreateClient();
+            client.BaseAddress ??= Client.BaseAddress;
+
+            using var _ = await client.PostAsJsonAsync("token/revoke", new RevokeTokenDto { RefreshToken = refreshToken });
+        }
+        catch (Exception)
+        {
+            // Whatever went wrong, the user is logged out here; the token expires on its own.
+        }
     }
 
     public async Task<string> RefreshToken()

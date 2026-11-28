@@ -11,8 +11,10 @@ public partial class UsersTable
 
     [Parameter] public string? LoggedUser { get; set; }
 
-    [Parameter] public EventCallback<UserLite> OnUpdate { get; set; }
+    /// <summary>The admin role switch was turned on.</summary>
+    [Parameter] public EventCallback<UserLite> OnGrantAdminRole { get; set; }
 
+    /// <summary>The admin role switch was turned off.</summary>
     [Parameter] public EventCallback<UserLite> OnRemoveAdminRole { get; set; }
 
     [Parameter] public EventCallback<UserLite> OnDeleteUser { get; set; }
@@ -25,26 +27,15 @@ public partial class UsersTable
     private bool IsLoggedUser(UserLite user) =>
         string.Equals(user.Email, LoggedUser, StringComparison.OrdinalIgnoreCase);
 
-    private async Task OnChange(bool value, UserLite user)
-    {
-        var userChange2StepsAuth = new UserLite2StepsAuthDto
+    private Task OnAdminRoleChange(bool isAdmin, UserLite user) =>
+        isAdmin ? OnGrantAdminRole.InvokeAsync(user) : OnRemoveAdminRole.InvokeAsync(user);
+
+    private Task OnTwoFactorChange(bool enabled, UserLite user) =>
+        OnChange2StepsAuthorization.InvokeAsync(new UserLite2StepsAuthDto
         {
             Email = user.Email,
-            TwoFactorEnabled = value
-        };
-
-        await OnChange2StepsAuthorization.InvokeAsync(userChange2StepsAuth);
-    }
-
-    private async Task UpdateUser(UserLite userToUpdate)
-    {
-        await OnUpdate.InvokeAsync(userToUpdate);
-    }
-
-    private async Task RemoveAdminRole(UserLite userToUpdate)
-    {
-        await OnRemoveAdminRole.InvokeAsync(userToUpdate);
-    }
+            TwoFactorEnabled = enabled
+        });
 
     private void CallConfirmationModal(UserLite userToDelete)
     {

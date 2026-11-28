@@ -1,5 +1,4 @@
 using BDayServer.IntegrationTests.Fixtures;
-using BDayServer.Mapping;
 using Contracts.DataTransferObjects.Person;
 using Contracts.Exceptions;
 using Core.Managers;
@@ -41,7 +40,6 @@ public class PersonManagerTests(MigratedDatabasesFixture fixture)
         services.AddIdentityCore<User>()
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<DbRepositoryContext>();
-        services.AddAutoMapper(a => a.AddProfile<MappingProfile>());
         services.AddScoped<IRepositoryManager, RepositoryManager>();
         services.AddScoped<IPersonManager, PersonManager>();
         services.AddScoped<IPersonMirror, PostgresPersonMirror>();

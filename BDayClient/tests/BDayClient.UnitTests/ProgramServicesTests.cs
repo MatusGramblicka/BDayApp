@@ -48,6 +48,7 @@ public class ProgramServicesTests
         using var scope = provider.CreateScope();
 
         scope.ServiceProvider.GetRequiredService<IPersonHttpRepository>().Should().NotBeNull();
+        scope.ServiceProvider.GetRequiredService<IEventHttpRepository>().Should().NotBeNull();
         scope.ServiceProvider.GetRequiredService<IUsersHttpRepository>().Should().NotBeNull();
         scope.ServiceProvider.GetRequiredService<AuthenticationStateProvider>().Should().BeOfType<AuthStateProvider>();
     }

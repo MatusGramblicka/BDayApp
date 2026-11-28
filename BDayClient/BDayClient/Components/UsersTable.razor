@@ -8,12 +8,12 @@ else if (Users.Count == 0)
 }
 else
 {
+    @* https://blazor.radzen.com/switch
+       The page reloads the users after every change, so a change the server refuses flips its switch back. *@
     <table class="table">
         <thead>
             <tr>
                 <th scope="col">User</th>
-                <th scope="col">Update to admin</th>
-                <th scope="col">Remove admin role</th>
                 <th scope="col">Admin role</th>
                 <th scope="col">Delete user</th>
                 <th scope="col">Enable 2 factor auth</th>
@@ -27,19 +27,13 @@ else
                     @user.Email
                 </td>
                 <td class="align-middle">
-                    <button type="button" class="btn btn-info"
-                            @onclick="() => UpdateUser(user)" disabled="@(user.IsAdmin || IsLoggedUser(user))">
-                        Update to Administrator
-                    </button>
-                </td>
-                <td class="align-middle">
-                    <button type="button" class="btn btn-danger"
-                            @onclick="() => RemoveAdminRole(user)" disabled="@(!user.IsAdmin || IsLoggedUser(user))">
-                        Remove Administrator role
-                    </button>
-                </td>
-                <td class="align-middle">
-                    @(user.IsAdmin ? "yes" : "no")
+                    @* On gives the user the administrator role, off removes it. Your own role can't be changed:
+                       the server refuses that, as it refuses removing the last administrator. *@
+                    <RadzenSwitch @bind-Value=@user.IsAdmin
+                                  Disabled="@IsLoggedUser(user)"
+                                  title="@(IsLoggedUser(user) ? "You cannot change your own administrator role" : null)"
+                                  aria-label="@($"Administrator role for {user.Email}")"
+                                  Change=@(isAdmin => OnAdminRoleChange(isAdmin, user)) />
                 </td>
                 <td class="align-middle">
                     <button type="button" class="btn btn-danger"
@@ -47,13 +41,10 @@ else
                         Delete User
                     </button>
                 </td>
-                <td>
-                    @*https://blazor.radzen.com/switch*@
-                    @* The page reloads the users after every change, so a refused change flips the switch back. *@
+                <td class="align-middle">
                     <RadzenSwitch @bind-Value=@user.TwoFactorEnabled
-                                  Style="margin-bottom: 20px"
                                   aria-label="@($"Two-factor authentication for {user.Email}")"
-                                  Change=@(args => OnChange(args, user)) />
+                                  Change=@(enabled => OnTwoFactorChange(enabled, user)) />
                 </td>
             </tr>
             }

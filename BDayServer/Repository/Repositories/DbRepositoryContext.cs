@@ -18,23 +18,46 @@ public class DbRepositoryContext(DbContextOptions<DbRepositoryContext> options, 
         modelBuilder.Entity<Person>().HasQueryFilter(b => b.User.UserName == _userName);
         modelBuilder.Entity<Event>().HasQueryFilter(b => b.User.UserName == _userName);
 
+        // One row per login (device or browser); only the hash of the token is stored.
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.ToTable("RefreshTokens");
+
+            entity.Property(t => t.UserId)
+                .HasMaxLength(100);
+
+            entity.Property(t => t.TokenHash)
+                .HasMaxLength(64);
+
+            entity.HasIndex(t => t.TokenHash)
+                .IsUnique();
+
+            entity.HasIndex(t => t.UserId);
+
+            entity.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         // AspNetUsers
         modelBuilder.Entity<User>(entity =>
         {
             entity.Property(r => r.Id)
-                .HasMaxLength(100);  
-                
+                .HasMaxLength(100);
+
+            // The e-mail address is also the user name. 256 is ASP.NET Core Identity's default length.
             entity.Property(u => u.UserName)
-                .HasMaxLength(50);
+                .HasMaxLength(256);
 
             entity.Property(u => u.NormalizedUserName)
-                .HasMaxLength(50);
+                .HasMaxLength(256);
 
             entity.Property(u => u.Email)
-                .HasMaxLength(50);
+                .HasMaxLength(256);
 
             entity.Property(u => u.NormalizedEmail)
-                .HasMaxLength(50);
+                .HasMaxLength(256);
 
             entity.Property(u => u.PasswordHash)
                 .HasMaxLength(500);
@@ -136,4 +159,5 @@ public class DbRepositoryContext(DbContextOptions<DbRepositoryContext> options, 
 
     public DbSet<Person> Persons { get; set; }
     public DbSet<Event> Events { get; set; }
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 }

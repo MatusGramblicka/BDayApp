@@ -41,7 +41,7 @@ public partial class Users
         }
     }
 
-    private Task UpdateUser(UserLite user) =>
+    private Task GrantAdminRole(UserLite user) =>
         ChangeUser(() => UsersHttpRepository.UpdateUser(user), $"{user.Email} is now an administrator.");
 
     private Task RemoveAdminRole(UserLite user) =>
@@ -55,7 +55,7 @@ public partial class Users
             $"Two-factor authentication is now {(user2StepsAuth.TwoFactorEnabled ? "on" : "off")} for {user2StepsAuth.Email}.");
 
     // Reloads the list after success and failure alike, so it always shows what the server has
-    // (e.g. a refused two-factor change flips the switch back).
+    // (e.g. a refused admin role or two-factor change flips its switch back).
     private async Task ChangeUser(Func<Task> change, string successMessage)
     {
         try

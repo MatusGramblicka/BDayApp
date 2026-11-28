@@ -243,7 +243,7 @@ public class AccountPagesTests : BunitContext
 
         var rows = cut.FindAll("tbody tr");
         rows[0].QuerySelectorAll("button").Should().OnlyContain(b => b.HasAttribute("disabled"), "nobody changes their own account");
-        cut.FindAll("tbody tr")[1].QuerySelector("button.btn-info")!.Click();
+        cut.Find("[aria-label='Administrator role for other@test.com']").Click();
 
         _toasts.Verify(t => t.ShowError("The last administrator cannot be changed.", It.IsAny<Action<ToastSettings>?>()), Times.Once);
         _toasts.Verify(t => t.ShowSuccess(It.IsAny<string>(), It.IsAny<Action<ToastSettings>?>()), Times.Never);
@@ -258,7 +258,7 @@ public class AccountPagesTests : BunitContext
         _usersRepository.Setup(r => r.UpdateUser(It.IsAny<UserLite>())).Returns(Task.CompletedTask);
         var cut = Render<Users>();
 
-        cut.Find("tbody button.btn-info").Click();
+        cut.Find("[aria-label='Administrator role for other@test.com']").Click();
 
         _toasts.Verify(t => t.ShowSuccess("other@test.com is now an administrator.", It.IsAny<Action<ToastSettings>?>()), Times.Once);
     }

@@ -7,7 +7,8 @@
     </div>
 
     <div class="main">
-        <div class="top-row px-4">
+        @* "auth" keeps the bar (log in / log out) visible on narrow screens, see MainLayout.razor.css. *@
+        <div class="top-row px-4 auth">
             <AuthLinks />
         </div>
 
@@ -16,9 +17,7 @@
         </div>
 
         <BlazoredToasts Position="ToastPosition.TopRight"
-                        Timeout="10"
-                        SuccessIcon="oi oi-thumb-up"
-                        ErrorIcon="oi oi-bug" />
+                        Timeout="10" />
 
     </div>
 </div>

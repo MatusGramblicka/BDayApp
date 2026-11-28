@@ -1,78 +1,109 @@
-﻿using Contracts.DataTransferObjects.User;
+using Contracts.Authorization;
+using Contracts.DataTransferObjects.User;
 using Contracts.Exceptions;
 using Core.Managers.ManagerInterfaces;
+using Core.Services;
+using Core.Services.Interfaces;
 using Entities.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
+using Repository.Services;
 using Identity = Microsoft.AspNetCore.Identity;
 
 namespace Core.Managers;
 
-public class UserManager(Identity.UserManager<User> userManager) : IUserManager
+/// <summary>User administration (administrators only).</summary>
+public class UserManager(
+    Identity.UserManager<User> userManager,
+    Identity.RoleManager<Identity.IdentityRole> roleManager,
+    IGetUserProvider currentUser,
+    IPersonMirror personMirror) : IUserManager
 {
-    public IQueryable<UserLite> GetUsers()
+    public async Task<List<UserLite>> GetUsersAsync()
     {
-        var allUsersLite = userManager.Users.Select(u => new UserLite
-        {
-            Email = u.Email,
-            IsAdmin = u.IsAdmin,
-            TwoFactorEnabled = u.TwoFactorEnabled
-        });
+        var query = userManager.Users
+            .OrderBy(u => u.Email)
+            .Select(u => new UserLite
+            {
+                Email = u.Email ?? string.Empty,
+                IsAdmin = u.IsAdmin,
+                TwoFactorEnabled = u.TwoFactorEnabled
+            });
 
-        return allUsersLite;
+        return query.Provider is IAsyncQueryProvider ? await query.ToListAsync() : query.ToList();
     }
 
+    /// <summary>Gives the user the administrator role.</summary>
     public async Task UpdateUser(UserLite userForUpdate)
     {
-        var user = await userManager.FindByNameAsync(userForUpdate.Email);
+        var user = await FindUserAsync(userForUpdate.Email);
 
-        if (user is null)
-            throw new UnauthorizedUserException("Invalid Request");
+        await roleManager.EnsureRoleExistsAsync(AppRoles.Administrator);
 
-        await userManager.AddToRoleAsync(user, "Administrator");
+        if (!await userManager.IsInRoleAsync(user, AppRoles.Administrator))
+            (await userManager.AddToRoleAsync(user, AppRoles.Administrator)).ThrowIfFailed("Adding the administrator role");
+
         user.IsAdmin = true;
-
-        await userManager.UpdateAsync(user);
+        (await userManager.UpdateAsync(user)).ThrowIfFailed("Updating the user");
     }
 
     public async Task RemoveAdminRole(UserLite userForUpdate)
     {
-        var user = await userManager.FindByNameAsync(userForUpdate.Email);
+        var user = await FindUserAsync(userForUpdate.Email);
 
-        if (user is null)
-            throw new UnauthorizedUserException("Invalid Request");
+        await EnsureNotSelfOrLastAdministratorAsync(user,
+            "remove the administrator role from your own account",
+            "remove the administrator role from the last administrator");
 
-        await userManager.RemoveFromRoleAsync(user, "Administrator");
+        if (await userManager.IsInRoleAsync(user, AppRoles.Administrator))
+            (await userManager.RemoveFromRoleAsync(user, AppRoles.Administrator))
+                .ThrowIfFailed("Removing the administrator role");
+
         user.IsAdmin = false;
-
-        await userManager.UpdateAsync(user);
+        (await userManager.UpdateAsync(user)).ThrowIfFailed("Updating the user");
     }
 
     public async Task DeleteUser(UserLite userForDeletion)
     {
-        var user = await userManager.FindByNameAsync(userForDeletion.Email);
+        var user = await FindUserAsync(userForDeletion.Email);
 
-        if (user is null)
-            throw new UnauthorizedUserException("Invalid Request");
+        await EnsureNotSelfOrLastAdministratorAsync(user,
+            "delete your own account",
+            "delete the last administrator");
 
-        var logins = await userManager.GetLoginsAsync(user);
+        foreach (var login in await userManager.GetLoginsAsync(user))
+            (await userManager.RemoveLoginAsync(user, login.LoginProvider, login.ProviderKey))
+                .ThrowIfFailed("Removing a login");
 
-        var rolesForUser = await userManager.GetRolesAsync(user);
+        foreach (var role in await userManager.GetRolesAsync(user))
+            (await userManager.RemoveFromRoleAsync(user, role)).ThrowIfFailed("Removing a role");
 
-        foreach (var login in logins)
-            await userManager.RemoveLoginAsync(user, login.LoginProvider, login.ProviderKey);
+        (await userManager.DeleteAsync(user)).ThrowIfFailed("Deleting the user");
 
-        foreach (var role in rolesForUser)
-            await userManager.RemoveFromRoleAsync(user, role);
-
-        await userManager.DeleteAsync(user);
+        // Otherwise the birthday e-mails would still be sent to the deleted user.
+        await personMirror.DeleteUserAsync(user.Id);
     }
 
     public async Task SetTwoFactorAuthorization(UserLite2StepsAuthDto userForUpdate)
     {
-        var user = await userManager.FindByNameAsync(userForUpdate.Email);
+        var user = await FindUserAsync(userForUpdate.Email);
 
-        if (user is null)
-            throw new UnauthorizedUserException("Invalid Request");
+        (await userManager.SetTwoFactorEnabledAsync(user, userForUpdate.TwoFactorEnabled))
+            .ThrowIfFailed("Changing the 2-step verification");
+    }
 
-        await userManager.SetTwoFactorEnabledAsync(user, userForUpdate.TwoFactorEnabled);
+    private async Task<User> FindUserAsync(string email) =>
+        await userManager.FindByNameAsync(email) ?? throw new UserNotExistException("User does not exist");
+
+    private async Task EnsureNotSelfOrLastAdministratorAsync(User user, string selfAction, string lastAdminAction)
+    {
+        if (currentUser.UserName is not null &&
+            (string.Equals(user.UserName, currentUser.UserName, StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(user.Email, currentUser.UserName, StringComparison.OrdinalIgnoreCase)))
+            throw new UserManagementException($"You cannot {selfAction}.");
+
+        if (await userManager.IsInRoleAsync(user, AppRoles.Administrator) &&
+            (await userManager.GetUsersInRoleAsync(AppRoles.Administrator)).Count <= 1)
+            throw new UserManagementException($"You cannot {lastAdminAction}.");
     }
 }

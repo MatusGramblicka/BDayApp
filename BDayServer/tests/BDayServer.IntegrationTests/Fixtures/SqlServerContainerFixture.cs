@@ -22,7 +22,7 @@ public class SqlServerContainerFixture : IContainerDatabaseFixture<DbRepositoryC
 
     public string ConnectionString => _msSqlContainer.GetConnectionString();
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _msSqlContainer.StartAsync();
         await using var _ = await DatabaseConnectionRetry.OpenConnectionWithRetryAsync<SqlConnection, SqlException>(
@@ -31,7 +31,7 @@ public class SqlServerContainerFixture : IContainerDatabaseFixture<DbRepositoryC
             connectionString => new SqlConnection(connectionString));
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         await _msSqlContainer.DisposeAsync();
     }

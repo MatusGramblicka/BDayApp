@@ -2,27 +2,50 @@
 
 namespace BDayClient.Components;
 
-public partial class Search
+/// <summary>A search box that raises <see cref="OnSearchChanged"/> once typing has paused for <see cref="DebounceDelay"/>.</summary>
+public partial class Search : IDisposable
 {
-    private string SearchTerm { get; set; } = string.Empty;
+    public static readonly TimeSpan DebounceDelay = TimeSpan.FromMilliseconds(500);
 
-    private Timer _timer = null!;
+    private CancellationTokenSource? _debounce;
+
+    [Parameter]
+    public string Placeholder { get; set; } = "Search by person name";
+
+    private string SearchTerm { get; set; } = string.Empty;
 
     [Parameter]
     public EventCallback<string> OnSearchChanged { get; set; }
 
-    private void SearchChanged()
+    // Runs after every change of the input (typing, pasting, autofill, clearing); only the last one within the delay searches.
+    private async Task SearchTermChanged()
     {
-        if (_timer is not null)
-            _timer.Dispose();
+        _debounce?.Cancel();
+        _debounce?.Dispose();
 
-        _timer = new Timer(OnTimerElapsed, null, 500, 0);
+        var debounce = new CancellationTokenSource();
+        _debounce = debounce;
+
+        try
+        {
+            await Task.Delay(DebounceDelay, debounce.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return; // superseded by a newer change, or the component was disposed
+        }
+
+        // The delay can finish just before a newer change cancels it; then the newer change searches.
+        if (!ReferenceEquals(debounce, _debounce))
+            return;
+
+        await OnSearchChanged.InvokeAsync(SearchTerm);
     }
 
-    private void OnTimerElapsed(object sender)
+    public void Dispose()
     {
-        OnSearchChanged.InvokeAsync(SearchTerm);
-
-        _timer.Dispose();
+        _debounce?.Cancel();
+        _debounce?.Dispose();
+        _debounce = null;
     }
 }

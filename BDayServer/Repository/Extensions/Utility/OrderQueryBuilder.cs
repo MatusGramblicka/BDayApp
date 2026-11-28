@@ -1,35 +1,39 @@
-﻿using System.Reflection;
-using System.Text;
+using System.Reflection;
 
 namespace Repository.Extensions.Utility;
 
 public static class OrderQueryBuilder
 {
-    public static string CreateOrderQuery<T>(string orderByQueryString)
+    /// <summary>
+    /// Turns "name desc, surname" into "Name descending, Surname ascending" (a Dynamic LINQ order clause).
+    /// Unknown properties are skipped; "desc"/"descending" in any case means descending, anything else ascending.
+    /// </summary>
+    public static string CreateOrderQuery<T>(string? orderByQueryString)
     {
-        var orderParams = orderByQueryString.Trim().Split(',');
+        if (string.IsNullOrWhiteSpace(orderByQueryString))
+            return string.Empty;
+
         var propertyInfos = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-        var orderQueryBuilder = new StringBuilder();
+        var clauses = new List<string>();
 
-        foreach (var param in orderParams)
+        foreach (var param in orderByQueryString.Split(',',
+                     StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
-            if (string.IsNullOrWhiteSpace(param))
-                continue;
+            var tokens = param.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-            var propertyFromQueryName = param.Split(" ")[0];
             var objectProperty = propertyInfos.FirstOrDefault(pi =>
-                pi.Name.Equals(propertyFromQueryName, StringComparison.InvariantCultureIgnoreCase));
+                pi.Name.Equals(tokens[0], StringComparison.OrdinalIgnoreCase));
 
             if (objectProperty is null)
                 continue;
 
-            var direction = param.EndsWith(" desc") ? "descending" : "ascending";
+            var descending = tokens.Length > 1 &&
+                             (tokens[1].Equals("desc", StringComparison.OrdinalIgnoreCase) ||
+                              tokens[1].Equals("descending", StringComparison.OrdinalIgnoreCase));
 
-            orderQueryBuilder.Append($"{objectProperty.Name} {direction}, ");
+            clauses.Add($"{objectProperty.Name} {(descending ? "descending" : "ascending")}");
         }
 
-        var orderQuery = orderQueryBuilder.ToString().TrimEnd(',', ' ');
-
-        return orderQuery;
+        return string.Join(", ", clauses);
     }
 }

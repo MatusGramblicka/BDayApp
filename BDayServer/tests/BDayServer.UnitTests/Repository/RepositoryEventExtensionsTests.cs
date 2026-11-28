@@ -26,9 +26,18 @@ public class RepositoryEventExtensionsTests
     [Theory]
     [InlineData("")]
     [InlineData("unknown")]
-    public void Sort_Default_OrdersByMonthThenDay(string orderBy)
+    [InlineData("date asc")]
+    [InlineData("date ascending")]
+    public void Sort_DefaultAndByDate_OrdersByMonthThenDayIgnoringTheYear(string orderBy)
     {
+        // By full date it would be Anniversary (1999), Wedding (2015), Graduation (2020).
         Events().Sort(orderBy).Should().Equal(Graduation, Wedding, Anniversary);
+    }
+
+    [Fact]
+    public void Sort_ByDateDescending_OrdersByMonthThenDayDescending()
+    {
+        Events().Sort("date desc").Should().Equal(Anniversary, Wedding, Graduation);
     }
 
     [Fact]

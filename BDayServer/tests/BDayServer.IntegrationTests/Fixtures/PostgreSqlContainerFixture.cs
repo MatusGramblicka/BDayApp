@@ -20,7 +20,7 @@ public class PostgreSqlContainerFixture : IContainerDatabaseFixture<PostgreDbRep
 
     public string ConnectionString => _postgreSqlContainer.GetConnectionString();
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _postgreSqlContainer.StartAsync();
         await using var _ = await DatabaseConnectionRetry.OpenConnectionWithRetryAsync<NpgsqlConnection, NpgsqlException>(
@@ -29,7 +29,7 @@ public class PostgreSqlContainerFixture : IContainerDatabaseFixture<PostgreDbRep
             connectionString => new NpgsqlConnection(connectionString));
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         await _postgreSqlContainer.DisposeAsync();
     }

@@ -1,6 +1,7 @@
-﻿using BDayClient.HttpInterceptor;
+﻿using BDayClient.Http;
 using BDayClient.HttpRepository;
-using Entities.Models;
+using Blazored.Toast.Services;
+using Contracts.DataTransferObjects.Person;
 using Entities.RequestFeatures;
 using Microsoft.AspNetCore.Components;
 
@@ -8,23 +9,22 @@ namespace BDayClient.Pages;
 
 public partial class Persons : IDisposable
 {
-    public List<Person> PersonList { get; set; } = new();
-    public MetaData MetaData { get; set; } = new();
+    // Null while loading, so "loading" and "no persons" look different.
+    private List<PersonDto>? _persons;
+    private MetaData _metaData = new();
+    private bool _loadFailed;
+    private CancellationTokenSource? _load;
 
-    public PersonParameters _personParameters = new();
+    private readonly PersonParameters _personParameters = new();
 
     [Inject]
-    public IPersonHttpRepository PersonRepo { get; set; }
+    public IPersonHttpRepository PersonRepo { get; set; } = default!;
 
     [Inject]
-    public HttpInterceptorService Interceptor { get; set; }
-
-    private bool _alreadyDisposed;
+    public IToastService ToastService { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
-        Interceptor.RegisterEvent();
-        Interceptor.RegisterBeforeSendEvent();
         await GetPersons();
     }
 
@@ -36,10 +36,30 @@ public partial class Persons : IDisposable
 
     private async Task GetPersons()
     {
-        var pagingResponse = await PersonRepo.GetPersons(_personParameters);
+        // A newer request (e.g. the next search term) cancels the one still running, so an older answer can never
+        // arrive last and overwrite the newer result.
+        _load?.Cancel();
+        _load?.Dispose();
+        var load = new CancellationTokenSource();
+        _load = load;
 
-        PersonList = pagingResponse.Items;
-        MetaData = pagingResponse.MetaData;
+        try
+        {
+            var pagingResponse = await PersonRepo.GetPersons(_personParameters, load.Token);
+
+            _persons = pagingResponse.Items;
+            _metaData = pagingResponse.MetaData;
+            _loadFailed = false;
+        }
+        catch (OperationCanceledException) when (load.IsCancellationRequested)
+        {
+            // Superseded by a newer request.
+        }
+        catch (ApiException ex)
+        {
+            _loadFailed = _persons is null;
+            ToastService.ShowApiError(ex);
+        }
     }
 
     private async Task SetPageSize(int pageSize)
@@ -67,9 +87,21 @@ public partial class Persons : IDisposable
 
     private async Task DeletePerson(Guid id)
     {
-        await PersonRepo.DeletePerson(id);
+        var person = _persons?.FirstOrDefault(p => p.Id == id);
 
-        if (_personParameters.PageNumber > 1 && PersonList.Count == 1)
+        try
+        {
+            await PersonRepo.DeletePerson(id);
+        }
+        catch (ApiException ex)
+        {
+            ToastService.ShowApiError(ex);
+            return;
+        }
+
+        ToastService.ShowSuccess(person is null ? "The person was deleted." : $"Person \"{person.Name}\" was deleted.");
+
+        if (_personParameters.PageNumber > 1 && _persons?.Count == 1)
             _personParameters.PageNumber--;
 
         await GetPersons();
@@ -77,24 +109,8 @@ public partial class Persons : IDisposable
 
     public void Dispose()
     {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
-    }
-
-    private void Dispose(bool disposing)
-    {
-        if (_alreadyDisposed)
-            return;
-
-        if (disposing)
-        {
-            Interceptor.DisposeEvent();
-            _alreadyDisposed = true;
-        }
-    }
-
-    ~Persons()
-    {
-        Dispose(disposing: false);
+        _load?.Cancel();
+        _load?.Dispose();
+        _load = null;
     }
 }

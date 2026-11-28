@@ -1,6 +1,6 @@
-﻿using Entities.Models;
-using Repository.Extensions.Utility;
 using System.Linq.Dynamic.Core;
+using Entities.Models;
+using Repository.Extensions.Utility;
 
 namespace Repository.Extensions;
 
@@ -16,33 +16,24 @@ public static class RepositoryEventExtensions
         return events.Where(e => e.Name.ToLower().Contains(lowerCaseTerm));
     }
 
-    public static IQueryable<Event> Sort(this IQueryable<Event> events, string orderByQueryString)
+    /// <summary>
+    /// Sorts by the first field of the order query. The date sorts by month and day - the year isn't shown, like for a
+    /// person's birthday - and is the default. Ties are broken by name and id, so that paging is stable.
+    /// </summary>
+    public static IQueryable<Event> Sort(this IQueryable<Event> events, string? orderByQueryString)
     {
-        if (string.IsNullOrWhiteSpace(orderByQueryString))
-            return events.OrderBy(x => x.Date.Month).ThenBy(x => x.Date.Day);
-
         var orderQuery = OrderQueryBuilder.CreateOrderQuery<Event>(orderByQueryString);
+        var firstClause = orderQuery.Split(',')[0].Trim();
 
-        if (string.IsNullOrWhiteSpace(orderQuery))
-            return events.OrderBy(x => x.Date.Month).ThenBy(x => x.Date.Day);
+        IOrderedQueryable<Event> ordered;
 
-        if (orderQuery.Contains("DayOfBirth"))
-        {
-            if (orderQuery.Contains("ascending"))
-                return events.OrderBy(x => x.Date.Month).ThenBy(x => x.Date.Day);
-            if (orderQuery.Contains("descending"))
-                return events.OrderByDescending(x => x.Date.Month).ThenByDescending(x => x.Date.Day);
-        }
+        if (firstClause.Length == 0 || firstClause.StartsWith(nameof(Event.Date) + " ", StringComparison.Ordinal))
+            ordered = firstClause.EndsWith(" descending", StringComparison.Ordinal)
+                ? events.OrderByDescending(e => e.Date.Month).ThenByDescending(e => e.Date.Day)
+                : events.OrderBy(e => e.Date.Month).ThenBy(e => e.Date.Day);
+        else
+            ordered = events.OrderBy(orderQuery);
 
-        if (orderQuery.Contains("DayOfNameDay"))
-        {
-            if (orderQuery.Contains("ascending"))
-                return events.OrderBy(x => x.Date.Month).ThenBy(x => x.Date.Day);
-            if (orderQuery.Contains("descending"))
-                return events.OrderByDescending(x => x.Date.Month)
-                    .ThenByDescending(x => x.Date.Day);
-        }
-
-        return events.OrderBy(orderQuery);
+        return ordered.ThenBy(e => e.Name).ThenBy(e => e.Id);
     }
 }

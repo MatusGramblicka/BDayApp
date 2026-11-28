@@ -1,5 +1,4 @@
 ﻿<section class="search-input">
-    <input type="text" class="form-control" placeholder="Search by person name"
-           @bind-value="@SearchTerm" @bind-value:event="oninput"
-           @onkeyup="SearchChanged" />
+    <input type="search" class="form-control" placeholder="@Placeholder" aria-label="@Placeholder"
+           @bind="SearchTerm" @bind:event="oninput" @bind:after="SearchTermChanged" />
 </section>

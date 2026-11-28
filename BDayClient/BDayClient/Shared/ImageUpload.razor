@@ -1,14 +1,13 @@
-﻿<InputFile OnChange="@HandleSelected" style="display:none;" id="file-upload" />
-
-<button type="button" class="btn btn-info"
-        onclick="document.getElementById('file-upload').click()">
+﻿@* The visually hidden input stays focusable, so the "button" also works with the keyboard. *@
+<label class="btn btn-info file-picker mb-0">
     Select a File
-</button>
+    <InputFile OnChange="HandleSelected" accept="image/*" class="sr-only" />
+</label>
 <span class="image-name">@_fileUploadMessage</span>
 
-@if (ImgUrl is not null)
+@if (ApiUrls.GetImageSource(_imageUrl) is { } imageSource)
 {
     <div>
-        <img src="@ImgUrl" class="image-preview" />
+        <img src="@imageSource" class="image-preview" alt="Selected image" />
     </div>
 }

@@ -1,4 +1,4 @@
-﻿using Entities.Models;
+using Entities.Models;
 using Entities.RequestFeatures;
 using Microsoft.EntityFrameworkCore;
 using Repository.DatabaseAccessInterfaces;
@@ -7,35 +7,26 @@ using Repository.Repositories;
 
 namespace Repository;
 
-public class EventRepository : RepositoryBase<Event>, IEventRepository
+// The context's query filter limits every query to the signed-in user's events.
+public class EventRepository(DbRepositoryContext repositoryContext)
+    : RepositoryBase<Event>(repositoryContext), IEventRepository
 {
-    public EventRepository(DbRepositoryContext repositoryContext)
-        : base(repositoryContext)
+    public Task<PagedList<Event>> GetAllEventsAsync(EventParameters eventParameters, bool trackChanges,
+        CancellationToken cancellationToken = default)
     {
-    }
+        ArgumentNullException.ThrowIfNull(eventParameters);
 
-    public PagedList<Event> GetAllEventsAsync(EventParameters eventParameters, bool trackChanges)
-    {
-        var events = FindAll(trackChanges)
+        return FindAll(trackChanges)
             .Search(eventParameters.SearchTerm)
-            .Sort(eventParameters.OrderBy);
-
-        return PagedList<Event>
-            .ToPagedList(events, eventParameters.PageNumber, eventParameters.PageSize);
+            .Sort(eventParameters.OrderBy)
+            .ToPagedListAsync(eventParameters.PageNumber, eventParameters.PageSize, cancellationToken);
     }
 
-    public async Task<Event> GetEventAsync(Guid eventId, bool trackChanges) =>
-        await FindByCondition(c => c.Id.Equals(eventId), trackChanges)
+    public Task<Event?> GetEventAsync(Guid eventId, bool trackChanges) =>
+        FindByCondition(e => e.Id == eventId, trackChanges)
             .SingleOrDefaultAsync();
 
-    public async Task<IEnumerable<Event>> GetByIdsAsync(IEnumerable<Guid> ids, bool trackChanges) =>
-        await FindByCondition(x => ids.Contains(x.Id), trackChanges)
-            .ToListAsync();
+    public void CreateEvent(Event @event) => Create(@event);
 
-    public void CreateEvent(Event eventParam) => Create(eventParam);
-
-    public void DeleteEvent(Event eventParam)
-    {
-        Delete(eventParam);
-    }
+    public void DeleteEvent(Event @event) => Delete(@event);
 }

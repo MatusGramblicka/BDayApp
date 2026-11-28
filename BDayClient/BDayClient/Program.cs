@@ -1,13 +1,14 @@
 using BDayClient.AuthProvider;
-using BDayClient.HttpInterceptor;
+using BDayClient.Http;
 using BDayClient.HttpRepository;
 using Blazored.LocalStorage;
 using Blazored.Toast;
+using Blazored.Toast.Services;
 using Entities.Configuration;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Microsoft.Extensions.Options;
-using Toolbelt.Blazor.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace BDayClient;
 
@@ -17,53 +18,60 @@ public class Program
     {
         var builder = WebAssemblyHostBuilder.CreateDefault(args);
         builder.RootComponents.Add<App>("#app");
+        builder.RootComponents.Add<HeadOutlet>("head::after");
 
         builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
 
-        builder.Services.AddHttpClient("PersonsAPI", (sp, cl) =>
-        {
-            var apiConfiguration = sp.GetRequiredService<IOptions<ApiConfiguration>>();
-            cl.BaseAddress =
-                new Uri(apiConfiguration.Value.BaseAddress + "/api/");
-            cl.EnableIntercept(sp);
-        });
+        ConfigureServices(builder.Services, builder.Configuration, builder.HostEnvironment.BaseAddress);
 
-        builder.Services.AddBlazoredToast();
+        await builder.Build().RunAsync();
+    }
 
-        builder.Services.AddScoped(
-            sp => sp.GetService<IHttpClientFactory>().CreateClient("PersonsAPI"));
-
-        builder.Services.AddHttpClientInterceptor();
-
-        builder.Services.AddScoped<IPersonHttpRepository, PersonHttpRepository>();
-
-        builder.Services.AddScoped<HttpInterceptorService>();
-
-        builder.Services.Configure<ApiConfiguration>
-            (builder.Configuration.GetSection("ApiConfiguration"));
+    /// <summary>The app's services (separate from <see cref="Main"/> so that tests can check the registrations).</summary>
+    /// <param name="hostBaseAddress">The address the app was loaded from.</param>
+    public static void ConfigureServices(IServiceCollection services, IConfiguration configuration,
+        string hostBaseAddress)
+    {
+        services.Configure<ApiConfiguration>(configuration.GetSection("ApiConfiguration"));
 
         // The client is hosted by BDayServer, so without an explicit ApiConfiguration:BaseAddress
         // (appsettings*.json are not in git) the API lives on the origin the app was loaded from.
-        builder.Services.PostConfigure<ApiConfiguration>(apiConfiguration =>
+        services.PostConfigure<ApiConfiguration>(apiConfiguration =>
         {
             if (string.IsNullOrWhiteSpace(apiConfiguration.BaseAddress))
-                apiConfiguration.BaseAddress = builder.HostEnvironment.BaseAddress.TrimEnd('/');
+                apiConfiguration.BaseAddress = hostBaseAddress;
         });
 
-        builder.Services.AddAutoMapper(a => a.AddProfile<MappingProfile>());
+        services.AddSingleton<ApiUrls>();
 
-        builder.Services.AddBlazoredLocalStorage();
+        // Everything the HTTP message handlers below use is a singleton: IHttpClientFactory creates the handlers in a
+        // DI scope of their own, where a scoped service would be a second, disconnected instance (a toast nobody
+        // displays, a logout the UI never hears about). In WebAssembly, scoped services live as long as singletons anyway.
+        services.AddBlazoredLocalStorageAsSingleton();
+        services.AddBlazoredToast();
+        services.Replace(ServiceDescriptor.Singleton<IToastService, ToastService>()); // registered as scoped above
+        services.AddSingleton<TokenStorage>();
+        services.AddSingleton<AuthStateProvider>();
+        services.AddSingleton<AuthenticationStateProvider>(sp => sp.GetRequiredService<AuthStateProvider>());
+        services.AddSingleton<IAuthenticationService, AuthenticationService>();
+        services.AddSingleton<RefreshTokenService>();
 
-        builder.Services.AddAuthorizationCore();
+        services.AddAuthorizationCore();
 
-        builder.Services.AddScoped<AuthenticationStateProvider, AuthStateProvider>();
+        // Token refresh and error handling for every API call, registered once here rather than in each page.
+        services.AddTransient<ApiErrorHandler>();
+        services.AddTransient<AuthTokenHandler>();
+        services
+            .AddHttpClient(ApiUrls.HttpClientName,
+                (sp, client) => client.BaseAddress = sp.GetRequiredService<ApiUrls>().ApiBase)
+            .AddHttpMessageHandler<ApiErrorHandler>()
+            .AddHttpMessageHandler<AuthTokenHandler>();
 
-        builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+        services.AddScoped(
+            sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient(ApiUrls.HttpClientName));
 
-        builder.Services.AddScoped<IUsersHttpRepository, UsersHttpRepository>();
-
-        builder.Services.AddScoped<RefreshTokenService>();
-
-        await builder.Build().RunAsync();
+        services.AddScoped<IPersonHttpRepository, PersonHttpRepository>();
+        services.AddScoped<IEventHttpRepository, EventHttpRepository>();
+        services.AddScoped<IUsersHttpRepository, UsersHttpRepository>();
     }
 }

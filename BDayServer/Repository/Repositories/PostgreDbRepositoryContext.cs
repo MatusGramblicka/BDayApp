@@ -21,17 +21,18 @@ public class PostgreDbRepositoryContext(DbContextOptions<PostgreDbRepositoryCont
             entity.Property(r => r.Id)
                 .HasMaxLength(100);
 
+            // The same lengths as in Azure SQL (users are copied from there).
             entity.Property(u => u.UserName)
-                .HasMaxLength(50);
+                .HasMaxLength(256);
 
             entity.Property(u => u.NormalizedUserName)
-                .HasMaxLength(50);
+                .HasMaxLength(256);
 
             entity.Property(u => u.Email)
-                .HasMaxLength(50);
+                .HasMaxLength(256);
 
             entity.Property(u => u.NormalizedEmail)
-                .HasMaxLength(50);
+                .HasMaxLength(256);
 
             entity.Property(u => u.PasswordHash)
                 .HasMaxLength(500);

@@ -1,40 +1,34 @@
-﻿using BDayClient.HttpInterceptor;
+﻿using BDayClient.Http;
 using BDayClient.HttpRepository;
-using Entities.Models;
-using Entities.RequestFeatures;
+using Blazored.Toast.Services;
+using Contracts.DataTransferObjects.Person;
 using Microsoft.AspNetCore.Components;
 
 namespace BDayClient.Pages;
 
 public partial class Index
 {
-    public List<Person> PersonList { get; set; } = new();
-    public MetaData MetaData { get; set; } = new();
-
-    private PersonParameters _personParameters = new();
-
-    [Inject]
-    public IPersonHttpRepository PersonRepo { get; set; }
+    // Null while loading.
+    private List<PersonDto>? _persons;
+    private bool _loadFailed;
 
     [Inject]
-    public HttpInterceptorService Interceptor { get; set; }
+    public IPersonHttpRepository PersonRepo { get; set; } = default!;
+
+    [Inject]
+    public IToastService ToastService { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
-        Interceptor.RegisterEvent();
-        Interceptor.RegisterBeforeSendEvent();
-
-        await GetPersons();
+        try
+        {
+            // All of them: upcoming birthdays can be on any page of the list.
+            _persons = await PersonRepo.GetAllPersons();
+        }
+        catch (ApiException ex)
+        {
+            _loadFailed = true;
+            ToastService.ShowApiError(ex);
+        }
     }
-
-    private async Task GetPersons()
-    {
-        _personParameters.PageSize = 50;
-        var pagingResponse = await PersonRepo.GetPersons(_personParameters);
-
-        PersonList = pagingResponse.Items;
-        MetaData = pagingResponse.MetaData;
-    }
-
-    public void Dispose() => Interceptor.DisposeEvent();
 }

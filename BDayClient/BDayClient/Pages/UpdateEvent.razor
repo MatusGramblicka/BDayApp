@@ -1,0 +1,26 @@
+@page "/updateEvent/{id:guid}"
+@attribute [Authorize]
+@using BDayClient.Components
+
+<PageTitle>Update event - BDay App</PageTitle>
+
+<h2>Update Event Form</h2>
+
+@if (_eventForUpdate is not null)
+{
+    <EventForm Model="_eventForUpdate" SubmitText="Update" OnValidSubmit="Update" />
+}
+else if (_loadFailed)
+{
+    <p>The event could not be loaded.</p>
+}
+else
+{
+    <p>Loading event...</p>
+}
+<br />
+<div class="row">
+    <div class="col">
+        <a href="/events" class="btn btn-success">Back</a>
+    </div>
+</div>

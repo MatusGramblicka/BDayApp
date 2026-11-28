@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using System.Globalization;
+using Microsoft.AspNetCore.Components;
 
 namespace BDayClient.Components;
 
@@ -9,12 +10,8 @@ public partial class PageSizeDropDown
 
     private async Task OnPageSizeChange(ChangeEventArgs eventArgs)
     {
-        if (eventArgs is null)
-            throw new ArgumentNullException(nameof(eventArgs));
-
-        if (eventArgs.Value is null)
-            throw new ArgumentNullException(nameof(eventArgs.Value));
-
-        await SelectedPageSize.InvokeAsync(int.Parse(eventArgs.Value.ToString()));
+        if (int.TryParse(eventArgs.Value?.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture,
+                out var pageSize) && pageSize > 0)
+            await SelectedPageSize.InvokeAsync(pageSize);
     }
 }

@@ -1,5 +1,4 @@
-﻿using BDayServer.ActionFilters;
-using Contracts.DataTransferObjects.Auth;
+using Contracts.Authorization;
 using Contracts.DataTransferObjects.User;
 using Contracts.Exceptions;
 using Core.Managers.ManagerInterfaces;
@@ -10,116 +9,42 @@ namespace BDayServer.Controllers;
 
 [Route("api/users")]
 [ApiController]
-[Authorize(Roles = "Administrator")]
+[Authorize(Roles = AppRoles.Administrator)]
 public class UsersController(IUserManager userManager) : ControllerBase
 {
     [HttpGet("Users")]
-    public IActionResult GetUsers()
-    {
-        var allUsersLite = userManager.GetUsers();
+    public async Task<IActionResult> GetUsers() => Ok(await userManager.GetUsersAsync());
 
-        return Ok(allUsersLite);
-    }
-
+    /// <summary>Gives the user the administrator role.</summary>
     [HttpPost("UpdateUser")]
-    [ServiceFilter(typeof(ValidationFilterAttribute))]
-    public async Task<IActionResult> UpdateUser([FromBody] UserLite userForUpdate)
-    {
-        if (userForUpdate is null)
-            return BadRequest("Object is null");
-
-        try
-        {
-            await userManager.UpdateUser(userForUpdate);
-        }
-        catch (UnauthorizedUserException ex)
-        {
-            return Unauthorized(new AuthResponseDto
-            {
-                ErrorMessage = ex.Message
-            });
-        }
-        catch (Exception)
-        {
-            return BadRequest("Unspecified problem");
-        }
-
-        return NoContent();
-    }
+    public Task<IActionResult> UpdateUser([FromBody] UserLite userForUpdate) =>
+        RunAsync(() => userManager.UpdateUser(userForUpdate));
 
     [HttpPost("RemoveAdminRole")]
-    [ServiceFilter(typeof(ValidationFilterAttribute))]
-    public async Task<IActionResult> RemoveAdminRole([FromBody] UserLite userForUpdate)
-    {
-        if (userForUpdate is null)
-            return BadRequest("Object is null");
-
-        try
-        {
-            await userManager.RemoveAdminRole(userForUpdate);
-        }
-        catch (UnauthorizedUserException ex)
-        {
-            return Unauthorized(new AuthResponseDto
-            {
-                ErrorMessage = ex.Message
-            });
-        }
-        catch (Exception)
-        {
-            return BadRequest("Unspecified problem");
-        }
-
-        return NoContent();
-    }
+    public Task<IActionResult> RemoveAdminRole([FromBody] UserLite userForUpdate) =>
+        RunAsync(() => userManager.RemoveAdminRole(userForUpdate));
 
     [HttpPost("DeleteUser")]
-    [ServiceFilter(typeof(ValidationFilterAttribute))]
-    public async Task<IActionResult> DeleteUser([FromBody] UserLite userForDeletion)
-    {
-        if (userForDeletion is null)
-            return BadRequest("Object is null");
-
-        try
-        {
-            await userManager.DeleteUser(userForDeletion);
-        }
-        catch (UnauthorizedUserException ex)
-        {
-            return Unauthorized(new AuthResponseDto
-            {
-                ErrorMessage = ex.Message
-            });
-        }
-        catch (Exception)
-        {
-            return BadRequest("Unspecified problem");
-        }
-
-        return NoContent();
-    }
+    public Task<IActionResult> DeleteUser([FromBody] UserLite userForDeletion) =>
+        RunAsync(() => userManager.DeleteUser(userForDeletion));
 
     [HttpPost("SetTwoFactorAuthorization")]
-    [ServiceFilter(typeof(ValidationFilterAttribute))]
-    public async Task<IActionResult> SetTwoFactorAuthorization([FromBody] UserLite2StepsAuthDto userForUpdate)
-    {
-        if (userForUpdate is null)
-            return BadRequest("Object is null");
+    public Task<IActionResult> SetTwoFactorAuthorization([FromBody] UserLite2StepsAuthDto userForUpdate) =>
+        RunAsync(() => userManager.SetTwoFactorAuthorization(userForUpdate));
 
+    private async Task<IActionResult> RunAsync(Func<Task> action)
+    {
         try
         {
-            await userManager.SetTwoFactorAuthorization(userForUpdate);
+            await action();
         }
-        catch (UnauthorizedUserException ex)
+        catch (UserNotExistException ex)
         {
-            return Unauthorized(new AuthResponseDto
-            {
-                ErrorMessage = ex.Message
-            });
+            return NotFound(ex.Message);
         }
-        catch (Exception)
+        catch (UserManagementException ex)
         {
-            return BadRequest("Unspecified problem");
+            return BadRequest(ex.Message);
         }
 
         return NoContent();

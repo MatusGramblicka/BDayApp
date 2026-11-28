@@ -1,11 +1,10 @@
-﻿using BDayServer.ActionFilters;
+using System.Text.Json;
 using Contracts.DataTransferObjects.Person;
 using Contracts.Exceptions;
 using Core.Managers.ManagerInterfaces;
 using Entities.RequestFeatures;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 
 namespace BDayServer.Controllers;
 
@@ -15,20 +14,17 @@ namespace BDayServer.Controllers;
 public class PersonsController(IPersonManager personManager) : ControllerBase
 {
     [HttpGet(Name = "GetPersons")]
-    [ServiceFilter(typeof(ValidationFilterAttribute))]
-    public IActionResult GetPersons([FromQuery] PersonParameters personParameters)
+    public async Task<IActionResult> GetPersons([FromQuery] PersonParameters personParameters,
+        CancellationToken cancellationToken)
     {
-        if (personParameters is null)
-            return BadRequest("Object is null");
+        var persons = await personManager.GetPersonsAsync(personParameters, cancellationToken);
 
-        var personsDto = personManager.GetPersons(personParameters);
+        Response.Headers["X-Pagination"] = JsonSerializer.Serialize(persons.MetaData);
 
-        Response.Headers["X-Pagination"] = JsonConvert.SerializeObject(personsDto.MetaData);
-
-        return Ok(personsDto);
+        return Ok(persons);
     }
 
-    [HttpGet("{id}", Name = "PersonById")]
+    [HttpGet("{id:guid}", Name = "PersonById")]
     public async Task<IActionResult> GetPerson(Guid id)
     {
         var personDto = await personManager.GetPersonAsync(id);
@@ -37,58 +33,36 @@ public class PersonsController(IPersonManager personManager) : ControllerBase
     }
 
     [HttpPost(Name = "CreatePerson")]
-    [ServiceFilter(typeof(ValidationFilterAttribute))]
     public async Task<IActionResult> CreatePerson([FromBody] PersonForCreationDto personForCreationDto)
     {
-        if (personForCreationDto is null)
-            return BadRequest("Object is null");
-
-        PersonDto personToReturn;
-
         try
         {
-            personToReturn = await personManager.CreatePersonAsync(personForCreationDto);
-        }
-        catch (ArgumentNullException ex)
-        {
-            return BadRequest(ex.Message);
+            var personToReturn = await personManager.CreatePersonAsync(personForCreationDto);
+
+            return CreatedAtRoute("PersonById", new { id = personToReturn.Id }, personToReturn);
         }
         catch (UserNotExistException ex)
         {
             return BadRequest(ex.Message);
         }
-        catch (Exception)
-        {
-            return BadRequest("Unspecified problem");
-        }
-
-        return CreatedAtRoute("PersonById", new {id = personToReturn.Id}, personToReturn);
     }
 
-    [HttpPut("{id}")]
-    [ServiceFilter(typeof(ValidationFilterAttribute))]
+    [HttpPut("{id:guid}")]
     public async Task<IActionResult> UpdatePerson(Guid id, [FromBody] PersonForUpdateDto personDto)
     {
-        if (personDto is null)
-            return BadRequest("Object is null");
-
         try
         {
             await personManager.UpdatePersonAsync(id, personDto);
         }
         catch (PersonNotExistException ex)
         {
-            return BadRequest(ex.Message);
-        }
-        catch (Exception)
-        {
-            return BadRequest("Unspecified problem");
+            return NotFound(ex.Message);
         }
 
         return NoContent();
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeletePerson(Guid id)
     {
         try
@@ -97,11 +71,7 @@ public class PersonsController(IPersonManager personManager) : ControllerBase
         }
         catch (PersonNotExistException ex)
         {
-            return BadRequest(ex.Message);
-        }
-        catch (Exception)
-        {
-            return BadRequest("Unspecified problem");
+            return NotFound(ex.Message);
         }
 
         return NoContent();

@@ -1,4 +1,5 @@
-﻿using BDayClient.HttpRepository;
+﻿using BDayClient.Http;
+using BDayClient.HttpRepository;
 using BDayClient.Pocos;
 using Contracts.DataTransferObjects.Auth;
 using Microsoft.AspNetCore.Components;
@@ -9,13 +10,14 @@ namespace BDayClient.Pages;
 public partial class TwoStepVerification
 {
     private TwoFactorVerification _twoFactorVerification = new();
+    private string? _returnUrl;
 
     private bool _showError;
-    private string _error;
+    private string? _error;
 
-    [Inject] public IAuthenticationService AuthService { get; set; }
+    [Inject] public IAuthenticationService AuthService { get; set; } = default!;
 
-    [Inject] public NavigationManager NavigationManager { get; set; }
+    [Inject] public NavigationManager NavigationManager { get; set; } = default!;
 
     protected override void OnInitialized()
     {
@@ -25,8 +27,9 @@ public partial class TwoStepVerification
         if (queryStrings.TryGetValue("email", out var email) &&
             queryStrings.TryGetValue("provider", out var provider))
         {
-            _twoFactorVerification.Email = email;
-            _twoFactorVerification.Provider = provider;
+            _twoFactorVerification.Email = email.ToString();
+            _twoFactorVerification.Provider = provider.ToString();
+            _returnUrl = queryStrings.TryGetValue("returnUrl", out var returnUrl) ? returnUrl.ToString() : null;
         }
         else
             NavigationManager.NavigateTo("/");
@@ -43,13 +46,27 @@ public partial class TwoStepVerification
             TwoFactorToken = _twoFactorVerification.TwoFactorToken
         };
 
-        var result = await AuthService.LoginVerification(twoFactorDto);
-        if (result.IsAuthSuccessful)
-            NavigationManager.NavigateTo("/");
-        else
+        AuthResponseDto result;
+        try
         {
-            _error = result.ErrorMessage;
-            _showError = true;
+            result = await AuthService.LoginVerification(twoFactorDto);
         }
+        catch (ApiException ex)
+        {
+            if (!ex.Handled)
+                ShowError(ex.Message);
+            return;
+        }
+
+        if (result.IsAuthSuccessful)
+            NavigationManager.NavigateTo(LoginNavigation.GetSafeReturnUrl(_returnUrl));
+        else
+            ShowError(result.ErrorMessage);
+    }
+
+    private void ShowError(string message)
+    {
+        _error = message;
+        _showError = true;
     }
 }

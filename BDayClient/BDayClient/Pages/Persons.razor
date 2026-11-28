@@ -1,9 +1,10 @@
 ﻿@page "/"
 @page "/persons"
 @using BDayClient.Components
-@using Microsoft.AspNetCore.Authorization
 
 @attribute [Authorize]
+
+<PageTitle>Persons - BDay App</PageTitle>
 
 <div class="row">
 	<div class="col-md-5">
@@ -18,12 +19,19 @@
 </div>
 <div class="row">
 	<div class="col">
-		<PersonTable Persons="PersonList" OnDelete="DeletePerson" />
+		@if (_loadFailed)
+		{
+			<p>The persons could not be loaded.</p>
+		}
+		else
+		{
+			<PersonTable Persons="_persons" OnDelete="DeletePerson" />
+		}
 	</div>
 </div>
 <div class="row">
 	<div class="col">
-		<Pagination MetaData="MetaData" Spread="1" SelectedPage="SelectedPage" />
+		<Pagination MetaData="_metaData" Spread="1" SelectedPage="SelectedPage" />
 	</div>
 	<div class="col">
 		<PageSizeDropDown SelectedPageSize="SetPageSize" />

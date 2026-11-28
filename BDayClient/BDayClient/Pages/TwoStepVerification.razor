@@ -1,5 +1,7 @@
 ﻿@page "/twostepverification"
 
+<PageTitle>Login verification - BDay App</PageTitle>
+
 <h3>Login Verification</h3>
 
 @if (_showError)
@@ -15,7 +17,7 @@
     <div class="form-group row">
         <label for="token" class="col-md-2 col-form-label">Token:</label>
         <div class="col-md-10">
-            <InputText type="text" id="token" class="form-control"
+            <InputText type="text" id="token" class="form-control" autocomplete="one-time-code"
                        @bind-Value="_twoFactorVerification.TwoFactorToken" />
             <ValidationMessage For="@(() => _twoFactorVerification.TwoFactorToken)" />
         </div>

@@ -1,5 +1,7 @@
 ﻿@page "/404"
 
+<PageTitle>Not found - BDay App</PageTitle>
+
 <div class="card customNotFound">
     <div class="card-body">
         <div class="col">
@@ -9,9 +11,13 @@
 </div>
 <div class="row">
     <div class="col text-md-center m-5 text-primary">
-        <button type="button" class="btn btn-primary"
-                @onclick="NavigateToHome">
-            Navigate to the Login Page
-        </button>
+        <AuthorizeView>
+            <Authorized>
+                <a class="btn btn-primary" href="/persons">Back to the persons</a>
+            </Authorized>
+            <NotAuthorized>
+                <a class="btn btn-primary" href="/login">Go to the login page</a>
+            </NotAuthorized>
+        </AuthorizeView>
     </div>
 </div>

@@ -1,0 +1,37 @@
+@page "/events"
+@attribute [Authorize]
+@using BDayClient.Components
+
+<PageTitle>Events - BDay App</PageTitle>
+
+<div class="row">
+    <div class="col-md-5">
+        <Search OnSearchChanged="SearchChanged" Placeholder="Search by event name" />
+    </div>
+    <div class="col-md-5">
+        <EventSort OnSortChanged="SortChanged" />
+    </div>
+    <div class="col-md-2">
+        <a class="btn btn-success mb-1" href="/createEvent">New Event</a>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        @if (_loadFailed)
+        {
+            <p>The events could not be loaded.</p>
+        }
+        else
+        {
+            <EventTable Events="_events" OnDelete="DeleteEvent" />
+        }
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <Pagination MetaData="_metaData" Spread="1" SelectedPage="SelectedPage" />
+    </div>
+    <div class="col">
+        <PageSizeDropDown SelectedPageSize="SetPageSize" />
+    </div>
+</div>

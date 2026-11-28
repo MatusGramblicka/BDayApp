@@ -1,20 +1,18 @@
 using System.Security.Claims;
 using BDayClient.AuthProvider;
 using BDayClient.UnitTests.TestUtilities;
-using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 
 namespace BDayClient.UnitTests.AuthProvider;
 
 public class AuthStateProviderTests
 {
-    private readonly HttpClient _httpClient = new();
-    private readonly Mock<ILocalStorageService> _localStorage = new();
+    private readonly LocalStorageMock _localStorage = new();
     private readonly AuthStateProvider _sut;
 
     public AuthStateProviderTests()
     {
-        _sut = new AuthStateProvider(_httpClient, _localStorage.Object);
+        _sut = new AuthStateProvider(new TokenStorage(_localStorage.Object));
     }
 
     [Theory]
@@ -23,29 +21,39 @@ public class AuthStateProviderTests
     [InlineData("  ")]
     public async Task GetAuthenticationState_NoToken_IsAnonymous(string? token)
     {
-        _localStorage.Setup(s => s.GetItemAsync<string>("authToken", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(token!);
+        _localStorage.StoreTokens(token);
 
         var state = await _sut.GetAuthenticationStateAsync();
 
         state.User.Identity!.IsAuthenticated.Should().BeFalse();
-        _httpClient.DefaultRequestHeaders.Authorization.Should().BeNull();
     }
 
     [Fact]
-    public async Task GetAuthenticationState_WithToken_IsAuthenticatedAndSetsBearerHeader()
+    public async Task GetAuthenticationState_WithToken_IsAuthenticatedWithNameAndRoles()
     {
-        var token = TestJwt.Create("john@test.com", roles: "Administrator");
-        _localStorage.Setup(s => s.GetItemAsync<string>("authToken", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(token);
+        _localStorage.StoreTokens(TestJwt.Create("john@test.com", roles: "Administrator"));
 
         var state = await _sut.GetAuthenticationStateAsync();
 
         state.User.Identity!.IsAuthenticated.Should().BeTrue();
         state.User.Identity.Name.Should().Be("john@test.com");
         state.User.IsInRole("Administrator").Should().BeTrue();
-        _httpClient.DefaultRequestHeaders.Authorization!.Scheme.Should().Be("bearer");
-        _httpClient.DefaultRequestHeaders.Authorization.Parameter.Should().Be(token);
+    }
+
+    // Review finding: a damaged stored token threw inside GetAuthenticationStateAsync and broke the whole app.
+    [Theory]
+    [InlineData("not-a-jwt")]
+    [InlineData("header.%%%.signature")]
+    [InlineData("header.bm90IGpzb24.signature")] // payload "not json"
+    public async Task GetAuthenticationState_DamagedToken_IsAnonymousAndRemoved(string token)
+    {
+        _localStorage.StoreTokens(token, "refresh");
+
+        var state = await _sut.GetAuthenticationStateAsync();
+
+        state.User.Identity!.IsAuthenticated.Should().BeFalse();
+        _localStorage.AccessToken.Should().BeNull();
+        _localStorage.RefreshToken.Should().BeNull();
     }
 
     [Fact]

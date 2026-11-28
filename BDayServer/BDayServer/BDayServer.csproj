@@ -8,7 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="17.0.0" />
     <PackageReference Include="Cronos" Version="0.13.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="11.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="11.0.0" />
@@ -19,19 +18,20 @@
     <!-- EF Core 11 uses Microsoft.Data.SqlClient 7, which no longer contains Entra ID (Azure AD) authentication.
          The production connection string uses "Authentication=Active Directory Default" (the App Service's
          managed identity), so the Azure extension is required - without it every database call fails. -->
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.2" />
-    <PackageReference Include="Microsoft.Data.SqlClient.Extensions.Azure" Version="7.1.2" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient.Extensions.Azure" Version="8.0.0" />
+    <!-- Needed by "dotnet ef" (migrations); design time only, not published. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="11.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="11.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="Microsoft.Extensions.Logging.AzureAppServices" Version="11.0.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="11.0.0" />
-    <PackageReference Include="Scalar.AspNetCore" Version="2.21.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="11.0.1" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.23.0" />
-    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.4" />
-    <PackageReference Include="NLog" Version="6.2.2" />
+    <PackageReference Include="Scalar.AspNetCore" Version="3.3.0" />
   </ItemGroup>
 
 	<ItemGroup>
@@ -60,7 +60,11 @@
 	<!-- Files that only live on the web server. Web Deploy never uploads, overwrites or deletes them,
 	     also not with "Remove additional files at destination":
 	     - person images uploaded at runtime (StaticFiles\Images)
-	     - appsettings*.json and NLog.config, which are not in git: change them on the server (Kudu), not by publishing.
+	     - the server's appsettings.json and appsettings.Development.json (local, development settings) and NLog.config.
+	     Deployed from this machine on every publish (all gitignored, so they never come from git):
+	     - the server's appsettings.Production.json, and the client's wwwroot\appsettings.json and
+	       wwwroot\appsettings.Production.json. They replace the copies on the server, so production settings are changed
+	       here and published, not edited on the server (Kudu edits would be overwritten by the next publish).
 	     (A skip rule skips add, update and delete; Web Deploy from Visual Studio does not support SkipAction.) -->
 	<ItemGroup>
 	  <MsDeploySkipRules Include="SkipUploadedImagesFolder">
@@ -71,9 +75,10 @@
 	    <ObjectName>filePath</ObjectName>
 	    <AbsolutePath>\\StaticFiles\\Images\\</AbsolutePath>
 	  </MsDeploySkipRules>
-	  <MsDeploySkipRules Include="SkipAppSettings">
+	  <!-- appsettings.json / appsettings.Development.json in the site root, not the client's copies in wwwroot. -->
+	  <MsDeploySkipRules Include="SkipServerDevelopmentSettings">
 	    <ObjectName>filePath</ObjectName>
-	    <AbsolutePath>(?i)\\appsettings[^\\]*\.json$</AbsolutePath>
+	    <AbsolutePath>(?i)(?&lt;!\\wwwroot)\\appsettings(\.Development)?\.json$</AbsolutePath>
 	  </MsDeploySkipRules>
 	  <MsDeploySkipRules Include="SkipNLogConfig">
 	    <ObjectName>filePath</ObjectName>
@@ -81,16 +86,34 @@
 	  </MsDeploySkipRules>
 	</ItemGroup>
 
+	<!-- Guard: a Web Deploy publish uploads the local production settings of server and client (see the skip rules above).
+	     If one is missing, "Remove additional files at destination" would delete it on the server and the site would not
+	     start, so the publish stops first. Folder publishes (CI) are not affected. -->
+	<PropertyGroup>
+	  <ServerProductionSettings>$(MSBuildProjectDirectory)\appsettings.Production.json</ServerProductionSettings>
+	  <ClientProductionSettings>$(MSBuildProjectDirectory)\..\..\BDayClient\BDayClient\wwwroot\appsettings.Production.json</ClientProductionSettings>
+	</PropertyGroup>
+	<Target Name="RequireProductionSettingsForWebDeploy" BeforeTargets="MSDeployPublish"
+	        Condition="'$(WebPublishMethod)' == 'MSDeploy'">
+	  <Error Condition="!Exists('$(ServerProductionSettings)')"
+	         Text="Publish stopped: $(ServerProductionSettings) is missing. Web Deploy uploads it as the server's production settings (connection strings, JWT key, e-mail); without it the settings on the server would be deleted." />
+	  <Error Condition="!Exists('$(ClientProductionSettings)')"
+	         Text="Publish stopped: $(ClientProductionSettings) is missing. Web Deploy uploads it as the Blazor client's production settings; without it the copy on the server would be deleted." />
+	  <PropertyGroup>
+	    <_ServerProductionSettingsText>$([System.IO.File]::ReadAllText('$(ServerProductionSettings)'))</_ServerProductionSettingsText>
+	  </PropertyGroup>
+	  <Error Condition="!$(_ServerProductionSettingsText.Contains('ConnectionStrings')) or !$(_ServerProductionSettingsText.Contains('JWTSettings')) or !$(_ServerProductionSettingsText.Contains('EmailConfiguration'))"
+	         Text="Publish stopped: $(ServerProductionSettings) has no ConnectionStrings, JWTSettings or EmailConfiguration section. It replaces the production settings on the server, so it must be complete." />
+	</Target>
+
 	<!-- Guard: the server's published web.config must never contain IIS rewrite rules. In November 2026 the Blazor client's
 	     standalone web.config (rewrite "Serve subdir" to wwwroot\) ended up in the server publish and every CSS/JS file and
 	     API call failed in production. Runs right after the SDK writes web.config, before anything is deployed. -->
-	<Target Name="BlockRewriteRulesInPublishedWebConfig" AfterTargets="_TransformWebConfig"
-	        Condition="Exists('$(PublishIntermediateOutputPath)web.config')">
+	<Target Name="BlockRewriteRulesInPublishedWebConfig" AfterTargets="_TransformWebConfig" Condition="Exists('$(PublishIntermediateOutputPath)web.config')">
 	  <PropertyGroup>
 	    <_PublishedWebConfigText>$([System.IO.File]::ReadAllText('$(PublishIntermediateOutputPath)web.config'))</_PublishedWebConfigText>
 	  </PropertyGroup>
-	  <Error Condition="$(_PublishedWebConfigText.Contains('&lt;rewrite'))"
-	         Text="The web.config being published contains IIS &lt;rewrite&gt; rules - most likely the Blazor client's own web.config was copied into BDayServer\BDayServer (or is left over in $(PublishIntermediateOutputPath)). Delete that web.config and publish again: the server generates its own web.config, and the client is published through the project reference." />
+	  <Error Condition="$(_PublishedWebConfigText.Contains('&lt;rewrite'))" Text="The web.config being published contains IIS &lt;rewrite&gt; rules - most likely the Blazor client's own web.config was copied into BDayServer\BDayServer (or is left over in $(PublishIntermediateOutputPath)). Delete that web.config and publish again: the server generates its own web.config, and the client is published through the project reference." />
 	</Target>
 
 </Project>

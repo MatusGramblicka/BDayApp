@@ -17,8 +17,8 @@ public abstract class DatabaseMigrationTests<TFixture, TContext>(TFixture fixtur
         await using var dbContext = CreateContext();
 
         // Act
-        await dbContext.Database.MigrateAsync();
-        var canConnect = await dbContext.Database.CanConnectAsync();
+        await dbContext.Database.MigrateAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var canConnect = await dbContext.Database.CanConnectAsync(TestContext.Current.CancellationToken);
 
         // Assert
         canConnect.Should().BeTrue();
@@ -48,9 +48,9 @@ public abstract class DatabaseMigrationTests<TFixture, TContext>(TFixture fixtur
         await using var dbContext = CreateContext();
 
         // Act
-        await dbContext.Database.MigrateAsync();
-        var appliedMigrations = await dbContext.Database.GetAppliedMigrationsAsync();
-        var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
+        await dbContext.Database.MigrateAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var appliedMigrations = await dbContext.Database.GetAppliedMigrationsAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         appliedMigrations.Should().NotBeEmpty();

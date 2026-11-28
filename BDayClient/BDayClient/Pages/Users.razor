@@ -1,15 +1,23 @@
 ﻿@page "/users"
 @using BDayClient.Components
-@using Microsoft.AspNetCore.Authorization
 
 @attribute [Authorize(Roles = "Administrator")]
 
+<PageTitle>Users - BDay App</PageTitle>
+
 <div class="row">
     <div class="col">
-        <UsersTable Users="UsersList" 
-                    LoggedUser="@LoggedUserName" 
-                    OnUpdate="UpdateUser" 
-                    OnRemoveAdminRole="RemoveAdminRole" OnDeleteUser="DeleteUser" 
-                    OnChange2StepsAuthorization="Change2StepsAuthorization"/>
+        @if (_loadFailed)
+        {
+            <p>The users could not be loaded.</p>
+        }
+        else
+        {
+            <UsersTable Users="_users"
+                        LoggedUser="@_loggedUserName"
+                        OnGrantAdminRole="GrantAdminRole"
+                        OnRemoveAdminRole="RemoveAdminRole" OnDeleteUser="DeleteUser"
+                        OnChange2StepsAuthorization="Change2StepsAuthorization"/>
+        }
     </div>
 </div>

@@ -1,21 +1,30 @@
-﻿using Contracts.Exceptions;
+using BDayServer.Extensions;
+using Contracts.Exceptions;
+using Core.Managers;
 using Core.Managers.ManagerInterfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace BDayServer.Controllers;
 
 [Route("api/upload")]
 [ApiController]
 [Authorize]
+[EnableRateLimiting(RateLimitPolicies.Upload)]
 public class UploadController(IUploadManager uploadManager) : ControllerBase
 {
+    // The largest allowed image plus room for the multipart envelope; larger requests get 413 before they are read.
+    private const long MaxRequestBytes = UploadManager.MaxFileSizeBytes + 64 * 1024;
+
     [HttpPost]
-    public IActionResult Upload()
+    [RequestSizeLimit(MaxRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaxRequestBytes)]
+    public async Task<IActionResult> Upload(CancellationToken cancellationToken)
     {
         try
         {
-            return Ok(uploadManager.Upload(Request));
+            return Ok(await uploadManager.UploadAsync(Request, cancellationToken));
         }
         catch (UploadException ex)
         {

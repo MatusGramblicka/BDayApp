@@ -1,52 +1,41 @@
-﻿using BDayClient.Features;
-using Blazored.LocalStorage;
+﻿using System.Security.Claims;
+using BDayClient.Features;
 using Microsoft.AspNetCore.Components.Authorization;
-using System.Net.Http.Headers;
-using System.Security.Claims;
 
 namespace BDayClient.AuthProvider;
 
-public class AuthStateProvider : AuthenticationStateProvider
+/// <summary>
+/// The authentication state comes from the stored access token. An expired token still counts as logged in: the
+/// <see cref="Http.AuthTokenHandler"/> refreshes it before the next API call, and logs the user out when that fails.
+/// </summary>
+public class AuthStateProvider(TokenStorage tokenStorage) : AuthenticationStateProvider
 {
-    private readonly HttpClient _httpClient;
-    private readonly ILocalStorageService _localStorage;
-    private readonly AuthenticationState _anonymous;
+    private const string AuthenticationType = "jwtAuthType";
 
-    public AuthStateProvider(HttpClient httpClient, ILocalStorageService localStorage)
-    {
-        _httpClient = httpClient;
-        _localStorage = localStorage;
-        _anonymous = new AuthenticationState(
-            new ClaimsPrincipal(new ClaimsIdentity()));
-    }
+    private static readonly AuthenticationState Anonymous = new(new ClaimsPrincipal(new ClaimsIdentity()));
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        var token = await _localStorage.GetItemAsync<string>("authToken");
+        var token = await tokenStorage.GetAccessTokenAsync();
         if (string.IsNullOrWhiteSpace(token))
-            return _anonymous;
+            return Anonymous;
 
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("bearer", token);
+        var state = CreateState(token);
+        if (state is not null)
+            return state;
 
-        return new AuthenticationState(new ClaimsPrincipal(
-            new ClaimsIdentity(JwtParser.ParseClaimsFromJwt(token), "jwtAuthType")));
+        // A damaged token would otherwise break the authentication state of the whole app until storage is cleared.
+        await tokenStorage.ClearAsync();
+        return Anonymous;
     }
 
-    public void NotifyUserAuthentication(string token)
-    {
-        var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(
-            JwtParser.ParseClaimsFromJwt(token), "jwtAuthType"));
+    public void NotifyUserAuthentication(string token) =>
+        NotifyAuthenticationStateChanged(Task.FromResult(CreateState(token) ?? Anonymous));
 
-        var authState = Task.FromResult(new AuthenticationState(authenticatedUser));
+    public void NotifyUserLogout() => NotifyAuthenticationStateChanged(Task.FromResult(Anonymous));
 
-        NotifyAuthenticationStateChanged(authState);
-    }
-
-    public void NotifyUserLogout()
-    {
-        var authState = Task.FromResult(_anonymous);
-
-        NotifyAuthenticationStateChanged(authState);
-    }		
+    private static AuthenticationState? CreateState(string token) =>
+        JwtParser.TryParseClaims(token, out var claims)
+            ? new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(claims, AuthenticationType)))
+            : null;
 }

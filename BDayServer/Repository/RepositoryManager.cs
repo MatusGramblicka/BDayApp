@@ -1,12 +1,12 @@
-﻿using Repository.DatabaseAccessInterfaces;
+using Repository.DatabaseAccessInterfaces;
 using Repository.Repositories;
 
 namespace Repository;
 
 public class RepositoryManager(DbRepositoryContext repositoryContext) : IRepositoryManager
 {
-    private IPersonRepository _personRepository;
-    private IEventRepository _eventRepository;
+    private IPersonRepository? _personRepository;
+    private IEventRepository? _eventRepository;
 
     public IPersonRepository Person => _personRepository ??= new PersonRepository(repositoryContext);
 

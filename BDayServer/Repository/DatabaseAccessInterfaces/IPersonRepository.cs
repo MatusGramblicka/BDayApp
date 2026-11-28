@@ -1,4 +1,4 @@
-﻿using Contracts.DataTransferObjects.Person;
+using Contracts.DataTransferObjects.Person;
 using Entities.Models;
 using Entities.RequestFeatures;
 
@@ -6,15 +6,14 @@ namespace Repository.DatabaseAccessInterfaces;
 
 public interface IPersonRepository
 {
-    PagedList<PersonDto> GetAllPersonsAsync(PersonParameters personParameters, bool trackChanges);
+    Task<PagedList<PersonDto>> GetAllPersonsAsync(PersonParameters personParameters,
+        CancellationToken cancellationToken = default);
 
     Task<PersonDto?> GetPersonAsync(Guid personId);
 
     Task<Person?> GetPersonAsync(Guid personId, bool trackChanges);
 
     void CreatePerson(Person person);
-
-    Task<IEnumerable<Person>> GetByIdsAsync(IEnumerable<Guid> ids, bool trackChanges);
 
     void DeletePerson(Person person);
 }

@@ -1,70 +1,71 @@
 using BDayServer.Extensions;
 using BDayServer.HostedService;
-using BDayServer.Mapping;
-using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi;
-using NLog;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
-LogManager.Setup().LoadConfigurationFromFile(string.Concat(Directory.GetCurrentDirectory(), "/nlog.config"));
+// Sends log output to the App Service log stream and log files once "App Service logs" are switched on in the
+// Azure portal (Application logging). Without it, errors on Azure are only visible in the Windows event log.
+builder.Logging.AddAzureWebAppDiagnostics();
 
 // ----------------------------
-// Services (from ConfigureServices)
+// Services
 // ----------------------------
 
 builder.Services.ConfigureCors();
 builder.Services.ConfigureSqlContext(configuration);
 builder.Services.ConfigureRepositoryManager();
 
-builder.Services.AddAutoMapper(a => a.AddProfile<MappingProfile>());
-
-builder.Services.RegisterActionFilters();
 builder.Services.AddIdentityServices();
 builder.Services.RegisterManagers();
 builder.Services.RegisterAuthentication(configuration);
 builder.Services.RegisterAuthorizationServices(configuration);
 builder.Services.RegisterEmailServices(configuration);
+builder.Services.ConfigureRateLimiting();
 var uploadsRoot = builder.Services.ConfigureUploads(configuration);
 
 builder.Services.AddControllers();
-builder.Services.AddRazorPages();
 // Unhandled errors are answered as RFC 7807 problem details (see UseExceptionHandler below).
 builder.Services.AddProblemDetails();
 
-builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi("v1", options =>
 {
     options.AddDocumentTransformer((doc, _, _) =>
     {
         doc.Info = new OpenApiInfo
         {
-            Title = "TravelOrders API",
+            Title = "BDay API",
             Version = "v1"
         };
         return Task.CompletedTask;
     });
 });
 
-// Cron job
-builder.Services.AddCronJob<ScheduleJob>(c =>
+// Daily birthday e-mails at 12:00 UTC - by default only on Azure App Service, whatever the environment name: the local
+// appsettings point at the production databases and SMTP server, so a developer machine would e-mail real users.
+// "Scheduler:Enabled" overrides the default.
+var runsOnAppService = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME"));
+if (configuration.GetValue("Scheduler:Enabled", defaultValue: runsOnAppService))
 {
-    c.TimeZoneInfo = TimeZoneInfo.Utc;
-    c.CronExpression = @"0 12 * * *";
-});
+    builder.Services.AddCronJob<ScheduleJob>(c =>
+    {
+        c.TimeZoneInfo = TimeZoneInfo.Utc;
+        c.CronExpression = @"0 12 * * *";
+    });
+}
 
 var app = builder.Build();
 
 // ----------------------------
-// Middleware (from Configure)
+// Middleware
 // ----------------------------
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
+    // (The developer exception page is switched on automatically in Development.)
     // No UseWebAssemblyDebugging() / inspectUri: since .NET 11, Visual Studio and VS Code launch
     // Blazor WebAssembly debugging themselves (ASPDEPR011).
 
@@ -104,20 +105,14 @@ app.UseStaticFiles(new StaticFileOptions
     OnPrepareResponse = ctx => ctx.Context.Response.Headers.XContentTypeOptions = "nosniff"
 });
 
-// Forwarded headers
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.All
-});
-
 app.UseRouting();
 
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
 // Endpoints
 app.MapControllers();
-app.MapRazorPages();
 // Unknown /api/... URLs are real 404s; every other unknown URL is a client-side route of the Blazor app.
 app.MapFallback("/api/{**path}", () => Results.NotFound());
 app.MapFallbackToFile("index.html");

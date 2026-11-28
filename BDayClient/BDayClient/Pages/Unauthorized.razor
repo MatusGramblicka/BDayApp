@@ -1,3 +1,14 @@
 ﻿@page "/unauthorized"
 
+<PageTitle>Not allowed - BDay App</PageTitle>
+
 <h3>Need to be authorized to interact with website</h3>
+
+<AuthorizeView>
+    <Authorized>
+        <p>Your account is not allowed to open this page. <a href="/persons">Back to the persons</a></p>
+    </Authorized>
+    <NotAuthorized>
+        <p>Please <a href="/login">log in</a> first.</p>
+    </NotAuthorized>
+</AuthorizeView>

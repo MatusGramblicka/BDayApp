@@ -6,8 +6,8 @@ namespace BDayClient.Components;
 
 public partial class Pagination
 {
-    [Parameter]
-    public MetaData MetaData { get; set; }
+    [Parameter, EditorRequired]
+    public MetaData MetaData { get; set; } = new();
 
     [Parameter]
     public int Spread { get; set; }
@@ -15,7 +15,7 @@ public partial class Pagination
     [Parameter]
     public EventCallback<int> SelectedPage { get; set; }
 
-    private List<PagingLink> _links = new();
+    private List<PagingLink> _links = [];
 
     protected override void OnParametersSet()
     {
@@ -24,7 +24,7 @@ public partial class Pagination
 
     private void CreatePaginationLinks()
     {
-        _links = new List<PagingLink> {new(MetaData.CurrentPage - 1, MetaData.HasPrevious, "Previous")};
+        _links = [new PagingLink(MetaData.CurrentPage - 1, MetaData.HasPrevious, "Previous")];
 
         for (var i = 1; i <= MetaData.TotalPages; i++)
         {
@@ -38,12 +38,11 @@ public partial class Pagination
         _links.Add(new PagingLink(MetaData.CurrentPage + 1, MetaData.HasNext, "Next"));
     }
 
+    // The parent loads the page and passes the new MetaData back; this component does not change it itself.
     private async Task OnSelectedPage(PagingLink link)
     {
         if (link.Page == MetaData.CurrentPage || !link.Enabled)
             return;
-
-        MetaData.CurrentPage = link.Page;
 
         await SelectedPage.InvokeAsync(link.Page);
     }

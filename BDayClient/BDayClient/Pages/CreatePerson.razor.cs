@@ -1,78 +1,41 @@
-﻿using BDayClient.HttpInterceptor;
+﻿using BDayClient.Features;
+using BDayClient.Http;
 using BDayClient.HttpRepository;
 using BDayClient.Pocos;
 using Blazored.Toast.Services;
-using Contracts.DataTransferObjects.Person;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Forms;
 
 namespace BDayClient.Pages;
 
 public partial class CreatePerson
 {
-    private PersonForCreation _person = new();
-    private EditContext _editContext;
-    private bool _formInvalid = true;
+    private PersonForCreation _person = NewPerson();
 
-    [Inject] public IPersonHttpRepository PersonRepo { get; set; }
+    [Inject] public IPersonHttpRepository PersonRepo { get; set; } = default!;
 
-    [Inject] public HttpInterceptorService Interceptor { get; set; }
+    [Inject] public IToastService ToastService { get; set; } = default!;
 
-    [Inject] public IToastService ToastService { get; set; }      
-
-    protected override void OnInitialized()
+    // The nameday starts as today, in the year the day/month pickers store dates in.
+    private static PersonForCreation NewPerson() => new()
     {
-        _person.DayOfBirth = null;
-        _person.DayOfNameDay = DateOnly.FromDateTime(DateTime.UtcNow);
-        _editContext = new EditContext(_person);
-        _editContext.OnFieldChanged += HandleFieldChanged;
-        Interceptor.RegisterEvent();
-    }
-
-    // EditContext.OnFieldChanged is a plain .NET event, so this handler is async void
-    // (EditContext.Validate() is obsolete since .NET 11).
-    private async void HandleFieldChanged(object? sender, FieldChangedEventArgs e)
-    {
-        _formInvalid = !await _editContext.ValidateAsync();
-        StateHasChanged();
-    }
+        DayOfNameDay = DayMonth.InStorageYear(DateOnly.FromDateTime(DateTime.Today))
+    };
 
     private async Task Create()
-    {     
-        var personForCreationDto = new PersonForCreationDto
+    {
+        try
         {
-            DayOfBirth = _person.DayOfBirth,
-            DayOfNameDay = _person.DayOfNameDay,
-            Name = _person.Name,
-            Surname = _person.Surname,
-            ImageUrl = _person.ImageUrl
-        };
+            await PersonRepo.CreatePerson(_person.ToDto());
+        }
+        catch (ApiException ex)
+        {
+            ToastService.ShowApiError(ex);
+            return;
+        }
 
-        await PersonRepo.CreatePerson(personForCreationDto);
+        ToastService.ShowSuccess($"Person \"{_person.Name}\" was added.");
 
-        ToastService.ShowSuccess("Action successful. " +
-                                 $"Person \"{_person.Name}\" successfully added.");
-        _person = new PersonForCreation();
-        _editContext.OnValidationStateChanged += ValidationChanged;
-        _editContext.NotifyValidationStateChanged();
-    }
-
-    private void ValidationChanged(object? sender, ValidationStateChangedEventArgs e)
-    {
-        _formInvalid = true;
-        _editContext.OnFieldChanged -= HandleFieldChanged;
-        _editContext = new EditContext(_person);
-        _editContext.OnFieldChanged += HandleFieldChanged;
-        _editContext.OnValidationStateChanged -= ValidationChanged;
-    }
-
-    private void AssignImageUrl(string imgUrl)
-        => _person.ImageUrl = imgUrl;
-   
-    public void Dispose()
-    {
-        Interceptor.DisposeEvent();
-        _editContext.OnFieldChanged -= HandleFieldChanged;
-        _editContext.OnValidationStateChanged -= ValidationChanged;
+        // A new model gives a new, untouched form.
+        _person = NewPerson();
     }
 }

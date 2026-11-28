@@ -1,13 +1,14 @@
-﻿using Contracts.DataTransferObjects.User;
-using System.Net;
+﻿using BDayClient.Http;
+using Contracts.DataTransferObjects.User;
 
 namespace BDayClient.HttpRepository;
 
+/// <summary>User administration calls. Every method throws an <see cref="ApiException"/> when the call fails.</summary>
 public interface IUsersHttpRepository
 {
     Task<List<UserLite>> GetUsers();
-    Task<HttpStatusCode> UpdateUser(UserLite user);
-    Task<HttpStatusCode> RemoveAdminRole(UserLite user);
-    Task<HttpStatusCode> DeleteUser(UserLite user);
-    Task<HttpStatusCode> SetTwoFactorAuthorization(UserLite2StepsAuthDto user2StepsAuth);
+    Task UpdateUser(UserLite user);
+    Task RemoveAdminRole(UserLite user);
+    Task DeleteUser(UserLite user);
+    Task SetTwoFactorAuthorization(UserLite2StepsAuthDto user2StepsAuth);
 }

@@ -1,10 +1,10 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>BDayClient</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BDay App</title>
     <base href="/" />
     <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
     <link href="css/app.css" rel="stylesheet" />
@@ -15,6 +15,13 @@
 
 <body>
     <div id="app">Loading...</div>
+
+    <!-- Shown by Blazor for unhandled exceptions only: failed API calls are handled (toast, redirect) by ApiErrorHandler. -->
+    <div id="blazor-error-ui" role="alert">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss" aria-label="Dismiss">🗙</a>
+    </div>
 
     <script src="_framework/blazor.webassembly.js"></script>
     <script src="_content/Radzen.Blazor/Radzen.Blazor.js"></script>

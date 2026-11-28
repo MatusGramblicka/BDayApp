@@ -1,6 +1,6 @@
-﻿using Contracts.DataTransferObjects.User;
-using System.Net;
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
+using BDayClient.Http;
+using Contracts.DataTransferObjects.User;
 
 namespace BDayClient.HttpRepository;
 
@@ -8,40 +8,24 @@ public class UsersHttpRepository(HttpClient client) : IUsersHttpRepository
 {
     public async Task<List<UserLite>> GetUsers()
     {
-        var usersResult = await client.GetFromJsonAsync<List<UserLite>>("users/users");
+        using var response = await client.GetAsync("users/users");
+        await response.EnsureSuccessAsync();
 
-        return usersResult;
+        return await response.ReadJsonOrDefaultAsync<List<UserLite>>() ?? [];
     }
 
-    public async Task<HttpStatusCode> UpdateUser(UserLite user)
+    public Task UpdateUser(UserLite user) => PostAsync("users/updateuser", user);
+
+    public Task RemoveAdminRole(UserLite user) => PostAsync("users/removeadminrole", user);
+
+    public Task DeleteUser(UserLite user) => PostAsync("users/deleteuser", user);
+
+    public Task SetTwoFactorAuthorization(UserLite2StepsAuthDto user2StepsAuth) =>
+        PostAsync("users/SetTwoFactorAuthorization", user2StepsAuth);
+
+    private async Task PostAsync<T>(string requestUri, T body)
     {
-        var result = await client.PostAsJsonAsync("users/updateuser",
-            user);
-
-        return result.StatusCode;
-    }
-
-    public async Task<HttpStatusCode> RemoveAdminRole(UserLite user)
-    {
-        var result = await client.PostAsJsonAsync("users/removeadminrole",
-            user);
-
-        return result.StatusCode;
-    }
-
-    public async Task<HttpStatusCode> DeleteUser(UserLite user)
-    {
-        var result = await client.PostAsJsonAsync("users/deleteuser",
-            user);
-
-        return result.StatusCode;
-    }
-
-    public async Task<HttpStatusCode> SetTwoFactorAuthorization(UserLite2StepsAuthDto user2StepsAuth)
-    {
-        var result = await client.PostAsJsonAsync("users/SetTwoFactorAuthorization",
-            user2StepsAuth);
-
-        return result.StatusCode;
+        using var response = await client.PostAsJsonAsync(requestUri, body);
+        await response.EnsureSuccessAsync();
     }
 }

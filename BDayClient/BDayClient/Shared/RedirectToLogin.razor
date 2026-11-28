@@ -1,0 +1,9 @@
+@using BDayClient.Http
+@inject NavigationManager NavigationManager
+
+@* Shown by App.razor to anonymous users on pages that need a login: go to the login page, and come back afterwards. *@
+<p>Redirecting to the login page...</p>
+
+@code {
+    protected override void OnInitialized() => NavigationManager.NavigateToLogin();
+}

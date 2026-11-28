@@ -1,99 +1,113 @@
-﻿using EmailService.EmailServiceContracts;
+﻿using System.Diagnostics.CodeAnalysis;
+using EmailService.EmailServiceContracts;
 using EmailService.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using MimeKit;
 using Repository.Repositories;
 
 namespace EmailService.EmailService;
 
-public class EmailPreparator(ILogger<EmailPreparator> logger, PostgreDbRepositoryContext repositoryContextScheduleJob)
+public class EmailPreparator(ILogger<EmailPreparator> logger, PostgreDbRepositoryContext context)
     : IEmailPreparator
 {
-    public List<Message>? PrepareMessage()
+    // Without this, MimeKit also accepts a bare "name" (an address without a domain), which no SMTP server delivers.
+    private static readonly ParserOptions AddressParserOptions = new() { AllowAddressesWithoutDomain = false };
+
+    public async Task<IReadOnlyList<Message>> PrepareMessagesAsync(DateOnly today,
+        CancellationToken cancellationToken = default)
     {
-        var personForEmailCreation = repositoryContextScheduleJob.Persons.Select(p => new PersonForEmailCreation
+        var persons = await context.Persons
+            .Select(p => new PersonForEmailCreation
+            {
+                CreatorEmail = p.User.Email,
+                Name = p.Name,
+                Surname = p.Surname,
+                DayOfBirth = p.DayOfBirth,
+                DayOfNameDay = p.DayOfNameDay
+            })
+            .ToListAsync(cancellationToken);
+
+        var celebrations = FindCelebrations(persons, today);
+
+        var messages = new List<Message>();
+        var creatorsWithoutValidEmail = 0;
+
+        foreach (var celebrationsOfCreator in celebrations.GroupBy(c => c.Recipient))
         {
-            CreatorEmail = p.User.Email,
-            Name = p.Name,
-            Surname = p.Surname,
-            DayOfBirth = p.DayOfBirth,
-            DayOfNameDay = p.DayOfNameDay
-        });
-
-        var messageBirthAndNameDays = PrepareMessagesBirthAndNameDay(personForEmailCreation);
-
-        var massages = new List<Message>();
-
-        if (messageBirthAndNameDays.Count == 0)
-            return null;
-
-        var messageDaysByPersonCreators = messageBirthAndNameDays.GroupBy(m => m.Recipient);
-        foreach (var messageDaysByPersonCreator in messageDaysByPersonCreators)
-        {
-            var recipients = new[] {messageDaysByPersonCreator.Key};
+            if (!TryGetAddress(celebrationsOfCreator.Key, out var address))
+            {
+                creatorsWithoutValidEmail++;
+                logger.LogDebug("Skipping the celebrations of a user whose e-mail {Email} is not a valid address",
+                    celebrationsOfCreator.Key);
+                continue;
+            }
 
             var messageBirth = "";
             var messageName = "";
-            foreach (var recipientsMess in messageDaysByPersonCreator)
+            foreach (var celebration in celebrationsOfCreator)
             {
-                if (recipientsMess.CelebrationType.Equals(DayType.Birthday))
-                    messageBirth += recipientsMess.Message;
+                if (celebration.CelebrationType == DayType.Birthday)
+                    messageBirth += celebration.Message;
                 else
-                    messageName += recipientsMess.Message;
+                    messageName += celebration.Message;
             }
 
-            massages.Add(new Message(recipients, "Celebration",
+            messages.Add(new Message([address], "Celebration",
                 $"Birthday:{Environment.NewLine}{messageBirth}{Environment.NewLine}" +
                 $"Nameday:{Environment.NewLine}{messageName}", null));
         }
 
-        return massages;
+        if (creatorsWithoutValidEmail > 0)
+            logger.LogWarning("{UserCount} user(s) with celebrations on {Date:yyyy-MM-dd} have no valid e-mail address " +
+                              "and get no e-mail", creatorsWithoutValidEmail, today);
+
+        logger.LogInformation("Prepared {MessageCount} celebration e-mail(s) for {Date:yyyy-MM-dd}: " +
+                              "{CelebrationCount} celebration(s) among {PersonCount} person(s)",
+            messages.Count, today, celebrations.Count, persons.Count);
+
+        return messages;
     }
 
-    private List<RecipientMessage> PrepareMessagesBirthAndNameDay(
-        IEnumerable<PersonForEmailCreation> personForEmailCreation)
+    private static List<RecipientMessage> FindCelebrations(List<PersonForEmailCreation> persons, DateOnly today)
     {
-        var personWithBirthDate = personForEmailCreation.Where(p => p.DayOfBirth.HasValue);
+        var birthdays = persons
+            .Where(p => p.DayOfBirth.HasValue && IsReminderDay(p.DayOfBirth.Value, today))
+            .Select(p => new RecipientMessage
+            {
+                Message = FormatLine(p, p.DayOfBirth!.Value),
+                Recipient = p.CreatorEmail,
+                CelebrationType = DayType.Birthday
+            });
 
-#pragma warning disable CS8629 // Nullable value type may be null.
-        var birthDayPersons = personWithBirthDate
-            .Where(p => HasCloseDay(p.DayOfBirth.Value));
-#pragma warning restore CS8629 // Nullable value type may be null.
+        var nameDays = persons
+            .Where(p => IsReminderDay(p.DayOfNameDay, today))
+            .Select(p => new RecipientMessage
+            {
+                Message = FormatLine(p, p.DayOfNameDay),
+                Recipient = p.CreatorEmail,
+                CelebrationType = DayType.NameDay
+            });
 
-        var recipientsMessageListBirthDay = birthDayPersons.Select(birthDayPerson => new RecipientMessage
-        {
-            Message = $"{birthDayPerson.Name} {birthDayPerson.Surname} {birthDayPerson.DayOfBirth:dd/MM}\n",
-            Recipient = birthDayPerson.CreatorEmail,
-            CelebrationType = DayType.Birthday
-        });
-
-        var nameDayPersons = personForEmailCreation
-            .Where(p => HasCloseDay(p.DayOfNameDay));
-
-        var recipientsMessageListNameDay = nameDayPersons.Select(nameDayPerson => new RecipientMessage
-        {
-            Message = $"{nameDayPerson.Name} {nameDayPerson.Surname} {nameDayPerson.DayOfNameDay:dd/MM}\n",
-            Recipient = nameDayPerson.CreatorEmail,
-            CelebrationType = DayType.NameDay
-        });
-
-        var recipientsMessageList = new List<RecipientMessage>();
-        recipientsMessageList.AddRange(recipientsMessageListBirthDay);
-        recipientsMessageList.AddRange(recipientsMessageListNameDay);
-
-        return recipientsMessageList.All(r => r.Message.Length == 0)
-            ? new List<RecipientMessage>()
-            : recipientsMessageList;
+        return [.. birthdays, .. nameDays];
     }
 
-    private bool HasCloseDay(DateOnly date)
+    // Announced 14 days ahead, the day before and on the day itself.
+    private static bool IsReminderDay(DateOnly date, DateOnly today) =>
+        CelebrationCalendar.DaysUntilNextAnniversary(date, today) is 14 or 1 or 0;
+
+    // "dd/MM" with an explicit culture: otherwise "/" becomes the date separator of the server's culture (e.g. "22.11").
+    private static string FormatLine(PersonForEmailCreation person, DateOnly date) =>
+        FormattableString.Invariant($"{person.Name} {person.Surname} {date:dd/MM}\n");
+
+    private static bool TryGetAddress(string? email, [NotNullWhen(true)] out string? address)
     {
-        logger.LogInformation($"{DateTime.Now:hh:mm:ss} ScheduleJob is searching " +
-                               "for people with close birthday.");
-        var timeNow = DateTime.Today;
+        address = null;
+        if (string.IsNullOrWhiteSpace(email) ||
+            !MailboxAddress.TryParse(AddressParserOptions, email, out var mailbox))
+            return false;
 
-        var age = timeNow.Year - date.Year;
-        var numOfDays = (date.ToDateTime(TimeOnly.MinValue) - timeNow.AddYears(-age)).Days;
-
-        return numOfDays is 14 or 1 or 0;
+        address = mailbox.Address;
+        return true;
     }
 }

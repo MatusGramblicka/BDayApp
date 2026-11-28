@@ -9,12 +9,7 @@ public partial class Sort
 
     private async Task ApplySort(ChangeEventArgs eventArgs)
     {
-        if (eventArgs.Value is null)
-            throw new ArgumentNullException(nameof(eventArgs.Value));
-
-        if (eventArgs.Value.ToString() == "-1")
-            return;
-
-        await OnSortChanged.InvokeAsync(eventArgs.Value.ToString());
+        if (eventArgs.Value?.ToString() is { Length: > 0 } orderBy)
+            await OnSortChanged.InvokeAsync(orderBy);
     }
 }

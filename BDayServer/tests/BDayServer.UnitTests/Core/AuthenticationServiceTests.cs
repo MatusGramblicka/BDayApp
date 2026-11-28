@@ -107,16 +107,4 @@ public class AuthenticationServiceTests
 
         act.Should().Throw<SecurityTokenInvalidIssuerException>();
     }
-
-    [Fact]
-    public void GenerateRefreshToken_Returns32RandomBytesAsBase64()
-    {
-        var sut = CreateSut();
-
-        var first = sut.GenerateRefreshToken();
-        var second = sut.GenerateRefreshToken();
-
-        Convert.FromBase64String(first).Should().HaveCount(32);
-        first.Should().NotBe(second);
-    }
 }

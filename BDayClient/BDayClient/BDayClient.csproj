@@ -16,7 +16,7 @@
     <PackageReference Include="Microsoft.Extensions.Http" Version="11.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="11.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="11.0.0" />
-    <PackageReference Include="Radzen.Blazor" Version="13.1.0" />
+    <PackageReference Include="Radzen.Blazor" Version="13.4.0" />
   </ItemGroup>
 
 	<ItemGroup>

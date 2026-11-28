@@ -19,15 +19,15 @@
     <!-- EF Core 11 uses Microsoft.Data.SqlClient 7, which no longer contains Entra ID (Azure AD) authentication.
          The production connection string uses "Authentication=Active Directory Default" (the App Service's
          managed identity), so the Azure extension is required - without it every database call fails. -->
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.2" />
-    <PackageReference Include="Microsoft.Data.SqlClient.Extensions.Azure" Version="7.1.2" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient.Extensions.Azure" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="11.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Logging.AzureAppServices" Version="11.0.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="11.0.0" />
-    <PackageReference Include="Scalar.AspNetCore" Version="2.21.0" />
+    <PackageReference Include="Scalar.AspNetCore" Version="3.3.0" />
   </ItemGroup>
 
 	<ItemGroup>
@@ -80,13 +80,11 @@
 	<!-- Guard: the server's published web.config must never contain IIS rewrite rules. In November 2026 the Blazor client's
 	     standalone web.config (rewrite "Serve subdir" to wwwroot\) ended up in the server publish and every CSS/JS file and
 	     API call failed in production. Runs right after the SDK writes web.config, before anything is deployed. -->
-	<Target Name="BlockRewriteRulesInPublishedWebConfig" AfterTargets="_TransformWebConfig"
-	        Condition="Exists('$(PublishIntermediateOutputPath)web.config')">
+	<Target Name="BlockRewriteRulesInPublishedWebConfig" AfterTargets="_TransformWebConfig" Condition="Exists('$(PublishIntermediateOutputPath)web.config')">
 	  <PropertyGroup>
 	    <_PublishedWebConfigText>$([System.IO.File]::ReadAllText('$(PublishIntermediateOutputPath)web.config'))</_PublishedWebConfigText>
 	  </PropertyGroup>
-	  <Error Condition="$(_PublishedWebConfigText.Contains('&lt;rewrite'))"
-	         Text="The web.config being published contains IIS &lt;rewrite&gt; rules - most likely the Blazor client's own web.config was copied into BDayServer\BDayServer (or is left over in $(PublishIntermediateOutputPath)). Delete that web.config and publish again: the server generates its own web.config, and the client is published through the project reference." />
+	  <Error Condition="$(_PublishedWebConfigText.Contains('&lt;rewrite'))" Text="The web.config being published contains IIS &lt;rewrite&gt; rules - most likely the Blazor client's own web.config was copied into BDayServer\BDayServer (or is left over in $(PublishIntermediateOutputPath)). Delete that web.config and publish again: the server generates its own web.config, and the client is published through the project reference." />
 	</Target>
 
 </Project>

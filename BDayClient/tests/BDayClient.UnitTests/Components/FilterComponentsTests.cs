@@ -92,7 +92,7 @@ public class FilterComponentsTests : BunitContext
         cut.Find("input").Input("an");
 
         await WaitUntilAsync(() => !raised.IsEmpty, TimeSpan.FromSeconds(3));
-        await Task.Delay(Search.DebounceDelay + TimeSpan.FromMilliseconds(200)); // the cancelled delay must not fire late
+        await Task.Delay(Search.DebounceDelay + TimeSpan.FromMilliseconds(200), Xunit.TestContext.Current.CancellationToken); // the cancelled delay must not fire late
         raised.Should().Equal("an");
     }
 
@@ -106,7 +106,7 @@ public class FilterComponentsTests : BunitContext
         cut.Find("input").Input("ann");
         await DisposeComponentsAsync();
 
-        await Task.Delay(Search.DebounceDelay + TimeSpan.FromMilliseconds(300));
+        await Task.Delay(Search.DebounceDelay + TimeSpan.FromMilliseconds(300), Xunit.TestContext.Current.CancellationToken);
         raised.Should().BeEmpty();
     }
 

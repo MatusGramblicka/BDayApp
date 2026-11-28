@@ -24,7 +24,7 @@ public sealed class CronJobStateFileTests : IDisposable
     [Fact]
     public async Task Read_NoFile_ReturnsNull()
     {
-        (await CreateSut("last-run.txt").ReadLastCompletedOccurrenceAsync()).Should().BeNull();
+        (await CreateSut("last-run.txt").ReadLastCompletedOccurrenceAsync(TestContext.Current.CancellationToken)).Should().BeNull();
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public sealed class CronJobStateFileTests : IDisposable
 
         await sut.WriteLastCompletedOccurrenceAsync(occurrenceInAnotherZone);
 
-        (await sut.ReadLastCompletedOccurrenceAsync()).Should().Be(Occurrence);
+        (await sut.ReadLastCompletedOccurrenceAsync(TestContext.Current.CancellationToken)).Should().Be(Occurrence);
         Directory.GetFiles(Path.Combine(_directory, "Scheduler")).Should().ContainSingle()
             .Which.Should().Be(sut.FilePath);
     }
@@ -48,7 +48,7 @@ public sealed class CronJobStateFileTests : IDisposable
 
         await sut.WriteLastCompletedOccurrenceAsync(Occurrence.AddDays(1));
 
-        (await sut.ReadLastCompletedOccurrenceAsync()).Should().Be(Occurrence.AddDays(1));
+        (await sut.ReadLastCompletedOccurrenceAsync(TestContext.Current.CancellationToken)).Should().Be(Occurrence.AddDays(1));
     }
 
     [Fact]
@@ -56,9 +56,9 @@ public sealed class CronJobStateFileTests : IDisposable
     {
         var sut = CreateSut("last-run.txt");
         Directory.CreateDirectory(_directory);
-        await File.WriteAllTextAsync(sut.FilePath, "not a date");
+        await File.WriteAllTextAsync(sut.FilePath, "not a date", TestContext.Current.CancellationToken);
 
-        (await sut.ReadLastCompletedOccurrenceAsync()).Should().BeNull();
+        (await sut.ReadLastCompletedOccurrenceAsync(TestContext.Current.CancellationToken)).Should().BeNull();
         _logger.Entries.Should().Contain(e => e.Level == LogLevel.Warning);
     }
 
@@ -67,9 +67,9 @@ public sealed class CronJobStateFileTests : IDisposable
     {
         var sut = CreateSut("last-run.txt");
         Directory.CreateDirectory(_directory);
-        await File.WriteAllTextAsync(sut.FilePath, "2026-11-22T12:00:00Z" + Environment.NewLine);
+        await File.WriteAllTextAsync(sut.FilePath, "2026-11-22T12:00:00Z" + Environment.NewLine, TestContext.Current.CancellationToken);
 
-        (await sut.ReadLastCompletedOccurrenceAsync()).Should().Be(Occurrence);
+        (await sut.ReadLastCompletedOccurrenceAsync(TestContext.Current.CancellationToken)).Should().Be(Occurrence);
     }
 
     [Fact]
@@ -77,14 +77,14 @@ public sealed class CronJobStateFileTests : IDisposable
     {
         // A file where the folder should be: the folder cannot be created.
         Directory.CreateDirectory(_directory);
-        await File.WriteAllTextAsync(Path.Combine(_directory, "blocked"), "");
+        await File.WriteAllTextAsync(Path.Combine(_directory, "blocked"), "", TestContext.Current.CancellationToken);
         var sut = CreateSut("blocked", "last-run.txt");
 
         var act = () => sut.WriteLastCompletedOccurrenceAsync(Occurrence);
 
         await act.Should().NotThrowAsync();
         _logger.Entries.Should().Contain(e => e.Level == LogLevel.Error && e.Exception != null);
-        (await sut.ReadLastCompletedOccurrenceAsync()).Should().BeNull();
+        (await sut.ReadLastCompletedOccurrenceAsync(TestContext.Current.CancellationToken)).Should().BeNull();
     }
 
     [Fact]

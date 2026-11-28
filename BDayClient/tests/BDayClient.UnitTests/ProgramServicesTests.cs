@@ -94,10 +94,10 @@ public class ProgramServicesTests
         using var provider = BuildProvider();
         using var scope = provider.CreateScope();
 
-        var response = await scope.ServiceProvider.GetRequiredService<HttpClient>().GetAsync("persons");
+        var response = await scope.ServiceProvider.GetRequiredService<HttpClient>().GetAsync("persons", Xunit.TestContext.Current.CancellationToken);
 
         _server.VerifyNoOutstandingExpectation();
         response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
-        (await ApiErrorReader.ReadAsync(response)).Handled.Should().BeTrue();
+        (await ApiErrorReader.ReadAsync(response, Xunit.TestContext.Current.CancellationToken)).Handled.Should().BeTrue();
     }
 }

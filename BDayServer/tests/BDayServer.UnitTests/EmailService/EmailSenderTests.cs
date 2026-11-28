@@ -109,7 +109,9 @@ public class EmailSenderTests
     {
         _client.SetupGet(c => c.IsConnected).Returns(true);
 
+#pragma warning disable xUnit1051 // This test is about the overload without a token.
         await CreateSut().SendEmailAsync(_message);
+#pragma warning restore xUnit1051
 
         _client.Verify(c => c.ConnectAsync("smtp.test", 465, true, CancellationToken.None), Times.Once);
     }

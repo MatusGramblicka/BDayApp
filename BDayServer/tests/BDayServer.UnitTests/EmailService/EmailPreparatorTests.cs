@@ -44,7 +44,7 @@ public class EmailPreparatorTests : IDisposable
     [Fact]
     public async Task PrepareMessages_NoPersons_ReturnsEmpty()
     {
-        (await CreateSut().PrepareMessagesAsync(Today)).Should().BeEmpty();
+        (await CreateSut().PrepareMessagesAsync(Today, TestContext.Current.CancellationToken)).Should().BeEmpty();
     }
 
     [Fact]
@@ -52,9 +52,9 @@ public class EmailPreparatorTests : IDisposable
     {
         var owner = AddUser("owner@test.com");
         AddPerson(owner, "Far", FarAway.AddYears(-30), FarAway);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        (await CreateSut().PrepareMessagesAsync(Today)).Should().BeEmpty();
+        (await CreateSut().PrepareMessagesAsync(Today, TestContext.Current.CancellationToken)).Should().BeEmpty();
     }
 
     [Fact]
@@ -62,9 +62,9 @@ public class EmailPreparatorTests : IDisposable
     {
         var owner = AddUser("owner@test.com");
         AddPerson(owner, "Anna", Today.AddYears(-30), FarAway);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var messages = await CreateSut().PrepareMessagesAsync(Today);
+        var messages = await CreateSut().PrepareMessagesAsync(Today, TestContext.Current.CancellationToken);
 
         var message = messages.Should().ContainSingle().Subject;
         message.To.Should().ContainSingle().Which.Address.Should().Be("owner@test.com");
@@ -80,9 +80,9 @@ public class EmailPreparatorTests : IDisposable
     {
         var owner = AddUser("owner@test.com");
         AddPerson(owner, "Boris", birth: null, nameDay: Today.AddYears(-20));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var message = (await CreateSut().PrepareMessagesAsync(Today)).Should().ContainSingle().Subject;
+        var message = (await CreateSut().PrepareMessagesAsync(Today, TestContext.Current.CancellationToken)).Should().ContainSingle().Subject;
 
         var parts = message.Content.Split("Nameday:");
         parts[0].Should().NotContain("Boris");
@@ -101,9 +101,9 @@ public class EmailPreparatorTests : IDisposable
     {
         var owner = AddUser("owner@test.com");
         AddPerson(owner, "Cyril", Today.AddDays(daysAhead).AddYears(-40), FarAway);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        (await CreateSut().PrepareMessagesAsync(Today)).Should().HaveCount(announced ? 1 : 0);
+        (await CreateSut().PrepareMessagesAsync(Today, TestContext.Current.CancellationToken)).Should().HaveCount(announced ? 1 : 0);
     }
 
     [Fact]
@@ -114,9 +114,9 @@ public class EmailPreparatorTests : IDisposable
         AddPerson(first, "Anna", Today.AddYears(-30), FarAway);
         AddPerson(first, "Cyril", Today.AddYears(-40), FarAway);
         AddPerson(second, "Dana", Today.AddYears(-25), FarAway);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var messages = await CreateSut().PrepareMessagesAsync(Today);
+        var messages = await CreateSut().PrepareMessagesAsync(Today, TestContext.Current.CancellationToken);
 
         messages.Should().HaveCount(2);
         var forFirst = messages.Single(m => m.To.Single().Address == "first@test.com");
@@ -132,9 +132,9 @@ public class EmailPreparatorTests : IDisposable
         AddPerson(owner, "Tomorrow", new DateOnly(1990, 1, 1), FarAway);
         AddPerson(owner, "Fortnight", birth: null, nameDay: new DateOnly(2000, 1, 14));
         AddPerson(owner, "Later", new DateOnly(1990, 1, 2), FarAway);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var message = (await CreateSut().PrepareMessagesAsync(new DateOnly(2026, 12, 31)))
+        var message = (await CreateSut().PrepareMessagesAsync(new DateOnly(2026, 12, 31), TestContext.Current.CancellationToken))
             .Should().ContainSingle().Subject;
 
         var sections = message.Content.Split("Nameday:");
@@ -151,9 +151,9 @@ public class EmailPreparatorTests : IDisposable
     {
         var owner = AddUser("owner@test.com");
         AddPerson(owner, "Leap", new DateOnly(1992, 2, 29), nameDay: new DateOnly(2000, 8, 15));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var messages = await CreateSut().PrepareMessagesAsync(DateOnly.Parse(today, CultureInfo.InvariantCulture));
+        var messages = await CreateSut().PrepareMessagesAsync(DateOnly.Parse(today, CultureInfo.InvariantCulture), TestContext.Current.CancellationToken);
 
         if (announced)
             messages.Should().ContainSingle().Which.Content.Should().Contain("Leap Test 29/02");
@@ -172,9 +172,9 @@ public class EmailPreparatorTests : IDisposable
         var valid = AddUser("valid@test.com");
         AddPerson(broken, "Anna", Today.AddYears(-30), FarAway);
         AddPerson(valid, "Boris", Today.AddYears(-20), FarAway);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var messages = await CreateSut().PrepareMessagesAsync(Today);
+        var messages = await CreateSut().PrepareMessagesAsync(Today, TestContext.Current.CancellationToken);
 
         var message = messages.Should().ContainSingle().Subject;
         message.To.Single().Address.Should().Be("valid@test.com");
@@ -186,7 +186,7 @@ public class EmailPreparatorTests : IDisposable
     {
         var owner = AddUser("owner@test.com");
         AddPerson(owner, "Anna", Today.AddYears(-30), FarAway);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var dottedCulture = (CultureInfo)CultureInfo.InvariantCulture.Clone();
         dottedCulture.DateTimeFormat.DateSeparator = ".";
@@ -194,7 +194,7 @@ public class EmailPreparatorTests : IDisposable
         CultureInfo.CurrentCulture = dottedCulture;
         try
         {
-            var message = (await CreateSut().PrepareMessagesAsync(Today)).Should().ContainSingle().Subject;
+            var message = (await CreateSut().PrepareMessagesAsync(Today, TestContext.Current.CancellationToken)).Should().ContainSingle().Subject;
 
             message.Content.Should().Contain("Anna Test 22/11");
         }

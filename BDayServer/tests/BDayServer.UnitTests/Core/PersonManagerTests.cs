@@ -61,7 +61,7 @@ public class PersonManagerTests
         _personRepository.Setup(r => r.GetAllPersonsAsync(parameters, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
 
-        var result = await CreateSut().GetPersonsAsync(parameters);
+        var result = await CreateSut().GetPersonsAsync(parameters, TestContext.Current.CancellationToken);
 
         result.Should().BeSameAs(expected);
     }

@@ -175,7 +175,7 @@ public class PersonManagerTests(MigratedDatabasesFixture fixture)
         await using var services = BuildServices(owner.UserName!);
         using var readScope = services.CreateScope();
         var persons = await readScope.ServiceProvider.GetRequiredService<IPersonManager>()
-            .GetPersonsAsync(new PersonParameters());
+            .GetPersonsAsync(new PersonParameters(), TestContext.Current.CancellationToken);
 
         persons.Select(p => p.Name).Should().BeEquivalentTo("Anna", "Boris");
     }
@@ -212,7 +212,7 @@ public class PersonManagerTests(MigratedDatabasesFixture fixture)
         var created = await scope.ServiceProvider.GetRequiredService<IPersonManager>().CreatePersonAsync(NewPerson());
 
         await using var context = fixture.PostgreSql.CreateContext();
-        var copiedUser = await context.Users.AsNoTracking().SingleAsync(u => u.Id == user.Id);
+        var copiedUser = await context.Users.AsNoTracking().SingleAsync(u => u.Id == user.Id, cancellationToken: TestContext.Current.CancellationToken);
         copiedUser.Email.Should().Be(user.Email);
         copiedUser.PasswordHash.Should().BeNull();
         (await FindInPostgreSqlAsync(created.Id)).Should().NotBeNull();
@@ -227,7 +227,7 @@ public class PersonManagerTests(MigratedDatabasesFixture fixture)
         var manager = scope.ServiceProvider.GetRequiredService<IPersonManager>();
         var created = await manager.CreatePersonAsync(NewPerson());
         await using (var context = fixture.PostgreSql.CreateContext())
-            await context.Persons.Where(p => p.Id == created.Id).ExecuteDeleteAsync();
+            await context.Persons.Where(p => p.Id == created.Id).ExecuteDeleteAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         await manager.UpdatePersonAsync(created.Id, new PersonForUpdateDto { Name = "Hana", DayOfNameDay = FarAway });
 
@@ -245,10 +245,10 @@ public class PersonManagerTests(MigratedDatabasesFixture fixture)
                 .CreatePersonAsync(NewPerson())).Id;
 
         using (var scope = services.CreateScope())
-            await scope.ServiceProvider.GetRequiredService<IPersonMirror>().DeleteUserAsync(user.Id);
+            await scope.ServiceProvider.GetRequiredService<IPersonMirror>().DeleteUserAsync(user.Id, TestContext.Current.CancellationToken);
 
         (await FindInPostgreSqlAsync(personId)).Should().BeNull();
         await using var context = fixture.PostgreSql.CreateContext();
-        (await context.Users.AnyAsync(u => u.Id == user.Id)).Should().BeFalse();
+        (await context.Users.AnyAsync(u => u.Id == user.Id, cancellationToken: TestContext.Current.CancellationToken)).Should().BeFalse();
     }
 }

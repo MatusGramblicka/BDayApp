@@ -43,14 +43,14 @@ public sealed class PostgresPersonMirrorTests : IDisposable
     {
         var person = NewPerson();
 
-        await _sut.UpsertPersonAsync(person);
+        await _sut.UpsertPersonAsync(person, TestContext.Current.CancellationToken);
 
-        var owner = await _mirror.Users.AsNoTracking().SingleAsync();
+        var owner = await _mirror.Users.AsNoTracking().SingleAsync(cancellationToken: TestContext.Current.CancellationToken);
         owner.Id.Should().Be(_owner.Id);
         owner.Email.Should().Be(_owner.Email);
         owner.PasswordHash.Should().BeNull();
         owner.RefreshToken.Should().BeEmpty();
-        var copy = await _mirror.Persons.AsNoTracking().SingleAsync();
+        var copy = await _mirror.Persons.AsNoTracking().SingleAsync(cancellationToken: TestContext.Current.CancellationToken);
         copy.Should().BeEquivalentTo(person, o => o.Excluding(p => p.User));
     }
 
@@ -58,16 +58,16 @@ public sealed class PostgresPersonMirrorTests : IDisposable
     public async Task Upsert_ExistingCopy_IsUpdated()
     {
         var person = NewPerson();
-        await _sut.UpsertPersonAsync(person);
+        await _sut.UpsertPersonAsync(person, TestContext.Current.CancellationToken);
 
         person.Name = "Hana";
         person.DayOfBirth = null;
-        await _sut.UpsertPersonAsync(person);
+        await _sut.UpsertPersonAsync(person, TestContext.Current.CancellationToken);
 
-        var copy = await _mirror.Persons.AsNoTracking().SingleAsync();
+        var copy = await _mirror.Persons.AsNoTracking().SingleAsync(cancellationToken: TestContext.Current.CancellationToken);
         copy.Name.Should().Be("Hana");
         copy.DayOfBirth.Should().BeNull();
-        (await _mirror.Users.CountAsync()).Should().Be(1);
+        (await _mirror.Users.CountAsync(cancellationToken: TestContext.Current.CancellationToken)).Should().Be(1);
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public sealed class PostgresPersonMirrorTests : IDisposable
         var act = () => _sut.UpsertPersonAsync(NewPerson());
 
         await act.Should().NotThrowAsync();
-        (await _mirror.Persons.CountAsync()).Should().Be(0);
+        (await _mirror.Persons.CountAsync(cancellationToken: TestContext.Current.CancellationToken)).Should().Be(0);
     }
 
     [Fact]

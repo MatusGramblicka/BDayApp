@@ -30,7 +30,7 @@ public class ApiErrorHandlerTests
     {
         _api.Http.When(HttpMethod.Get, Api + "persons").Respond(HttpStatusCode.Unauthorized);
 
-        var response = await _api.Client.GetAsync("persons");
+        var response = await _api.Client.GetAsync("persons", Xunit.TestContext.Current.CancellationToken);
 
         _api.LocalStorage.AccessToken.Should().BeNull();
         _api.LocalStorage.RefreshToken.Should().BeNull();
@@ -59,7 +59,7 @@ public class ApiErrorHandlerTests
     {
         _api.Http.When(HttpMethod.Get, Api + "users/users").Respond(HttpStatusCode.Forbidden);
 
-        var response = await _api.Client.GetAsync("users/users");
+        var response = await _api.Client.GetAsync("users/users", Xunit.TestContext.Current.CancellationToken);
 
         _api.Navigation.NavigatedTo.Should().Equal("/unauthorized");
         _api.LocalStorage.AccessToken.Should().NotBeNull("a 403 does not log the user out");
@@ -73,7 +73,7 @@ public class ApiErrorHandlerTests
     {
         _api.Http.When(Api + route).Respond(HttpStatusCode.TooManyRequests);
 
-        var response = await _api.Client.PostAsync(route, new StringContent(string.Empty));
+        var response = await _api.Client.PostAsync(route, new StringContent(string.Empty), Xunit.TestContext.Current.CancellationToken);
 
         _api.VerifyErrorToast("Too many requests - please try again in a minute", Times.Once());
         _api.Navigation.NavigatedTo.Should().BeEmpty();
@@ -99,13 +99,13 @@ public class ApiErrorHandlerTests
             new StringContent("""{"title":"An error occurred while processing your request.","status":500}""",
                 Encoding.UTF8, "application/problem+json"));
 
-        var response = await _api.Client.GetAsync("persons");
+        var response = await _api.Client.GetAsync("persons", Xunit.TestContext.Current.CancellationToken);
 
         _api.VerifyErrorToast("An error occurred while processing your request.", Times.Once());
         _api.Navigation.NavigatedTo.Should().BeEmpty("there is no /error redirect for handled errors");
         (await IsHandled(response)).Should().BeTrue();
         // The body can still be read by the caller after the handler has read it.
-        (await response.Content.ReadAsStringAsync()).Should().Contain("An error occurred");
+        (await response.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken)).Should().Contain("An error occurred");
     }
 
     // Review finding: a transport failure navigated to /error, a route that did not exist.
@@ -114,7 +114,7 @@ public class ApiErrorHandlerTests
     {
         _api.Http.When(HttpMethod.Get, Api + "persons").Throw(new HttpRequestException("TypeError: Failed to fetch"));
 
-        var exception = await Record.ExceptionAsync(() => _api.Client.GetAsync("persons"));
+        var exception = await Record.ExceptionAsync(() => _api.Client.GetAsync("persons", Xunit.TestContext.Current.CancellationToken));
 
         var apiException = exception.Should().BeOfType<ApiException>().Subject;
         apiException.Handled.Should().BeTrue();
@@ -132,7 +132,7 @@ public class ApiErrorHandlerTests
         _api.LocalStorage.StoreTokens(expiring, "refresh-1");
         _api.Http.When(HttpMethod.Post, Api + "token/refresh").Throw(new HttpRequestException("TypeError: Failed to fetch"));
 
-        var exception = await Record.ExceptionAsync(() => _api.Client.GetAsync("persons"));
+        var exception = await Record.ExceptionAsync(() => _api.Client.GetAsync("persons", Xunit.TestContext.Current.CancellationToken));
 
         exception.Should().BeOfType<ApiException>().Which.Handled.Should().BeTrue();
         _api.LocalStorage.AccessToken.Should().Be(expiring, "no answer from the server is not a refused refresh");
@@ -149,14 +149,14 @@ public class ApiErrorHandlerTests
     {
         _api.Http.When(HttpMethod.Put, Api + "persons/1").Respond(status, "text/plain", "Person does not exist");
 
-        var response = await _api.Client.PutAsync("persons/1", new StringContent("{}"));
+        var response = await _api.Client.PutAsync("persons/1", new StringContent("{}"), Xunit.TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(status);
         (await IsHandled(response)).Should().BeFalse();
         _api.VerifyNoErrorToast();
         _api.Navigation.NavigatedTo.Should().BeEmpty();
 
-        var exception = await Record.ExceptionAsync(() => response.EnsureSuccessAsync());
+        var exception = await Record.ExceptionAsync(() => response.EnsureSuccessAsync(cancellationToken: Xunit.TestContext.Current.CancellationToken));
         exception.Should().BeOfType<ApiException>().Which.Message.Should().Be("Person does not exist");
     }
 
@@ -165,7 +165,7 @@ public class ApiErrorHandlerTests
     {
         _api.Http.When(HttpMethod.Delete, Api + "persons/1").Respond(HttpStatusCode.NoContent);
 
-        var response = await _api.Client.DeleteAsync("persons/1");
+        var response = await _api.Client.DeleteAsync("persons/1", Xunit.TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         _api.VerifyNoErrorToast();

@@ -18,7 +18,7 @@ public class ApiErrorReaderTests
     public async Task AuthResponseDto_UsesErrorMessage()
     {
         var error = await ApiErrorReader.ReadAsync(Response(HttpStatusCode.Unauthorized,
-            JsonContent.Create(new AuthResponseDto { ErrorMessage = "Invalid credentials" })));
+            JsonContent.Create(new AuthResponseDto { ErrorMessage = "Invalid credentials" })), Xunit.TestContext.Current.CancellationToken);
 
         error.Errors.Should().Equal("Invalid credentials");
         error.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -29,7 +29,7 @@ public class ApiErrorReaderTests
     public async Task ResponseDto_UsesErrorsArray()
     {
         var error = await ApiErrorReader.ReadAsync(Response(HttpStatusCode.BadRequest,
-            JsonContent.Create(new ResponseDto { Errors = ["Email taken", "Password too short"] })));
+            JsonContent.Create(new ResponseDto { Errors = ["Email taken", "Password too short"] })), Xunit.TestContext.Current.CancellationToken);
 
         error.Errors.Should().Equal("Email taken", "Password too short");
         error.Message.Should().Be("Email taken Password too short");
@@ -44,7 +44,7 @@ public class ApiErrorReaderTests
              "Password":["The Password field is required."]},"traceId":"00-abc"}
             """;
 
-        var error = await ApiErrorReader.ReadAsync(Response(HttpStatusCode.BadRequest, Text(body, "application/problem+json")));
+        var error = await ApiErrorReader.ReadAsync(Response(HttpStatusCode.BadRequest, Text(body, "application/problem+json")), Xunit.TestContext.Current.CancellationToken);
 
         error.Errors.Should().Equal("The Email field is required.", "The Email field is not a valid e-mail address.",
             "The Password field is required.");
@@ -57,7 +57,7 @@ public class ApiErrorReaderTests
     public async Task ProblemDetails_PrefersDetailOverTitle(string body, string expected)
     {
         var error = await ApiErrorReader.ReadAsync(Response(HttpStatusCode.InternalServerError,
-            Text(body, "application/problem+json")));
+            Text(body, "application/problem+json")), Xunit.TestContext.Current.CancellationToken);
 
         error.Errors.Should().Equal(expected);
     }
@@ -65,7 +65,7 @@ public class ApiErrorReaderTests
     [Fact]
     public async Task PlainText_IsTheMessage()
     {
-        var error = await ApiErrorReader.ReadAsync(Response(HttpStatusCode.BadRequest, Text("Unspecified problem")));
+        var error = await ApiErrorReader.ReadAsync(Response(HttpStatusCode.BadRequest, Text("Unspecified problem")), Xunit.TestContext.Current.CancellationToken);
 
         error.Errors.Should().Equal("Unspecified problem");
     }
@@ -74,7 +74,7 @@ public class ApiErrorReaderTests
     public async Task JsonString_IsUnquoted()
     {
         var error = await ApiErrorReader.ReadAsync(Response(HttpStatusCode.BadRequest,
-            Text("\"Object is null\"", "application/json")));
+            Text("\"Object is null\"", "application/json")), Xunit.TestContext.Current.CancellationToken);
 
         error.Errors.Should().Equal("Object is null");
     }
@@ -84,7 +84,7 @@ public class ApiErrorReaderTests
     {
         // IIS answers with an HTML page, e.g. 503 while the site restarts after a deploy.
         var error = await ApiErrorReader.ReadAsync(Response(HttpStatusCode.ServiceUnavailable,
-            Text("<html><body>Service Unavailable</body></html>", "text/html")));
+            Text("<html><body>Service Unavailable</body></html>", "text/html")), Xunit.TestContext.Current.CancellationToken);
 
         error.Errors.Should().ContainSingle().Which.Should().Contain("503").And.Contain("Service Unavailable");
     }
@@ -92,7 +92,7 @@ public class ApiErrorReaderTests
     [Fact]
     public async Task EmptyBody429_GivesTooManyRequestsMessage()
     {
-        var error = await ApiErrorReader.ReadAsync(Response(HttpStatusCode.TooManyRequests));
+        var error = await ApiErrorReader.ReadAsync(Response(HttpStatusCode.TooManyRequests), Xunit.TestContext.Current.CancellationToken);
 
         error.Errors.Should().Equal("Too many requests - please try again in a minute");
     }
@@ -101,7 +101,7 @@ public class ApiErrorReaderTests
     public async Task UnknownJson_GivesStatusMessage()
     {
         var error = await ApiErrorReader.ReadAsync(Response(HttpStatusCode.Conflict,
-            Text("""{"isSuccessfulRegistration":false,"errors":[]}""", "application/json")));
+            Text("""{"isSuccessfulRegistration":false,"errors":[]}""", "application/json")), Xunit.TestContext.Current.CancellationToken);
 
         error.Errors.Should().ContainSingle().Which.Should().Contain("409");
     }
@@ -111,7 +111,7 @@ public class ApiErrorReaderTests
     {
         var stackTrace = "System.InvalidOperationException: boom" + new string('x', 400);
 
-        var error = await ApiErrorReader.ReadAsync(Response(HttpStatusCode.InternalServerError, Text(stackTrace)));
+        var error = await ApiErrorReader.ReadAsync(Response(HttpStatusCode.InternalServerError, Text(stackTrace)), Xunit.TestContext.Current.CancellationToken);
 
         error.Errors.Should().ContainSingle().Which.Should().Contain("500").And.NotContain("boom");
     }
@@ -123,7 +123,7 @@ public class ApiErrorReaderTests
         var response = Response(HttpStatusCode.BadGateway);
         response.ReasonPhrase = string.Empty;
 
-        var error = await ApiErrorReader.ReadAsync(response);
+        var error = await ApiErrorReader.ReadAsync(response, Xunit.TestContext.Current.CancellationToken);
 
         error.Message.Should().Contain("502 Bad Gateway");
     }
@@ -136,7 +136,7 @@ public class ApiErrorReaderTests
         var response = Response(HttpStatusCode.TooManyRequests);
         response.RequestMessage = request;
 
-        var error = await ApiErrorReader.ReadAsync(response);
+        var error = await ApiErrorReader.ReadAsync(response, Xunit.TestContext.Current.CancellationToken);
 
         error.Handled.Should().BeTrue();
     }

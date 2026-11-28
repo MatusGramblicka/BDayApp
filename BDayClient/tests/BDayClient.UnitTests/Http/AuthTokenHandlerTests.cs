@@ -21,7 +21,7 @@ public class AuthTokenHandlerTests
             .WithHeaders("Authorization", $"Bearer {token}")
             .Respond(HttpStatusCode.OK);
 
-        await _api.Client.GetAsync("persons");
+        await _api.Client.GetAsync("persons", Xunit.TestContext.Current.CancellationToken);
 
         _api.Http.VerifyNoOutstandingExpectation();
         _api.Client.DefaultRequestHeaders.Authorization.Should().BeNull();
@@ -38,7 +38,7 @@ public class AuthTokenHandlerTests
             .With(request => request.Headers.Authorization is null)
             .Respond(HttpStatusCode.OK);
 
-        await _api.Client.PostAsync(route, new StringContent("{}"));
+        await _api.Client.PostAsync(route, new StringContent("{}"), Xunit.TestContext.Current.CancellationToken);
 
         _api.Http.VerifyNoOutstandingExpectation();
     }
@@ -51,7 +51,7 @@ public class AuthTokenHandlerTests
             .With(request => request.Headers.Authorization is null)
             .Respond(HttpStatusCode.OK);
 
-        await _api.Client.GetAsync("persons");
+        await _api.Client.GetAsync("persons", Xunit.TestContext.Current.CancellationToken);
 
         _api.Http.VerifyNoOutstandingExpectation();
         _api.Http.GetMatchCount(refresh).Should().Be(0);
@@ -72,7 +72,7 @@ public class AuthTokenHandlerTests
             .WithHeaders("Authorization", $"Bearer {newToken}")
             .Respond(HttpStatusCode.OK);
 
-        await _api.Client.GetAsync("persons/1");
+        await _api.Client.GetAsync("persons/1", Xunit.TestContext.Current.CancellationToken);
 
         _api.Http.VerifyNoOutstandingExpectation();
         _api.LocalStorage.AccessToken.Should().Be(newToken);
@@ -104,7 +104,7 @@ public class AuthTokenHandlerTests
             .Respond(HttpStatusCode.OK);
 
         var requests = Enumerable.Range(1, 3).Select(i => _api.Client.GetAsync($"persons?page={i}")).ToList();
-        await Task.Delay(100);
+        await Task.Delay(100, Xunit.TestContext.Current.CancellationToken);
         releaseRefresh.SetResult();
         var responses = await Task.WhenAll(requests);
 
@@ -126,7 +126,7 @@ public class AuthTokenHandlerTests
             .With(request => request.Headers.Authorization is null)
             .Respond(HttpStatusCode.Unauthorized);
 
-        await _api.Client.GetAsync("persons");
+        await _api.Client.GetAsync("persons", Xunit.TestContext.Current.CancellationToken);
 
         _api.LocalStorage.AccessToken.Should().BeNull();
         _api.LocalStorage.RefreshToken.Should().BeNull();
@@ -141,7 +141,7 @@ public class AuthTokenHandlerTests
             .With(request => request.Headers.Authorization is null)
             .Respond(HttpStatusCode.OK);
 
-        await _api.Client.GetAsync("https://elsewhere.test/api/persons");
+        await _api.Client.GetAsync("https://elsewhere.test/api/persons", Xunit.TestContext.Current.CancellationToken);
 
         _api.Http.VerifyNoOutstandingExpectation();
     }

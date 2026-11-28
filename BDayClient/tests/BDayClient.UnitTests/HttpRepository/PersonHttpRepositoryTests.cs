@@ -51,7 +51,7 @@ public class PersonHttpRepositoryTests
         var result = await _sut.GetPersons(new PersonParameters
         {
             PageNumber = 2, PageSize = 4, SearchTerm = "an", OrderBy = "name desc"
-        });
+        }, Xunit.TestContext.Current.CancellationToken);
 
         result.Items.Select(p => p.Name).Should().Equal("Anna", "Boris");
         result.Items[0].DayOfNameDay.Should().Be(new DateOnly(2000, 7, 26));
@@ -67,7 +67,7 @@ public class PersonHttpRepositoryTests
             .WithQueryString("searchTerm", "")
             .Respond(_ => PersonsPage(new MetaData()));
 
-        var result = await _sut.GetPersons(new PersonParameters());
+        var result = await _sut.GetPersons(new PersonParameters(), Xunit.TestContext.Current.CancellationToken);
 
         result.Items.Should().BeEmpty();
         _http.VerifyNoOutstandingExpectation();
@@ -79,7 +79,7 @@ public class PersonHttpRepositoryTests
         _http.When(HttpMethod.Get, Api + "persons")
             .Respond(_ => PersonsPage(null, new { id = Guid.NewGuid(), name = "Anna", dayOfNameDay = "2000-07-26" }));
 
-        var result = await _sut.GetPersons(new PersonParameters { PageNumber = 1, PageSize = 10 });
+        var result = await _sut.GetPersons(new PersonParameters { PageNumber = 1, PageSize = 10 }, Xunit.TestContext.Current.CancellationToken);
 
         result.Items.Should().ContainSingle();
         result.MetaData.HasNext.Should().BeFalse();
@@ -91,7 +91,7 @@ public class PersonHttpRepositoryTests
     {
         _http.When(HttpMethod.Get, Api + "persons").Respond(HttpStatusCode.BadRequest, "text/plain", "Object is null");
 
-        var exception = await Record.ExceptionAsync(() => _sut.GetPersons(new PersonParameters()));
+        var exception = await Record.ExceptionAsync(() => _sut.GetPersons(new PersonParameters(), Xunit.TestContext.Current.CancellationToken));
 
         exception.Should().BeOfType<ApiException>().Which.Message.Should().Be("Object is null");
     }
@@ -107,7 +107,7 @@ public class PersonHttpRepositoryTests
             .Respond(_ => PersonsPage(new MetaData { CurrentPage = 2, PageSize = 50, TotalPages = 2, TotalCount = 51 },
                 new { id = Guid.NewGuid(), name = "Boris", dayOfNameDay = "2000-05-02" }));
 
-        var persons = await _sut.GetAllPersons();
+        var persons = await _sut.GetAllPersons(Xunit.TestContext.Current.CancellationToken);
 
         persons.Select(p => p.Name).Should().Equal("Anna", "Boris");
         _http.VerifyNoOutstandingExpectation();
@@ -120,7 +120,7 @@ public class PersonHttpRepositoryTests
         _http.When(HttpMethod.Get, Api + $"persons/{id}")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new { id, name = "Anna", dayOfNameDay = "2000-07-26" }));
 
-        var person = await _sut.GetPerson(id);
+        var person = await _sut.GetPerson(id, Xunit.TestContext.Current.CancellationToken);
 
         person!.Id.Should().Be(id);
         person.Name.Should().Be("Anna");
@@ -132,7 +132,7 @@ public class PersonHttpRepositoryTests
         var id = Guid.NewGuid();
         _http.When(HttpMethod.Get, Api + $"persons/{id}").Respond(HttpStatusCode.NotFound);
 
-        (await _sut.GetPerson(id)).Should().BeNull();
+        (await _sut.GetPerson(id, Xunit.TestContext.Current.CancellationToken)).Should().BeNull();
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public class PersonHttpRepositoryTests
         var id = Guid.NewGuid();
         _http.When(HttpMethod.Get, Api + $"persons/{id}").Respond(HttpStatusCode.InternalServerError);
 
-        var exception = await Record.ExceptionAsync(() => _sut.GetPerson(id));
+        var exception = await Record.ExceptionAsync(() => _sut.GetPerson(id, Xunit.TestContext.Current.CancellationToken));
 
         exception.Should().BeOfType<ApiException>().Which.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
     }

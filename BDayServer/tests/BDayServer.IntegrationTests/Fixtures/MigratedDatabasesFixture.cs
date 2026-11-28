@@ -14,9 +14,9 @@ public class MigratedDatabasesFixture : IAsyncLifetime
 
     public PostgreSqlContainerFixture PostgreSql { get; } = new();
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
-        await Task.WhenAll(SqlServer.InitializeAsync(), PostgreSql.InitializeAsync());
+        await Task.WhenAll(SqlServer.InitializeAsync().AsTask(), PostgreSql.InitializeAsync().AsTask());
 
         await using var sqlContext = SqlServer.CreateContext();
         await sqlContext.Database.MigrateAsync();
@@ -25,9 +25,9 @@ public class MigratedDatabasesFixture : IAsyncLifetime
         await postgreContext.Database.MigrateAsync();
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        await Task.WhenAll(SqlServer.DisposeAsync(), PostgreSql.DisposeAsync());
+        await Task.WhenAll(SqlServer.DisposeAsync().AsTask(), PostgreSql.DisposeAsync().AsTask());
     }
 
     /// <summary>Creates a user with a unique e-mail in the SQL Server identity store.</summary>

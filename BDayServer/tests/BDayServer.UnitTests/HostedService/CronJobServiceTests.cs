@@ -30,9 +30,9 @@ public sealed class CronJobServiceTests : IAsyncLifetime
             NullLogger<CronJobStateFile>.Instance);
     }
 
-    public Task InitializeAsync() => Task.CompletedTask;
+    public ValueTask InitializeAsync() => ValueTask.CompletedTask;
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         foreach (var job in _jobs)
         {

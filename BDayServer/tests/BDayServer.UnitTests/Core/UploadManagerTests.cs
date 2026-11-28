@@ -82,11 +82,11 @@ public sealed class UploadManagerTests : IDisposable
     {
         byte[] content = [0x89, 0x50, 0x4E, 0x47];
 
-        var urlPath = await _sut.UploadAsync(FormRequest(File(@"..\..\Photo.PNG", content)));
+        var urlPath = await _sut.UploadAsync(FormRequest(File(@"..\..\Photo.PNG", content)), TestContext.Current.CancellationToken);
 
         urlPath.Should().MatchRegex("^StaticFiles/Images/[0-9a-f]{32}\\.png$");
         var stored = StoredFiles().Should().ContainSingle().Subject;
         Path.GetFileName(stored).Should().Be(urlPath["StaticFiles/Images/".Length..]);
-        (await System.IO.File.ReadAllBytesAsync(stored)).Should().Equal(content);
+        (await System.IO.File.ReadAllBytesAsync(stored, TestContext.Current.CancellationToken)).Should().Equal(content);
     }
 }
